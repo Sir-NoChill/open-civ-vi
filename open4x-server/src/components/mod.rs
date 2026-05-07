@@ -1,3 +1,4 @@
+pub mod api;
 pub mod client_auth;
 pub mod hexmap;
 pub mod session;

@@ -5,6 +5,7 @@ pub mod messages;
 pub mod profile;
 pub mod reports;
 pub mod view;
+pub mod web;
 
 // Re-export key types at crate root for convenience.
 pub use coord::{HexCoord, HexDir};

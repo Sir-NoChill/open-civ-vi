@@ -10,3 +10,5 @@ pub mod ws;
 pub mod api;
 pub mod api_token;
 pub mod reports;
+pub mod rest;
+pub mod web_projection;

@@ -1,18 +1,21 @@
 # Ongoing Work
 
-> **Current task**: Web UI port — Phase 0 (scaffolding)
+> **Current task**: Web UI port — Phase 1 (HUD MVP)
 > **Plan**: [book/src/roadmap/web-ui.md](./web-ui.md)
 > **Status**: In progress
 
 ## Web UI port (Leptos + REST)
 
-- [ ] Phase 0 — Scaffolding
-  - [ ] `types/web.rs` skeleton
-  - [ ] `server/web_projection.rs` stubs
-  - [ ] `server/rest/` module + `/api/v1/health`
-  - [ ] `components/api/` with `http.rs` + stub
-  - [ ] trunk build instructions in `book/getting-started.md`
+- [x] Phase 0 — Scaffolding
 - [ ] Phase 1 — HUD MVP
+  - [ ] `build_player_state` projector (real)
+  - [ ] `GET /api/v1/player-state`
+  - [ ] `build_world_snapshot` projector (real)
+  - [ ] `GET /api/v1/world/snapshot`
+  - [ ] `components/api/{player_state,world}.rs` real bindings
+  - [ ] `POST /api/v1/turn/end`
+  - [ ] HUD topbar consumes `Resource<PlayerState>`
+  - [ ] HexMap re-bound to `Resource<WorldSnapshot>`
 - [ ] Phase 2 — Cities + Units
 - [ ] Phase 3 — Research & policy stacks
 - [ ] Phase 4 — Outer loop screens

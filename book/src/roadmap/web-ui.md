@@ -1,6 +1,6 @@
 # Web UI Roadmap — Leptos port of the `open4x-webui/` wireframe
 
-> **Status**: Planning. No code yet.
+> **Status**: Phase 0 complete. Phase 1 next.
 > **Goal**: Replace the static `open4x-webui/` HTML wireframe with an interactive
 > Leptos/WASM frontend that lives in `open4x-server` and is driven by REST calls
 > against the same crate's `ssr` server. Single-player, declarative state on the
@@ -503,15 +503,17 @@ Everything else round-trips through REST.
 Each phase ends in a working, mergeable state. No phase requires more than
 one libciv PR + one open4x-server PR.
 
-### Phase 0 — Scaffolding (prep, no behaviour change)
+### Phase 0 — Scaffolding (prep, no behaviour change) ✅
 
-1. Add `types/web.rs` with empty modules for each wireframe schema (compiles
-   for both `ssr` and `csr`).
-2. Add `server/web_projection.rs` with stub functions that return `Default`.
-3. Add `server/rest/` as a new module mirroring `server/api.rs` style. Wire
-   `/api/v1/health` only.
-4. Add `components/api/` with `http.rs` and one stub call (`get_player_state`).
-5. Add `trunk` build instructions to `book/getting-started.md`.
+1. [x] Add `types/web.rs` with empty modules for each wireframe schema
+   (compiles for both `ssr` and `csr`).
+2. [x] Add `server/web_projection.rs` with stub functions that return
+   `Default`.
+3. [x] Add `server/rest/` as a new module mirroring `server/api.rs` style.
+   Wire `/api/v1/health` only.
+4. [x] Add `components/api/` with `http.rs` and one stub call
+   (`get_player_state`).
+5. [x] Add `trunk` build instructions to `book/src/getting-started.md`.
 
 **Done when**: `cargo build --workspace` clean and the server boots with both
 `/api/game/*` (existing) and `/api/v1/health` reachable.
@@ -628,3 +630,51 @@ endpoint and the wireframe directory is gone.
 - No save/load over REST yet. Save remains a JSON download in the topbar.
 - No accessibility or i18n pass — that is a separate roadmap item.
 - No mobile layout — the wireframe is desktop-only and so is the port.
+
+---
+
+## 10. Changelog
+
+Running record of work performed against this plan, newest at top.
+
+### Phase 0 — Scaffolding (2026-05-07)
+
+- **Commit `docs(web-ui): import wireframe and add Leptos port roadmap`** —
+  brought in `open4x-webui/` as a visual reference and wrote this plan.
+- **Commit `feat(open4x-server): scaffold /api/v1 REST surface (Phase 0)`**:
+  - `open4x-server/src/types/web.rs` — wire-type modules for every wireframe
+    schema (`player_state`, `world`, `tech_tree`, `civics_tree`, `government`,
+    `diplomacy`, `empire_overview`, `victory`, `city_data`, `city_tiles`,
+    `unit_data`, `army_data`, `notifications`, `turn_queue`, `map_overlays`)
+    plus the shared `MutationResponse<T>` envelope and `ApiErrorBody`. All
+    types are `Default` stubs; field schemas land in Phase 1+.
+  - `open4x-server/src/server/web_projection.rs` — one builder stub per wire
+    type. Each returns `Default::default()` for now.
+  - `open4x-server/src/server/rest/{mod,auth,handlers}.rs` — new REST module.
+    `auth.rs` wraps `api_token::resolve_token` into the `Result<_, ApiError>`
+    shape Axum expects; `handlers.rs` ships only `health` for Phase 0.
+  - `open4x-server/src/main.rs` — wired `/api/v1/health` next to the legacy
+    `/api/game/*` routes.
+  - `open4x-server/src/components/api/{mod,http,player_state}.rs` — client
+    bindings layer. `http.rs` is a wasm-bindgen `fetch_json` helper (no JS
+    shim). `player_state::get` is the first stub call.
+  - `book/src/getting-started.md` — documented the trunk build (`--features
+    csr --no-default-features`) and added a pointer to this roadmap.
+  - `cargo build -p open4x-server` (ssr) and
+    `cargo build -p open4x-server --no-default-features --features csr
+    --target wasm32-unknown-unknown` both pass clean.
+  - `cargo clippy -p open4x-server -- -D warnings` (ssr) clean. csr clippy
+    surfaces 3 pre-existing `uninlined_format_args` warnings in
+    `tabs/{city,culture,science}.rs` — unrelated to this scaffolding;
+    tracked for cleanup in a later phase.
+
+### Open API decisions resolved during Phase 0
+
+- The `MutationResponse<T>` and `ApiErrorBody` envelopes from §4.2/§4.3 now
+  exist concretely in `types/web.rs` so every Phase 1+ handler can return
+  them without rediscussion.
+- `/api/v1/health` is intentionally **unauthenticated** (mirrors the existing
+  `/health`). Every other `/api/v1/*` endpoint will go through
+  `rest::auth::auth_or_401` and so requires a bearer token.
+- Tile coordinates on the wire use axial `(q, r)` only (no `s`), per §8 — the
+  `world::TileCoord` and `world::TileView` types reflect this.

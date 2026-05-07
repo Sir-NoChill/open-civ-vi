@@ -19,7 +19,9 @@ async fn main() {
         .route("/ws", get(server::ws::ws_handler))
         .route("/health", get(|| async { "ok" }))
         .route("/api/demo-game", get(demo_game_handler))
-        // REST API endpoints
+        // REST v1 (under construction — see book/src/roadmap/web-ui.md)
+        .route("/api/v1/health", get(server::rest::handlers::health))
+        // Legacy /api/game/* (deprecated, removed in Phase 5)
         .route("/api/game/view", get(server::api::game_view))
         .route("/api/game/cities", get(server::api::cities))
         .route("/api/game/city/{id}", get(server::api::city_detail))

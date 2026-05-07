@@ -63,16 +63,39 @@ The server serves the WASM frontend as static files and exposes a WebSocket endp
 
 ## Building the WASM Frontend
 
+The frontend is the `open4x-server` crate compiled with the `csr` feature for
+the `wasm32-unknown-unknown` target. The native server binary uses the `ssr`
+feature (default).
+
 ```bash
-# Install trunk if needed
+# One-time setup
+rustup target add wasm32-unknown-unknown
 cargo install trunk
 
-# Build and serve the frontend (hot-reloading)
+# Iterate on the UI with hot-reloading (proxies API calls to localhost:3001)
 cd open4x-server
-trunk serve
+trunk serve --features csr --no-default-features
+
+# Production build — emits open4x-server/dist/ for the server to serve
+trunk build --release --features csr --no-default-features
 ```
 
-The frontend connects to the server's WebSocket endpoint for multiplayer games.
+Then start the native server (which will fall back to the trunk-built
+artefacts at `OPEN4X_STATIC_DIR`, defaulting to `./open4x-server/dist`):
+
+```bash
+cargo run -p open4x-server     # serves /api/*, /ws, and dist/
+```
+
+### REST surface (under construction)
+
+The HTTP API is being grown out under `/api/v1/*` — see
+[`book/src/roadmap/web-ui.md`](./roadmap/web-ui.md) for the full plan. As of
+Phase 0 only `/api/v1/health` is reachable; the legacy `/api/game/*`
+read-only endpoints remain in place during the transition.
+
+The frontend connects to the server's WebSocket endpoint (`/ws`) for the AI
+demo and future multiplayer; the single-player loop will use REST instead.
 
 ## Running Individual Test Suites
 
