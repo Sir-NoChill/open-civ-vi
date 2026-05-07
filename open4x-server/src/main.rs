@@ -21,17 +21,6 @@ async fn main() {
         .route("/api/demo-game", get(demo_game_handler))
         // REST v1 — see book/src/roadmap/web-ui.md
         .nest("/api/v1", server::rest::v1_router())
-        // Legacy /api/game/* (deprecated, removed in Phase 5)
-        .route("/api/game/view", get(server::api::game_view))
-        .route("/api/game/cities", get(server::api::cities))
-        .route("/api/game/city/{id}", get(server::api::city_detail))
-        .route("/api/game/resources", get(server::api::resources))
-        .route("/api/game/units", get(server::api::units))
-        .route("/api/game/map-stats", get(server::api::map_stats))
-        .route("/api/game/players", get(server::api::players))
-        .route("/api/game/science", get(server::api::science))
-        .route("/api/game/culture", get(server::api::culture))
-        .route("/api/game/turn", get(server::api::turn_status))
         .fallback_service(ServeDir::new(&static_dir))
         .layer(CorsLayer::permissive())
         .with_state(state);

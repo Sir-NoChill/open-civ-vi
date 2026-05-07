@@ -879,6 +879,39 @@ pub fn build_turn_queue(view: &GameView) -> turn_queue::TurnQueue {
 
 // ── /map/overlays ────────────────────────────────────────────────────────────
 
+pub fn build_registry(view: &GameView) -> registry::Registry {
+    let unit_types = view
+        .unit_type_defs
+        .iter()
+        .map(|d| registry::UnitType {
+            id: d.id.as_ulid().to_string(),
+            name: d.name.clone(),
+            production_cost: d.production_cost,
+            combat_strength: d.combat_strength,
+            max_movement: d.max_movement,
+            category: format!("{:?}", d.category),
+            domain: format!("{:?}", d.domain),
+            can_found_city: d.can_found_city,
+        })
+        .collect();
+
+    let buildings = view
+        .building_defs
+        .iter()
+        .map(|d| registry::Building {
+            id: d.id.as_ulid().to_string(),
+            name: d.name.clone(),
+            cost: d.cost,
+            maintenance: d.maintenance,
+        })
+        .collect();
+
+    registry::Registry {
+        unit_types,
+        buildings,
+    }
+}
+
 pub fn build_map_overlays(view: &GameView) -> map_overlays::MapOverlays {
     let _ = view;
     map_overlays::MapOverlays {

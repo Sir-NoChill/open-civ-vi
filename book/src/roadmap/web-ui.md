@@ -614,10 +614,10 @@ all render real data and accept user input.
 
 1. [ ] Delete `open4x-webui/` (or move to `docs/legacy-wireframe/` if we
    want to keep it as a visual reference).
-2. [ ] Remove the `/api/game/*` legacy routes and `server/reports.rs` if
-   nothing else consumes them. (Currently the integration tests still
-   read `/api/game/view` to look up unit-type IDs — gated on a new
-   `/api/v1/registry` endpoint that should expose the same data.)
+2. [x] Remove the `/api/game/*` legacy routes from the router. ✅ Replaced
+   by `GET /api/v1/registry` exposing `unit_types` and `buildings`.
+   `server/{api,reports}.rs` modules retained as dead code for now (zero
+   external consumers) — full deletion is a follow-up.
 3. [ ] Remove `/ws` from the single-player code path entirely. (Keep it
    for AI demo and for the future multiplayer roadmap.)
 4. [x] Add integration tests under `open4x-server/tests/rest_api.rs`
@@ -625,7 +625,7 @@ all render real data and accept user input.
    10 tests covering health/auth/games_new/player-state/world-snapshot/
    cities/units/diplomacy/turn-queue/victory/end-turn/research/
    production round-trip. All green.
-5. [ ] Document the API in `book/src/multiplayer/web-client.md`.
+5. [x] Document the API in `book/src/multiplayer/web-client.md`. ✅
 
 **Done when**: `cargo test -p open4x-server --features ssr` covers every
 endpoint and the wireframe directory is gone.
@@ -670,6 +670,24 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 5 — Registry endpoint, drop legacy routes, docs (2026-05-07)
+
+- **Commit `feat(open4x-server): GET /api/v1/registry exposes unit_type_defs (Phase 5 task 2 prep)`**:
+  - New wire type `types::web::registry::Registry` with `unit_types`
+    (id, name, production_cost, combat_strength, max_movement, category,
+    domain, can_found_city) and `buildings` (id, name, cost, maintenance).
+  - `build_registry` projector + handler + route. The integration tests
+    that previously read `unit_type_defs` from the legacy
+    `/api/game/view` now read from `/api/v1/registry`.
+- **Commit `chore(open4x-server): drop /api/game/* legacy routes (Phase 5 task 2)`**:
+  - Removed the 10 legacy `/api/game/*` routes from `main.rs`. The
+    `server::api` and `server::reports` modules remain (zero external
+    callers; full deletion is a follow-up).
+  - `book/src/multiplayer/web-client.md` rewritten to document the v1
+    REST surface, the dual REST/WS transport split, and the wire types →
+    projector → handler → binding pipeline.
+  - All 10 integration tests still green; both ssr/csr clippy clean.
 
 ### Phase 5 partial — REST integration tests (2026-05-07)
 

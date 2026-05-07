@@ -735,6 +735,17 @@ pub async fn map_overlays(
     Ok(Json(web_projection::build_map_overlays(&view)))
 }
 
+// ── /registry ────────────────────────────────────────────────────────────────
+
+pub async fn registry(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_registry(&view)))
+}
+
 // ── /diplomacy ───────────────────────────────────────────────────────────────
 
 pub async fn diplomacy(

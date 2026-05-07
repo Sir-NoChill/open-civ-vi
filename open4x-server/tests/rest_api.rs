@@ -18,13 +18,11 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Body;
-use axum::routing::get;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
 use serde_json::Value;
 use tower::ServiceExt;
 
-use open4x_server::server::api;
 use open4x_server::server::rest::v1_router;
 use open4x_server::server::state::AppState;
 
@@ -34,9 +32,6 @@ fn build_app() -> (Router, Arc<AppState>) {
     let state = AppState::new();
     let router = Router::new()
         .nest("/api/v1", v1_router())
-        // The legacy /api/game/view is the only way to read unit_type_defs
-        // until /api/v1 grows a registry endpoint — see plan §5.3.
-        .route("/api/game/view", get(api::game_view))
         .with_state(state.clone());
     (router, state)
 }
@@ -256,27 +251,15 @@ async fn production_queue_and_cancel_round_trip() {
     let (_, cities) = get_with(&app, "/api/v1/cities", &token).await;
     let city_id = cities["cities"][0]["id"].as_str().unwrap().to_string();
 
-    // Pull a unit-type id from the legacy /api/game/view (still wired and
-    // exposes the full GameView with unit_type_defs).
-    let resp = app
-        .clone()
-        .oneshot(
-            Request::builder()
-                .uri("/api/game/view")
-                .header("authorization", format!("Bearer {token}"))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    let (_, view) = json_body(resp).await;
-    let warrior_type = view["unit_type_defs"]
+    // Pull a unit-type id from /api/v1/registry.
+    let (_, reg) = get_with(&app, "/api/v1/registry", &token).await;
+    let warrior_type = reg["unit_types"]
         .as_array()
         .unwrap()
         .iter()
         .find(|d| d["name"] == "warrior")
         .and_then(|d| d["id"].as_str())
-        .expect("warrior unit type def")
+        .expect("warrior unit type")
         .to_string();
 
     let (status, body) = post_with(

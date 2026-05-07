@@ -578,6 +578,39 @@ pub mod map_overlays {
     }
 }
 
+// ── /registry ────────────────────────────────────────────────────────────────
+
+pub mod registry {
+    use super::*;
+
+    #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+    pub struct Registry {
+        pub unit_types: Vec<UnitType>,
+        pub buildings: Vec<Building>,
+    }
+
+    #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+    pub struct UnitType {
+        pub id: String,
+        pub name: String,
+        pub production_cost: u32,
+        pub combat_strength: Option<u32>,
+        pub max_movement: u32,
+        pub category: String,
+        pub domain: String,
+        #[serde(default)]
+        pub can_found_city: bool,
+    }
+
+    #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+    pub struct Building {
+        pub id: String,
+        pub name: String,
+        pub cost: u32,
+        pub maintenance: u32,
+    }
+}
+
 // ── /turn/end response ───────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

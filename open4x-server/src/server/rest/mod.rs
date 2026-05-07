@@ -42,6 +42,7 @@ pub fn v1_router() -> Router<Arc<AppState>> {
         .route("/diplomacy/civs/{id}", get(handlers::diplomacy_civ))
         .route("/empire/overview", get(handlers::empire_overview))
         .route("/victory", get(handlers::victory))
+        .route("/registry", get(handlers::registry))
         .route("/notifications", get(handlers::notifications))
         .route("/turn-queue", get(handlers::turn_queue))
         // writes
