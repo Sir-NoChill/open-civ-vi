@@ -273,9 +273,111 @@ pub async fn end_turn(
     ))
 }
 
-// ── Phase 2+ stubs ───────────────────────────────────────────────────────────
+// ── /cities ──────────────────────────────────────────────────────────────────
 
-#[allow(dead_code)]
+pub async fn cities(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_cities(&view)))
+}
+
+pub async fn city_detail(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    let cities = web_projection::build_cities(&view);
+    cities
+        .cities
+        .into_iter()
+        .find(|c| c.id == id)
+        .map(Json)
+        .ok_or_else(|| crate::server::rest::auth::not_found("city not found"))
+}
+
+pub async fn city_tiles(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    web_projection::build_city_tiles(&view, &id)
+        .map(Json)
+        .ok_or_else(|| crate::server::rest::auth::not_found("city not found"))
+}
+
+// ── /units ───────────────────────────────────────────────────────────────────
+
+pub async fn units(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_units(&view)))
+}
+
+pub async fn unit_detail(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    let units = web_projection::build_units(&view);
+    units
+        .units
+        .into_iter()
+        .find(|u| u.id == id)
+        .map(Json)
+        .ok_or_else(|| crate::server::rest::auth::not_found("unit not found"))
+}
+
+// ── /armies (stub for Phase 4) ───────────────────────────────────────────────
+
+pub async fn armies(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_armies(&view)))
+}
+
+// ── /combat/preview ──────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct CombatPreviewQuery {
+    pub attacker_id: String,
+    pub defender_q: i32,
+    pub defender_r: i32,
+}
+
+pub async fn combat_preview(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<CombatPreviewQuery>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    web_projection::build_combat_preview(
+        &view,
+        &params.attacker_id,
+        params.defender_q,
+        params.defender_r,
+    )
+    .map(Json)
+    .ok_or_else(|| crate::server::rest::auth::not_found("attacker not found"))
+}
+
+// ── /map/overlays (Phase 4 stub) ─────────────────────────────────────────────
+
 pub async fn map_overlays(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,

@@ -387,10 +387,20 @@ pub mod city_data {
     pub struct CityRow {
         pub id: String,
         pub name: String,
+        pub owner: String,
         #[serde(default)]
         pub capital: bool,
+        #[serde(default)]
+        pub is_own: bool,
         pub position: super::world::TileCoord,
         pub population: u32,
+        pub food_stored: u32,
+        pub food_to_grow: u32,
+        pub production_stored: u32,
+        /// Names of items currently in the production queue (head = active).
+        pub production_queue: Vec<String>,
+        pub worked_tile_count: u32,
+        pub territory_count: u32,
     }
 }
 
@@ -400,6 +410,7 @@ pub mod city_tiles {
     #[derive(Debug, Clone, Default, Serialize, Deserialize)]
     pub struct CityTiles {
         pub city_id: String,
+        pub center: super::world::TileCoord,
         pub tiles: Vec<TileEntry>,
     }
 
@@ -411,6 +422,8 @@ pub mod city_tiles {
         pub worked: bool,
         #[serde(default)]
         pub locked: bool,
+        #[serde(default)]
+        pub is_center: bool,
     }
 }
 
@@ -429,12 +442,20 @@ pub mod unit_data {
         pub id: String,
         pub name: String,
         pub kind: String,
+        pub owner: String,
+        #[serde(default)]
+        pub is_own: bool,
         pub hp: u32,
         pub hp_max: u32,
         pub mp: u32,
         pub mp_max: u32,
         pub position: super::world::TileCoord,
         pub status: String,
+        pub combat_strength: Option<u32>,
+        pub range: u8,
+        pub vision_range: u8,
+        pub category: String,
+        pub domain: String,
         pub actions: Vec<UnitAction>,
     }
 
@@ -444,6 +465,31 @@ pub mod unit_data {
         pub label: String,
         pub hotkey: Option<String>,
         pub enabled: bool,
+    }
+}
+
+// ── /combat/preview ──────────────────────────────────────────────────────────
+
+pub mod combat_preview {
+    use super::*;
+
+    #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+    pub struct CombatPreview {
+        pub attacker_id: String,
+        pub defender: Option<DefenderInfo>,
+        pub attacker_strength: i32,
+        pub defender_strength: i32,
+        pub predicted_attacker_damage: i32,
+        pub predicted_defender_damage: i32,
+        pub note: String,
+    }
+
+    #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+    pub struct DefenderInfo {
+        pub id: String,
+        pub kind: String,
+        pub q: i32,
+        pub r: i32,
     }
 }
 

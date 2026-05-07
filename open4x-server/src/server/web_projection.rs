@@ -164,7 +164,7 @@ pub fn build_world_snapshot(
             });
 
             let city = cities_by_coord.get(&t.coord).map(|c| world::TileCity {
-                id: c.id.to_string(),
+                id: c.id.as_ulid().to_string(),
                 name: c.name.clone(),
                 pop: c.population,
                 capital: c.is_capital,
@@ -176,7 +176,7 @@ pub fn build_world_snapshot(
                     .map(|d| capitalize(&d.name))
                     .unwrap_or_else(|| "Unit".into());
                 world::TileUnit {
-                    id: u.id.to_string(),
+                    id: u.id.as_ulid().to_string(),
                     kind,
                     name: format!("{:?}", u.category),
                     hp: format!("{}/{}", u.health, 100),
@@ -232,22 +232,267 @@ fn capitalize(s: &str) -> String {
     }
 }
 
-// ── Phase 2+ stubs ───────────────────────────────────────────────────────────
+// ── /cities ──────────────────────────────────────────────────────────────────
+
+pub fn build_cities(view: &GameView) -> city_data::CityData {
+    use crate::types::enums::ProductionItemView;
+    let unit_type_by_id: std::collections::HashMap<_, _> = view
+        .unit_type_defs
+        .iter()
+        .map(|d| (d.id, d))
+        .collect();
+    let building_def_by_id: std::collections::HashMap<_, _> = view
+        .building_defs
+        .iter()
+        .map(|d| (d.id, d))
+        .collect();
+    let my_civ_id = view.my_civ_id;
+
+    let cities = view
+        .cities
+        .iter()
+        .map(|c| {
+            let owner = if c.owner == my_civ_id {
+                view.my_civ.name.clone()
+            } else {
+                view.other_civs
+                    .iter()
+                    .find(|p| p.id == c.owner)
+                    .map(|p| p.name.clone())
+                    .unwrap_or_else(|| c.owner.to_string())
+            };
+            let production_queue: Vec<String> = c
+                .production_queue
+                .iter()
+                .map(|item| match item {
+                    ProductionItemView::Unit(t) => unit_type_by_id
+                        .get(t)
+                        .map(|d| capitalize(&d.name))
+                        .unwrap_or_else(|| "Unit".into()),
+                    ProductionItemView::Building(b) => building_def_by_id
+                        .get(b)
+                        .map(|d| capitalize(&d.name))
+                        .unwrap_or_else(|| "Building".into()),
+                    ProductionItemView::District(d) => format!("{d:?}"),
+                    ProductionItemView::Wonder(_) => "Wonder".into(),
+                    ProductionItemView::Project(_) => "Project".into(),
+                })
+                .collect();
+            city_data::CityRow {
+                id: c.id.as_ulid().to_string(),
+                name: c.name.clone(),
+                owner,
+                capital: c.is_capital,
+                is_own: c.is_own,
+                position: world::TileCoord {
+                    q: c.coord.q,
+                    r: c.coord.r,
+                },
+                population: c.population,
+                food_stored: c.food_stored,
+                food_to_grow: c.food_to_grow,
+                production_stored: c.production_stored,
+                production_queue,
+                worked_tile_count: c.worked_tiles.len() as u32,
+                territory_count: c.territory.len() as u32,
+            }
+        })
+        .collect();
+
+    city_data::CityData { cities }
+}
+
+pub fn build_city_tiles(view: &GameView, city_id: &str) -> Option<city_tiles::CityTiles> {
+    let target_ulid: ulid::Ulid = city_id.parse().ok()?;
+    let target = crate::types::ids::CityId::from_ulid(target_ulid);
+    let city = view.cities.iter().find(|c| c.id == target)?;
+
+    let worked: std::collections::HashSet<_> = city.worked_tiles.iter().collect();
+
+    let tiles = city
+        .territory
+        .iter()
+        .map(|coord| city_tiles::TileEntry {
+            q: coord.q,
+            r: coord.r,
+            worked: worked.contains(coord),
+            // GameView doesn't currently expose locked_tiles; default false.
+            locked: false,
+            is_center: *coord == city.coord,
+        })
+        .collect();
+
+    Some(city_tiles::CityTiles {
+        city_id: city_id.to_string(),
+        center: world::TileCoord {
+            q: city.coord.q,
+            r: city.coord.r,
+        },
+        tiles,
+    })
+}
+
+// ── /units ───────────────────────────────────────────────────────────────────
 
 pub fn build_units(view: &GameView) -> unit_data::UnitData {
-    unit_data::UnitData::default()
+    let unit_type_by_id: std::collections::HashMap<_, _> = view
+        .unit_type_defs
+        .iter()
+        .map(|d| (d.id, d))
+        .collect();
+    let my_civ_id = view.my_civ_id;
+
+    let units = view
+        .units
+        .iter()
+        .map(|u| {
+            let def = unit_type_by_id.get(&u.unit_type);
+            let kind = def.map(|d| capitalize(&d.name)).unwrap_or_else(|| "Unit".into());
+            let owner = if u.owner == my_civ_id {
+                view.my_civ.name.clone()
+            } else {
+                view.other_civs
+                    .iter()
+                    .find(|p| p.id == u.owner)
+                    .map(|p| p.name.clone())
+                    .unwrap_or_else(|| u.owner.to_string())
+            };
+
+            // Static placeholder action set — Phase 2 RulesEngine extension
+            // will replace this with `available_unit_actions(gs, unit)`.
+            let mut actions = vec![
+                unit_data::UnitAction {
+                    id: "move".into(),
+                    label: "Move".into(),
+                    hotkey: Some("M".into()),
+                    enabled: u.movement_left > 0,
+                },
+                unit_data::UnitAction {
+                    id: "fortify".into(),
+                    label: "Fortify".into(),
+                    hotkey: Some("F".into()),
+                    enabled: u.is_own && u.combat_strength.is_some(),
+                },
+                unit_data::UnitAction {
+                    id: "sleep".into(),
+                    label: "Sleep".into(),
+                    hotkey: Some("Z".into()),
+                    enabled: u.is_own,
+                },
+            ];
+            if u.is_own && u.combat_strength.is_some() {
+                actions.insert(
+                    1,
+                    unit_data::UnitAction {
+                        id: "attack".into(),
+                        label: "Attack".into(),
+                        hotkey: Some("A".into()),
+                        enabled: u.movement_left > 0,
+                    },
+                );
+            }
+            if def.is_some_and(|d| d.can_found_city) {
+                actions.push(unit_data::UnitAction {
+                    id: "found_city".into(),
+                    label: "Found City".into(),
+                    hotkey: Some("B".into()),
+                    enabled: u.is_own && u.movement_left > 0,
+                });
+            }
+
+            unit_data::Unit {
+                id: u.id.as_ulid().to_string(),
+                name: kind.clone(),
+                kind,
+                owner,
+                is_own: u.is_own,
+                hp: u.health,
+                hp_max: 100,
+                mp: u.movement_left / 100,
+                mp_max: u.max_movement / 100,
+                position: world::TileCoord {
+                    q: u.coord.q,
+                    r: u.coord.r,
+                },
+                status: "idle".into(),
+                combat_strength: u.combat_strength,
+                range: u.range,
+                vision_range: u.vision_range,
+                category: format!("{:?}", u.category),
+                domain: format!("{:?}", u.domain),
+                actions,
+            }
+        })
+        .collect();
+
+    unit_data::UnitData { units }
 }
 
 pub fn build_armies(view: &GameView) -> army_data::ArmyData {
     army_data::ArmyData::default()
 }
 
-pub fn build_cities(view: &GameView) -> city_data::CityData {
-    city_data::CityData::default()
-}
+// ── /combat/preview ──────────────────────────────────────────────────────────
 
-pub fn build_city_tiles(view: &GameView, city_id: &str) -> city_tiles::CityTiles {
-    city_tiles::CityTiles::default()
+/// Compute a heuristic combat preview: the attacker's combat strength vs.
+/// the defender's, with a simple expected-damage estimate.
+///
+/// This does not call into `RulesEngine` yet — the proper implementation is
+/// a Phase 2 libciv extension (`RulesEngine::preview_combat`). For now the
+/// projector is good enough to drive the wireframe's combat-odds bar.
+pub fn build_combat_preview(
+    view: &GameView,
+    attacker_id: &str,
+    defender_q: i32,
+    defender_r: i32,
+) -> Option<combat_preview::CombatPreview> {
+    let attacker_ulid: ulid::Ulid = attacker_id.parse().ok()?;
+    let attacker_uid = crate::types::ids::UnitId::from_ulid(attacker_ulid);
+    let attacker = view.units.iter().find(|u| u.id == attacker_uid)?;
+    let attacker_str = attacker.combat_strength? as i32;
+
+    let unit_type_by_id: std::collections::HashMap<_, _> = view
+        .unit_type_defs
+        .iter()
+        .map(|d| (d.id, d))
+        .collect();
+
+    let defender = view
+        .units
+        .iter()
+        .find(|u| u.coord.q == defender_q && u.coord.r == defender_r && !u.is_own);
+    let (defender_info, defender_str) = match defender {
+        Some(d) => {
+            let kind = unit_type_by_id
+                .get(&d.unit_type)
+                .map(|t| capitalize(&t.name))
+                .unwrap_or_else(|| "Enemy".into());
+            (
+                Some(combat_preview::DefenderInfo {
+                    id: d.id.as_ulid().to_string(),
+                    kind,
+                    q: d.coord.q,
+                    r: d.coord.r,
+                }),
+                d.combat_strength.unwrap_or(0) as i32,
+            )
+        }
+        None => (None, 0),
+    };
+
+    let diff = attacker_str - defender_str;
+    let predicted_atk = (30 - diff).clamp(0, 60);
+    let predicted_def = (30 + diff).clamp(0, 60);
+
+    Some(combat_preview::CombatPreview {
+        attacker_id: attacker.id.as_ulid().to_string(),
+        defender: defender_info,
+        attacker_strength: attacker_str,
+        defender_strength: defender_str,
+        predicted_attacker_damage: predicted_atk,
+        predicted_defender_damage: predicted_def,
+        note: "heuristic preview; replaced by RulesEngine::preview_combat in a later commit".into(),
+    })
 }
 
 pub fn build_tech_tree(view: &GameView) -> tech_tree::TechTreeView {
@@ -383,6 +628,111 @@ mod tests {
         assert!(snap.world.wrap_x);
         assert!(!snap.world.wrap_y);
         assert_eq!(snap.world.turn, 7);
+    }
+
+    #[test]
+    fn cities_projector_includes_owner_and_queue() {
+        use crate::types::enums::ProductionItemView;
+        use crate::types::ids::{CityId, UnitTypeId};
+
+        let mut view = empty_game_view();
+        let unit_type_id = UnitTypeId::from_ulid(ulid::Ulid::new());
+        view.unit_type_defs.push(UnitTypeDefView {
+            id: unit_type_id,
+            name: "warrior".into(),
+            production_cost: 40,
+            domain: crate::types::enums::UnitDomain::Land,
+            category: crate::types::enums::UnitCategory::Combat,
+            max_movement: 200,
+            combat_strength: Some(20),
+            range: 0,
+            vision_range: 2,
+            can_found_city: false,
+            resource_cost: None,
+        });
+
+        view.cities.push(CityView {
+            id: CityId::from_ulid(ulid::Ulid::new()),
+            name: "Alexandria".into(),
+            owner: view.my_civ.id,
+            coord: HexCoord::from_qr(2, 3),
+            is_capital: true,
+            population: 4,
+            food_stored: 5,
+            food_to_grow: 20,
+            production_stored: 12,
+            production_queue: vec![ProductionItemView::Unit(unit_type_id)],
+            buildings: Vec::new(),
+            worked_tiles: vec![HexCoord::from_qr(2, 3)],
+            territory: vec![HexCoord::from_qr(2, 3), HexCoord::from_qr(3, 3)],
+            ownership: crate::types::enums::CityOwnership::Normal,
+            walls: crate::types::enums::WallLevel::None,
+            religious_followers: std::collections::HashMap::new(),
+            majority_religion: None,
+            is_own: true,
+        });
+
+        let cities = build_cities(&view);
+        assert_eq!(cities.cities.len(), 1);
+        let c = &cities.cities[0];
+        assert_eq!(c.name, "Alexandria");
+        assert_eq!(c.owner, "Egypt");
+        assert!(c.capital);
+        assert!(c.is_own);
+        assert_eq!(c.population, 4);
+        assert_eq!(c.production_queue, vec!["Warrior".to_string()]);
+        assert_eq!(c.worked_tile_count, 1);
+        assert_eq!(c.territory_count, 2);
+    }
+
+    #[test]
+    fn units_projector_emits_action_set() {
+        use crate::types::ids::{UnitId, UnitTypeId};
+
+        let mut view = empty_game_view();
+        let unit_type_id = UnitTypeId::from_ulid(ulid::Ulid::new());
+        view.unit_type_defs.push(UnitTypeDefView {
+            id: unit_type_id,
+            name: "settler".into(),
+            production_cost: 80,
+            domain: crate::types::enums::UnitDomain::Land,
+            category: crate::types::enums::UnitCategory::Civilian,
+            max_movement: 200,
+            combat_strength: None,
+            range: 0,
+            vision_range: 2,
+            can_found_city: true,
+            resource_cost: None,
+        });
+        view.units.push(UnitView {
+            id: UnitId::from_ulid(ulid::Ulid::new()),
+            unit_type: unit_type_id,
+            owner: view.my_civ.id,
+            coord: HexCoord::from_qr(0, 0),
+            domain: crate::types::enums::UnitDomain::Land,
+            category: crate::types::enums::UnitCategory::Civilian,
+            movement_left: 200,
+            max_movement: 200,
+            combat_strength: None,
+            health: 100,
+            range: 0,
+            vision_range: 2,
+            is_own: true,
+        });
+
+        let units = build_units(&view);
+        assert_eq!(units.units.len(), 1);
+        let u = &units.units[0];
+        assert_eq!(u.kind, "Settler");
+        assert!(u.is_own);
+        assert_eq!(u.hp, 100);
+        assert_eq!(u.mp, 2);
+        // Found City should be present and enabled for an own civilian with movement.
+        let action_ids: Vec<_> = u.actions.iter().map(|a| a.id.as_str()).collect();
+        assert!(action_ids.contains(&"move"));
+        assert!(action_ids.contains(&"found_city"));
+        // No combat actions for a non-combat unit.
+        assert!(!action_ids.contains(&"attack"));
     }
 
     #[test]

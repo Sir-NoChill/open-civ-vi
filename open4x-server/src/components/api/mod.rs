@@ -7,10 +7,12 @@
 //! Phase 0 (scaffolding): only [`health`] and a stub [`player_state::get`] are
 //! implemented; subsequent phases fill in the rest.
 
+pub mod cities;
 pub mod games;
 pub mod http;
 pub mod player_state;
 pub mod turn;
+pub mod units;
 pub mod world;
 
 pub use http::{ApiError, fetch_json};
