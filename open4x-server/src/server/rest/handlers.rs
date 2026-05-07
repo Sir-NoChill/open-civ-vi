@@ -706,7 +706,7 @@ pub async fn government(
     Ok(Json(web_projection::build_government(&view)))
 }
 
-// ── /map/overlays (Phase 4 stub) ─────────────────────────────────────────────
+// ── /map/overlays ────────────────────────────────────────────────────────────
 
 pub async fn map_overlays(
     State(state): State<Arc<AppState>>,
@@ -715,4 +715,72 @@ pub async fn map_overlays(
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
     Ok(Json(web_projection::build_map_overlays(&view)))
+}
+
+// ── /diplomacy ───────────────────────────────────────────────────────────────
+
+pub async fn diplomacy(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_diplomacy(&view)))
+}
+
+pub async fn diplomacy_civ(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    let dip = web_projection::build_diplomacy(&view);
+    dip.civs
+        .into_iter()
+        .find(|c| c.id == id)
+        .map(Json)
+        .ok_or_else(|| crate::server::rest::auth::not_found("civ not found"))
+}
+
+// ── /empire/overview ─────────────────────────────────────────────────────────
+
+pub async fn empire_overview(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_empire_overview(&view)))
+}
+
+// ── /victory ─────────────────────────────────────────────────────────────────
+
+pub async fn victory(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_victory(&view)))
+}
+
+// ── /notifications + /turn-queue ─────────────────────────────────────────────
+
+pub async fn notifications(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_notifications(&view)))
+}
+
+pub async fn turn_queue(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_turn_queue(&view)))
 }

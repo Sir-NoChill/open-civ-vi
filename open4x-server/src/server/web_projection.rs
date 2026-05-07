@@ -657,28 +657,259 @@ pub fn build_government(view: &GameView) -> government::GovernmentPolicies {
     }
 }
 
+// ── /diplomacy ───────────────────────────────────────────────────────────────
+
 pub fn build_diplomacy(view: &GameView) -> diplomacy::Diplomacy {
-    diplomacy::Diplomacy::default()
+    use crate::types::enums::DiplomaticStatus;
+
+    let civs = view
+        .other_civs
+        .iter()
+        .map(|c| {
+            let relation = match c.diplomatic_status {
+                DiplomaticStatus::War => "At War",
+                DiplomaticStatus::Denounced => "Unfriendly",
+                DiplomaticStatus::Neutral => "Neutral",
+                DiplomaticStatus::Friendly => "Friendly",
+                DiplomaticStatus::Alliance => "Allied",
+            };
+            let cities_known = view.cities.iter().filter(|city| city.owner == c.id).count() as u32;
+            diplomacy::CivRow {
+                id: c.id.as_ulid().to_string(),
+                name: c.name.clone(),
+                leader: c.leader_name.clone(),
+                relation: relation.into(),
+                relation_score: 0,
+                agenda: String::new(),
+                government: String::new(),
+                cities_known,
+                treaties: Vec::new(),
+                modifiers: Vec::new(),
+            }
+        })
+        .collect();
+
+    diplomacy::Diplomacy {
+        civs,
+        city_states: Vec::new(),
+        active_civ: None,
+        deal_draft: None,
+    }
 }
+
+// ── /empire/overview ─────────────────────────────────────────────────────────
 
 pub fn build_empire_overview(view: &GameView) -> empire_overview::EmpireOverview {
-    empire_overview::EmpireOverview::default()
+    let my_cities: Vec<_> = view.cities.iter().filter(|c| c.is_own).collect();
+    let total_pop = my_cities.iter().map(|c| c.population).sum();
+    let military_units = view
+        .units
+        .iter()
+        .filter(|u| u.is_own && u.combat_strength.is_some())
+        .count() as u32;
+
+    let summary = empire_overview::Summary {
+        cities: my_cities.len() as u32,
+        population: total_pop,
+        treasury: view.my_civ.gold,
+        treasury_per_turn: view.my_civ.yields.gold,
+        military_units,
+    };
+
+    let cities = my_cities
+        .iter()
+        .map(|c| empire_overview::CityRow {
+            name: c.name.clone(),
+            capital: c.is_capital,
+            pop: c.population,
+        })
+        .collect();
+
+    let strategic_resources = view
+        .my_civ
+        .strategic_resources
+        .iter()
+        .map(|(name, value)| empire_overview::ResourceRow {
+            name: name.clone(),
+            value: *value,
+            per_turn: 0,
+        })
+        .collect();
+
+    empire_overview::EmpireOverview {
+        summary,
+        cities,
+        strategic_resources,
+        luxury_resources: Vec::new(),
+        trade_routes: Vec::new(),
+        trade_slots_total: 0,
+    }
 }
+
+// ── /victory ─────────────────────────────────────────────────────────────────
 
 pub fn build_victory(view: &GameView) -> victory::Victory {
-    victory::Victory::default()
+    let my_civ_id = view.my_civ_id;
+    let my_score = view
+        .scores
+        .iter()
+        .find(|(id, _)| *id == my_civ_id)
+        .map(|(_, s)| *s as i32)
+        .unwrap_or(0);
+
+    // Build leaderboard from scores Vec.
+    let mut leaderboard: Vec<_> = view
+        .scores
+        .iter()
+        .map(|(id, score)| (*id, *score as i32))
+        .collect();
+    leaderboard.sort_by(|a, b| b.1.cmp(&a.1));
+    let leaderboard = leaderboard
+        .into_iter()
+        .enumerate()
+        .map(|(i, (id, score))| {
+            let name = if id == view.my_civ_id {
+                view.my_civ.name.clone()
+            } else {
+                view.other_civs
+                    .iter()
+                    .find(|c| c.id == id)
+                    .map(|c| c.name.clone())
+                    .unwrap_or_else(|| "Unknown".into())
+            };
+            victory::LeaderRow {
+                rank: (i + 1) as u32,
+                name,
+                is_player: id == view.my_civ_id,
+                score,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let rank = leaderboard
+        .iter()
+        .position(|r| r.is_player)
+        .map(|i| (i + 1) as u32)
+        .unwrap_or(1);
+
+    // Six standard victory conditions; placeholder progress until libciv
+    // exposes RulesEngine::victory_progress.
+    let conditions = vec![
+        ("score", "Score"),
+        ("culture", "Culture"),
+        ("domination", "Domination"),
+        ("science", "Science"),
+        ("religious", "Religious"),
+        ("diplomatic", "Diplomatic"),
+    ]
+    .into_iter()
+    .map(|(id, name)| victory::Condition {
+        id: id.into(),
+        name: name.into(),
+        player_pct: 0,
+    })
+    .collect();
+
+    victory::Victory {
+        turn: view.turn,
+        turn_max: 500,
+        leading_condition: "score".into(),
+        leading_pct: 0,
+        score: my_score,
+        rank,
+        rank_of: leaderboard.len() as u32,
+        conditions,
+        leaderboard,
+    }
 }
+
+// ── /notifications ───────────────────────────────────────────────────────────
 
 pub fn build_notifications(view: &GameView) -> notifications::Notifications {
-    notifications::Notifications::default()
+    notifications::Notifications {
+        turn: view.turn,
+        notifications: Vec::new(),
+    }
 }
+
+// ── /turn-queue ──────────────────────────────────────────────────────────────
 
 pub fn build_turn_queue(view: &GameView) -> turn_queue::TurnQueue {
-    turn_queue::TurnQueue::default()
+    let mut items = Vec::new();
+
+    // Required: pick a research target if none queued.
+    if view.my_civ.research_queue.is_empty() && !view.tech_tree.nodes.is_empty() {
+        items.push(turn_queue::TurnQueueItem {
+            id: "choose_research".into(),
+            kind: "research".into(),
+            required: true,
+            title: "Choose next research".into(),
+            desc: "No tech is queued — pick one to start researching.".into(),
+            skip_label: None,
+            target: Some(notifications::NotificationTarget {
+                screen: "tech".into(),
+                q: None,
+                r: None,
+            }),
+        });
+    }
+
+    // Optional: own units with movement remaining and no orders.
+    for u in view.units.iter().filter(|u| u.is_own && u.movement_left > 0) {
+        items.push(turn_queue::TurnQueueItem {
+            id: format!("unit_{}", u.id.as_ulid()),
+            kind: "unit".into(),
+            required: false,
+            title: format!("Unit at ({}, {})", u.coord.q, u.coord.r),
+            desc: format!("{}/{} MP available", u.movement_left / 100, u.max_movement / 100),
+            skip_label: Some("Sleep".into()),
+            target: Some(notifications::NotificationTarget {
+                screen: "hud".into(),
+                q: Some(u.coord.q),
+                r: Some(u.coord.r),
+            }),
+        });
+    }
+
+    turn_queue::TurnQueue {
+        turn: view.turn,
+        items,
+    }
 }
 
+// ── /map/overlays ────────────────────────────────────────────────────────────
+
 pub fn build_map_overlays(view: &GameView) -> map_overlays::MapOverlays {
-    map_overlays::MapOverlays::default()
+    let _ = view;
+    map_overlays::MapOverlays {
+        overlays: vec![
+            map_overlays::Overlay {
+                id: "yields".into(),
+                label: "Yields".into(),
+                active: false,
+            },
+            map_overlays::Overlay {
+                id: "appeal".into(),
+                label: "Appeal".into(),
+                active: false,
+            },
+            map_overlays::Overlay {
+                id: "religion".into(),
+                label: "Religion".into(),
+                active: false,
+            },
+            map_overlays::Overlay {
+                id: "borders".into(),
+                label: "Borders".into(),
+                active: true,
+            },
+            map_overlays::Overlay {
+                id: "resources".into(),
+                label: "Resources".into(),
+                active: true,
+            },
+        ],
+    }
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

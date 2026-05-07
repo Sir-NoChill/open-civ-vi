@@ -1,7 +1,8 @@
 # Web UI Roadmap — Leptos port of the `open4x-webui/` wireframe
 
-> **Status**: Phase 0–2 server side complete (reads + production/unit-action
-> mutations). Phase 2 client tabs + libciv extensions in progress.
+> **Status**: Phase 0–4 server side complete. Client tabs (city/units/
+> diplomacy/empire/victory/government), HexMap rebind, and libciv extensions
+> still pending. Phase 5 cleanup at the end.
 > **Goal**: Replace the static `open4x-webui/` HTML wireframe with an interactive
 > Leptos/WASM frontend that lives in `open4x-server` and is driven by REST calls
 > against the same crate's `ssr` server. Single-player, declarative state on the
@@ -589,14 +590,17 @@ government, slot policies, and confirm — all through REST.
 
 ### Phase 4 — Outer loop screens
 
-1. Projectors: `build_diplomacy`, `build_empire_overview`, `build_victory`,
-   `build_notifications`, `build_turn_queue`, `build_map_overlays`.
-2. `RulesEngine::pending_actions`, `RulesEngine::victory_progress`.
-3. `NotificationRecord` ring buffer in `GameRoom` populated from
-   `advance_turn` deltas.
-4. New tabs: `tabs/diplomacy.rs`, `tabs/empire.rs`, `tabs/victory.rs`.
-5. Drawers: `components/hud/{notifications,turn_queue,overlays}_drawer.rs`.
-6. Block End Turn when `turn-queue` has `required: true` items —
+1. [x] Projectors: `build_diplomacy`, `build_empire_overview`, `build_victory`,
+   `build_notifications`, `build_turn_queue`, `build_map_overlays`. ✅
+2. [ ] `RulesEngine::pending_actions`, `RulesEngine::victory_progress`
+   (current `build_turn_queue` and `build_victory` are pure projections;
+   neither calls into libciv yet — the conditions array uses a static
+   placeholder list of the 6 builtin victories with `player_pct = 0`.)
+3. [ ] `NotificationRecord` ring buffer in `GameRoom` populated from
+   `advance_turn` deltas. `/notifications` currently returns an empty list.
+4. [ ] New tabs: `tabs/diplomacy.rs`, `tabs/empire.rs`, `tabs/victory.rs`.
+5. [ ] Drawers: `components/hud/{notifications,turn_queue,overlays}_drawer.rs`.
+6. [ ] Block End Turn when `turn-queue` has `required: true` items —
    `POST /api/v1/turn/end` returns 400 with the structured payload.
 
 **Done when**: the wireframe's HUD drawers and the four outer-loop screens
@@ -658,6 +662,45 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 4 — Outer-loop reads (2026-05-07)
+
+- **Commit `feat(open4x-server): outer-loop reads (Phase 4 server)`**:
+  - `build_diplomacy` projects every known civ into `{id, name, leader,
+    relation, cities_known}` rows. `relation` maps `DiplomaticStatus` →
+    "At War / Unfriendly / Neutral / Friendly / Allied". Modifiers and
+    treaties stay empty until libciv exposes them.
+  - `build_empire_overview` aggregates the player's cities, total
+    population, treasury (current + per-turn from
+    `my_civ.yields.gold`), military unit count (own combat units), and
+    the per-city table.
+  - `build_victory` builds a leaderboard from `view.scores`, sets the
+    player's rank, and emits the 6 builtin victory conditions with
+    placeholder `player_pct = 0` (real progress lands when libciv ships
+    `RulesEngine::victory_progress`).
+  - `build_turn_queue` derives required vs. skippable items from the
+    player view: a required `choose_research` if the queue is empty, plus
+    one optional row per own unit with movement remaining. Per the plan's
+    §4.3 contract, the End Turn handler will refuse to advance with any
+    `required: true` item — the libciv-backed enforcement comes once
+    `RulesEngine::pending_actions` lands; for now the heuristic is server
+    side.
+  - `build_notifications` returns an empty list; `NotificationRecord`
+    ring buffer + `advance_turn` delta wiring is a follow-up.
+  - `build_map_overlays` returns a fixed list of toggleable overlays
+    (yields, appeal, religion, borders, resources). Toggle persistence is
+    client-side only (per §6.4).
+  - REST handlers: `GET /diplomacy`, `GET /diplomacy/civs/{id}`,
+    `GET /empire/overview`, `GET /victory`, `GET /notifications`,
+    `GET /turn-queue`. Existing `GET /map/overlays` now returns real
+    data.
+  - Client bindings:
+    `components/api/{diplomacy,empire,victory,notifications}.rs`.
+  - Smoke-tested end-to-end: 3-civ game showed Babylon + Greece in
+    `/diplomacy`, the player's Rome civ ranked 1/3 in `/victory` with
+    score 7, `/turn-queue` flagged the missing research target as
+    required, and `/empire/overview` returned `{cities:1, military_units:1,
+    treasury:0}`.
 
 ### Phase 3 — Tech / Civics / Government reads + research mutations (2026-05-07)
 

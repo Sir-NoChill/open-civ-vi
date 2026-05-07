@@ -8,13 +8,17 @@
 //! implemented; subsequent phases fill in the rest.
 
 pub mod cities;
+pub mod diplomacy;
+pub mod empire;
 pub mod games;
 pub mod government;
 pub mod http;
+pub mod notifications;
 pub mod player_state;
 pub mod tech;
 pub mod turn;
 pub mod units;
+pub mod victory;
 pub mod world;
 
 pub use http::{ApiError, fetch_json};
