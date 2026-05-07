@@ -64,7 +64,7 @@ pub fn CityTab(
                 gv.building_defs.iter()
                     .find(|d| d.id == *bid)
                     .map(|d| d.name.clone())
-                    .unwrap_or_else(|| format!("{:?}", bid))
+                    .unwrap_or_else(|| format!("{bid:?}"))
             })
             .collect();
 

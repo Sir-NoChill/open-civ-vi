@@ -58,7 +58,7 @@ pub fn ScienceTab(
                         let boost_tag = if boosted { " [Eureka!]" } else { "" };
                         view! {
                             <div class="tech-current">
-                                {format!("Researching: {} [{}/{}]{}", name, progress, cost, boost_tag)}
+                                {format!("Researching: {name} [{progress}/{cost}]{boost_tag}")}
                                 <div class="progress-bar">
                                     <div class="progress-fill" style=move || {
                                         let pct = if cost > 0 { (progress as f64 / cost as f64 * 100.0).min(100.0) } else { 0.0 };
