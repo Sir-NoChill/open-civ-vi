@@ -49,3 +49,4 @@
 
 - [Implementation Status](./roadmap/status.md)
 - [Remaining TODOs](./roadmap/todo.md)
+- [Web UI Port (Leptos REST)](./roadmap/web-ui.md)

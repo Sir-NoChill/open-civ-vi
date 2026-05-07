@@ -1,0 +1,3624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>4X Wireframes — Low-fi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   4X WIREFRAME — low-fi but tidy
+   Clean low-fi wireframe style
+   ========================================================= */
+
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #3a3a3a;
+  --ink-muted: #6b6b6b;
+  --ink-faint: #9a9a9a;
+  --paper: #f5f2ea;
+  --paper-2: #eceae0;
+  --paper-3: #e2dfd3;
+  --accent: #2b4a6b;        /* ink blue */
+  --accent-soft: #dce4ee;
+  --warn: #8a4a2b;
+  --good: #3d5a2b;
+  --bad:  #7a2b2b;
+
+  --stroke: 1.5px;
+  --stroke-heavy: 2.25px;
+
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --hand: "Caveat", "Patrick Hand", cursive;
+  --sans: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: var(--mono); font-size: 12px; line-height: 1.35; }
+
+/* ---------- SKETCH MODE ---------- */
+body.sketch {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,.04) 23px 24px),
+    var(--paper);
+}
+body.sketch, body.sketch .screen { font-family: var(--hand); font-size: 15px; }
+body.sketch .mono, body.sketch [data-mono] { font-family: var(--mono); font-size: 11px; }
+body.sketch .box,
+body.sketch .hex,
+body.sketch .btn,
+body.sketch .card,
+body.sketch .panel,
+body.sketch .chip,
+body.sketch .node,
+body.sketch .bar,
+body.sketch .ring {
+  filter: url(#rough);
+}
+body.sketch .line, body.sketch .edge { filter: url(#rough-line); }
+
+/* ---------- CLEAN MODE ---------- */
+body.clean { background: var(--paper); }
+body.clean * { filter: none !important; }
+
+/* ---------- TOP NAV (screens) ---------- */
+.topnav {
+  position: fixed; top: 0; left: 0; right: 0; height: 40px;
+  background: var(--paper-2); border-bottom: var(--stroke) solid var(--ink);
+  display: flex; align-items: stretch; z-index: 50;
+  font-family: var(--mono);
+}
+.topnav .brand { padding: 0 14px; display: flex; align-items: center; gap: 8px; border-right: var(--stroke) solid var(--ink); font-weight: 700; letter-spacing: .02em; text-transform: uppercase; font-size: 11px; }
+.topnav .brand .dot { width: 10px; height: 10px; background: var(--ink); transform: rotate(45deg); }
+.topnav .tabs { display: flex; flex: 1; overflow: auto; }
+.topnav .tab { padding: 0 14px; display: flex; align-items: center; cursor: pointer; border-right: 1px dashed var(--ink-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); white-space: nowrap; }
+.topnav .tab:hover { background: var(--paper-3); }
+.topnav .tab.active { background: var(--ink); color: var(--paper); }
+.topnav .meta { padding: 0 14px; display: flex; align-items: center; gap: 10px; border-left: var(--stroke) solid var(--ink); font-size: 10px; color: var(--ink-muted); }
+
+/* ---------- SCREEN LAYOUT ---------- */
+.stage { position: fixed; top: 40px; left: 0; right: 0; bottom: 0; overflow: hidden; }
+.screen { position: absolute; inset: 0; display: none; }
+.screen.active { display: block; }
+
+/* ---------- TWEAKS PANEL ---------- */
+.tweaks {
+  position: fixed; right: 14px; bottom: 14px; z-index: 100;
+  background: var(--paper); border: var(--stroke-heavy) solid var(--ink);
+  padding: 10px 12px; display: none; min-width: 220px;
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: var(--mono); font-size: 11px;
+}
+.tweaks.visible { display: block; }
+.tweaks h4 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--ink); padding-bottom: 4px; }
+.tweaks label { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; cursor: pointer; }
+.tweaks label input { accent-color: var(--ink); }
+
+/* ---------- REUSABLE ---------- */
+.box { border: var(--stroke) solid var(--ink); background: var(--paper); }
+.box.heavy { border-width: var(--stroke-heavy); }
+.box.dashed { border-style: dashed; }
+.box.filled { background: var(--ink); color: var(--paper); }
+.box.soft { background: var(--paper-2); }
+.box.accent { border-color: var(--accent); }
+.label { text-transform: uppercase; letter-spacing: .06em; font-size: 10px; color: var(--ink-muted); }
+.k { font-family: var(--mono); font-size: 11px; }
+.v { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.muted { color: var(--ink-muted); }
+.faint { color: var(--ink-faint); }
+.hr { height: 1px; background: var(--ink); opacity: .25; margin: 6px 0; }
+.hr.dashed { background: none; border-top: 1px dashed var(--ink-muted); }
+
+/* annotations */
+.anno { font-family: var(--hand); font-size: 14px; color: var(--accent); pointer-events: none; }
+.anno::before { content: "→ "; }
+body:not(.show-anno) .anno { display: none; }
+body.sketch .anno { font-size: 15px; }
+
+.arrow { position: absolute; font-family: var(--hand); color: var(--accent); font-size: 13px; pointer-events: none; }
+body:not(.show-anno) .arrow { display: none; }
+
+/* buttons */
+.btn { border: var(--stroke) solid var(--ink); background: var(--paper); padding: 5px 10px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
+.btn:hover { background: var(--paper-3); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.accent { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.btn.sm { padding: 3px 7px; font-size: 9px; }
+
+/* chips */
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--ink); font-family: var(--mono); font-size: 10px; background: var(--paper); }
+.chip.filled { background: var(--ink); color: var(--paper); }
+.chip.accent { border-color: var(--accent); color: var(--accent); }
+
+/* placeholder image box */
+.ph {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,.08) 6px 7px);
+  border: 1px dashed var(--ink); display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .08em;
+}
+
+/* progress bar */
+.bar { height: 10px; border: 1px solid var(--ink); position: relative; background: var(--paper); }
+.bar > span { display: block; height: 100%; background: var(--ink); }
+.bar.accent > span { background: var(--accent); }
+
+/* ===== HEX GRID (main HUD) — SVG-based, virtualized, infinite scroll ===== */
+.hexfield {
+  position: absolute; inset: 0; overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,.025) 23px 24px),
+    var(--paper);
+  cursor: grab;
+}
+.hexfield.dragging { cursor: grabbing; }
+.hexfield svg.hex-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; user-select: none; }
+
+/* base hex polygon */
+.hex-poly {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+.hex-poly.fog {
+  fill: url(#fog-pattern);
+  stroke: var(--ink-faint);
+  stroke-dasharray: 3 2;
+}
+.hex-poly.oob {
+  fill: url(#oob-pattern);
+  stroke: var(--ink-muted);
+  stroke-dasharray: 1 3;
+}
+.hex-poly.city  { fill: #eae5d2; stroke-width: 2.2; }
+.hex-poly.unit  { fill: #e7ecf2; }
+.hex-poly.flood-2 { fill: url(#flood2-pattern); }
+.hex-poly.flood-3 { fill: url(#flood3-pattern); }
+.hex-poly.selected { stroke: var(--accent); stroke-width: 2.8; fill: var(--accent-soft); }
+
+/* per-edge overlays — drawn on top of the base polygon as individual line segments */
+.hex-edge { fill: none; stroke-linecap: round; pointer-events: none; }
+.hex-edge.river  { stroke: #2b4a6b; stroke-width: 3.2; }
+.hex-edge.cliff  { stroke: #1a1a1a; stroke-width: 3.2; stroke-dasharray: 6 3; }
+.hex-edge.coast  { stroke: #5a7d9b; stroke-width: 2.2; }
+.hex-edge.wonder { stroke: #8a4a2b; stroke-width: 3.2; stroke-dasharray: 2 2; }
+.hex-edge.border { stroke: #2b4a6b; stroke-width: 1.5; stroke-dasharray: 4 3; opacity: .6; }
+
+/* hex labels (HTML overlay so text stays crisp) */
+.hex-labels { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.hex-label {
+  position: absolute; font-family: var(--mono); font-size: 9px; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  text-align: center; line-height: 1.1; white-space: nowrap;
+}
+.hex-label.dim { color: var(--ink-faint); }
+.hex-label .hl-id { font-size: 7.5px; color: var(--ink-faint); letter-spacing: .04em; }
+.hex-label .hl-terrain { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 8.5px; }
+.hex-label .hl-yields { font-size: 9px; }
+.hex-label .hl-res { font-size: 8px; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.hex-label .hl-foot { font-size: 7.5px; color: var(--ink-muted); }
+.hex-label .hl-city { font-size: 10px; font-weight: 700; }
+.hex-label .hl-flood { color: #2b4a6b; font-size: 7.5px; }
+
+/* mini-compass / coords readout */
+.hex-coords {
+  position: absolute; left: 12px; bottom: 12px;
+  background: var(--paper); border: 1.5px solid var(--ink); padding: 4px 8px;
+  font-family: var(--mono); font-size: 10px; pointer-events: none;
+}
+.hex-coords .label { display: block; font-size: 8.5px; }
+
+/* edge legend chip */
+.edge-legend {
+  position: absolute; right: 12px; bottom: 12px;
+  background: var(--paper); border: 1.5px solid var(--ink); padding: 6px 8px;
+  font-family: var(--mono); font-size: 9.5px; display: flex; flex-direction: column; gap: 3px;
+  pointer-events: none;
+}
+.edge-legend .row { display: flex; align-items: center; gap: 6px; }
+.edge-legend .swatch { width: 22px; height: 4px; }
+.edge-legend .swatch.river { background: #2b4a6b; }
+.edge-legend .swatch.cliff { background: repeating-linear-gradient(90deg, #1a1a1a 0 6px, transparent 6px 9px); height: 3px; }
+.edge-legend .swatch.coast { background: #5a7d9b; height: 2px; }
+.edge-legend .swatch.wonder { background: repeating-linear-gradient(90deg, #8a4a2b 0 2px, transparent 2px 4px); }
+.edge-legend .swatch.border { background: repeating-linear-gradient(90deg, #2b4a6b 0 4px, transparent 4px 7px); height: 2px; opacity: .6; }
+
+/* zoom controls */
+.zoom-ctl {
+  position: absolute; left: 12px; top: 60px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.zoom-ctl button {
+  width: 28px; height: 28px; background: var(--paper); border: 1.5px solid var(--ink);
+  font-family: var(--mono); font-size: 13px; cursor: pointer; padding: 0;
+}
+.zoom-ctl button:hover { background: var(--paper-3); }
+
+/* yield glyphs (text-based, low-fi) */
+.y-food::before   { content: "F"; }
+.y-prod::before   { content: "P"; }
+.y-gold::before   { content: "G"; }
+.y-sci::before    { content: "S"; }
+.y-cult::before   { content: "C"; }
+.y-faith::before  { content: "†"; }
+
+/* movement path dots */
+.path-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 1px solid var(--paper); }
+.path-end { position: absolute; font-family: var(--hand); color: var(--accent); font-size: 14px; }
+
+/* bottom action wheel — removed, replaced by radial menu */
+
+/* ===== RADIAL CONTEXT MENU ===== */
+.radial-root { position: absolute; pointer-events: none; z-index: 30; }
+.radial-ring {
+  position: absolute; transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.radial-center {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--paper); border: 2px solid var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+  cursor: pointer; z-index: 2;
+}
+.radial-center:hover { background: var(--ink); color: var(--paper); }
+.radial-btn {
+  position: absolute; transform: translate(-50%, -50%);
+  background: var(--paper); border: 1.5px solid var(--ink);
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+  letter-spacing: .04em; padding: 4px 8px; cursor: pointer;
+  white-space: nowrap; transition: opacity .1s;
+  box-shadow: 2px 2px 0 rgba(0,0,0,.08);
+}
+.radial-btn:hover { background: var(--ink); color: var(--paper); }
+.radial-btn.disabled { opacity: .38; cursor: not-allowed; }
+.radial-btn.disabled:hover { background: var(--paper); color: var(--ink); }
+.radial-btn.has-sub::after { content: " ›"; color: var(--ink-muted); }
+.radial-backdrop {
+  position: fixed; inset: 0; z-index: 29; cursor: default;
+}
+
+/* ======= DOCK / PANELS ======= */
+.dock-top { position: absolute; top: 8px; left: 8px; right: 8px; height: 44px; display: flex; gap: 6px; align-items: stretch; }
+.res-bar { flex: 1; display: flex; align-items: center; padding: 0 12px; gap: 14px; font-family: var(--mono); font-size: 11px; background: var(--paper); }
+.res-bar .res { display: flex; align-items: baseline; gap: 4px; }
+.res-bar .res .k { color: var(--ink-muted); font-size: 10px; }
+.res-bar .res .v { font-size: 13px; }
+.res-bar .res .d { color: var(--ink-muted); font-size: 10px; }
+.res-bar .sep { width: 1px; height: 20px; background: var(--ink); opacity: .25; }
+
+.turnpill { display: flex; align-items: center; padding: 0 12px; gap: 10px; }
+.turnpill .v { font-size: 13px; }
+
+.dock-left { position: absolute; top: 60px; left: 8px; width: 260px; bottom: 100px; display: flex; flex-direction: column; gap: 6px; }
+.dock-right { position: absolute; top: 60px; right: 8px; width: 260px; bottom: 100px; display: flex; flex-direction: column; gap: 6px; }
+.dock-bottom { position: absolute; bottom: 40px; left: 8px; right: 8px; height: 70px; display: flex; gap: 6px; transition: opacity .15s, transform .15s; }
+.dock-bottom.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
+
+/* ===== TABBED DRAWER (Notifications + Turn Queue) ===== */
+.drawer {
+  position: absolute; left: 8px; right: 8px; bottom: 8px;
+  display: flex; flex-direction: column;
+  z-index: 25;
+  pointer-events: none;
+}
+.drawer > * { pointer-events: auto; }
+
+.drawer-tabs {
+  display: flex; align-items: stretch; gap: 0;
+  height: 28px;
+}
+/* two halves — each group gets exactly half the tab bar, so the feed group starts at the midpoint */
+.drawer-tab-group {
+  display: flex; align-items: stretch; gap: 0;
+  flex: 1 1 0; min-width: 0;
+}
+.drawer-tab-group[data-group="feed"] { margin-left: 8px; }
+.drawer-tab {
+  background: var(--paper-2);
+  border: 1.5px solid var(--ink); border-bottom: none;
+  font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  padding: 0 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  color: var(--ink-soft); margin-right: -1.5px;
+}
+.drawer-tab:hover { background: var(--paper-3); }
+.drawer-tab .dt-icon { font-size: 11px; }
+.drawer-tab .dt-label { font-weight: 600; }
+.drawer-tab .dt-badge {
+  background: var(--ink); color: var(--paper); font-size: 9px; padding: 1px 5px;
+  font-weight: 700; min-width: 14px; text-align: center;
+}
+.drawer-tab.active {
+  background: var(--paper); color: var(--ink);
+  border-color: var(--ink); border-width: 2px;
+  position: relative; z-index: 3;
+  box-shadow: 0 2px 0 var(--paper); /* hides the top border of the drawer body */
+}
+.drawer-tab.active .dt-badge { background: var(--accent); }
+.drawer-spacer { flex: 1; border-bottom: 1.5px solid var(--ink); }
+.drawer-tab.close-tab { border-color: var(--ink-muted); color: var(--ink-muted); font-size: 9px; }
+.drawer-tab.close-tab:hover { background: var(--paper); color: var(--ink); border-color: var(--ink); }
+.drawer:not(.open) .close-tab { display: none; }
+
+.drawer-body {
+  display: none;
+  background: transparent; border: none;
+  height: 320px; overflow: visible;
+  flex-direction: row;
+  gap: 8px;
+}
+.drawer.open .drawer-body { display: flex; }
+
+/* Each pane is hidden unless marked .active. flex:1 gives equal width when 2 are shown.
+   Each pane carries its own border+bg so the gap between two active panes is clean. */
+.drawer-pane {
+  display: none; flex-direction: column; flex: 1 1 0;
+  overflow: hidden; min-width: 0;
+  background: var(--paper); border: 2px solid var(--ink);
+}
+.drawer-pane.active { display: flex; }
+
+/* two-column layout for tile/unit/map panes */
+.drawer-split { display: flex; flex: 1; overflow: hidden; gap: 0; }
+.drawer-split .drawer-col { flex: 1; padding: 10px 14px; overflow: auto; border-right: 1px dashed var(--ink-faint); }
+.drawer-split .drawer-col:last-child { border-right: none; }
+
+/* (old drawer-tab-sep removed — groups now occupy two halves of the bar) */
+
+.drawer-pane-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-bottom: 1px dashed var(--ink); gap: 8px;
+}
+.drawer-pane-head .label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.drawer-pane-actions { display: flex; gap: 6px; align-items: center; }
+.drawer-pane-actions .chip { font-family: var(--mono); font-size: 9px; letter-spacing: .04em; }
+.drawer-list { flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; }
+.drawer-list::-webkit-scrollbar { width: 8px; }
+.drawer-list::-webkit-scrollbar-thumb { background: var(--ink-faint); }
+.drawer-list::-webkit-scrollbar-track { background: var(--paper-2); }
+
+/* turn queue item */
+.qitem {
+  position: relative;
+  display: grid; grid-template-columns: 24px 1fr auto auto; gap: 8px; align-items: center;
+  border: 1px solid var(--ink); padding: 6px 10px; background: var(--paper);
+  font-family: var(--mono); font-size: 10.5px;
+}
+.qitem.required { border-color: var(--warn); border-width: 2px; background: #f6ede4; }
+.qitem.unit     { border-left: 4px solid var(--good); }
+.qitem.civilian { border-left: 4px solid var(--accent); }
+.qitem.city     { border-left: 4px solid var(--ink); }
+.qitem.research { border-left: 4px solid var(--warn); }
+.qitem .qidx { font-size: 9px; color: var(--ink-muted); font-weight: 700; }
+.qitem .qmain { min-width: 0; }
+.qitem .qmain .qt { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.qitem .qmain .qd { color: var(--ink-muted); font-size: 9.5px; }
+.qitem .qtag {
+  font-family: var(--mono); font-size: 8.5px; padding: 2px 5px; border: 1px solid var(--ink-muted); color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+}
+.qitem.required .qtag { border-color: var(--warn); color: var(--warn); font-weight: 700; }
+.qitem .qactions { display: flex; gap: 4px; }
+.qitem .qbtn {
+  border: 1.5px solid var(--ink); background: var(--paper); padding: 3px 9px;
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; cursor: pointer;
+  white-space: nowrap;
+}
+.qitem .qbtn:hover { background: var(--ink); color: var(--paper); }
+.qitem .qbtn.primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.qitem .qbtn.primary:hover { background: var(--ink); border-color: var(--ink); }
+.qitem .qbtn.skip { color: var(--ink-muted); }
+.qitem .qbtn.disabled { opacity: .35; cursor: not-allowed; }
+.qitem .qbtn.disabled:hover { background: var(--paper); color: var(--ink-muted); }
+.qitem.done { opacity: .45; }
+
+/* tech / civic row in drawer */
+.titem {
+  position: relative;
+  display: grid; grid-template-columns: 22px 1fr 150px auto; gap: 10px; align-items: center;
+  border: 1px solid var(--ink); padding: 6px 10px; background: var(--paper);
+  font-family: var(--mono); font-size: 10.5px;
+}
+.titem.current { border-width: 2px; border-color: var(--accent); background: var(--accent-soft); }
+.titem.queued  { border-left: 4px solid var(--accent); }
+.titem.done    { opacity: .45; }
+.titem.locked  { opacity: .55; background: var(--paper-2); }
+.titem .qpos {
+  width: 20px; height: 20px; border: 1.5px solid var(--ink);
+  display: grid; place-items: center; font-size: 10px; font-weight: 700;
+  background: var(--paper);
+}
+.titem.queued .qpos { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.titem.current .qpos { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.titem.done .qpos { background: var(--good); color: var(--paper); border-color: var(--good); }
+.titem .qpos.empty { border-style: dashed; color: var(--ink-faint); }
+.titem .tmain { min-width: 0; }
+.titem .tmain .tt { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.titem .tmain .td { color: var(--ink-muted); font-size: 9.5px; }
+.titem .tmain .tmeta { color: var(--ink-faint); font-size: 9px; margin-top: 2px; }
+.titem .tcost { text-align: right; color: var(--ink-muted); font-size: 10px; white-space: nowrap; }
+.titem .tcost .c-era { font-size: 8.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; }
+.titem.current .tcost { color: var(--ink); font-weight: 700; }
+.titem .tactions { display: flex; gap: 4px; }
+.titem .tbtn {
+  border: 1.5px solid var(--ink); background: var(--paper); padding: 3px 9px;
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; cursor: pointer;
+  white-space: nowrap;
+}
+.titem .tbtn:hover { background: var(--ink); color: var(--paper); }
+.titem .tbtn.primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.titem .tbtn.primary:hover { background: var(--ink); border-color: var(--ink); }
+.titem .tbtn.queued-btn { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.titem .tbtn.queued-btn:hover { background: var(--accent); color: var(--paper); }
+.titem .tbtn.disabled { opacity: .35; cursor: not-allowed; }
+.titem .tbtn.disabled:hover { background: var(--paper); color: var(--ink-muted); }
+.titem .tbar { grid-column: 1 / -1; margin-top: 2px; }
+
+.panel { padding: 8px 10px; overflow: auto; }
+.panel h3 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--ink); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+.panel h3 .tag { font-family: var(--mono); font-size: 9px; color: var(--ink-muted); letter-spacing: 0; }
+
+.kv { display: grid; grid-template-columns: 90px 1fr; row-gap: 3px; column-gap: 8px; font-family: var(--mono); font-size: 10.5px; }
+.kv .k { color: var(--ink-muted); }
+.kv .v { font-weight: 700; }
+
+/* minimap */
+.minimap { height: 140px; position: relative; background: var(--paper-2); }
+.minimap .mm-grid {
+  position: absolute; inset: 4px;
+  background-image:
+    linear-gradient(to right, rgba(0,0,0,.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,.08) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.minimap .mm-view { position: absolute; border: 1.5px solid var(--accent); background: rgba(43,74,107,.08); }
+.minimap .mm-city { position: absolute; width: 6px; height: 6px; background: var(--ink); }
+.minimap .mm-enemy { position: absolute; width: 6px; height: 6px; background: var(--bad); }
+
+/* notification stack */
+.notif { border-left: 3px solid var(--ink); padding: 5px 7px; background: var(--paper); font-size: 10px; position: relative; display: grid; grid-template-columns: 1fr auto; column-gap: 6px; align-items: start; }
+.notif.warn { border-color: var(--warn); }
+.notif.good { border-color: var(--good); }
+.notif.bad { border-color: var(--bad); }
+.notif.accent { border-color: var(--accent); }
+.notif .t { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.notif .d { color: var(--ink-muted); font-size: 9.5px; grid-column: 1 / 2; }
+.notif .body { min-width: 0; }
+.notif .goto { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; background: var(--paper); border: 1px solid var(--ink); padding: 2px 6px; cursor: pointer; white-space: nowrap; align-self: center; }
+.notif .goto:hover { background: var(--ink); color: var(--paper); }
+.notif .goto.disabled { opacity: .4; cursor: default; }
+.notif-panel h3 .btn.sm { padding: 2px 6px; font-size: 8.5px; letter-spacing: .04em; }
+#notif-list::-webkit-scrollbar { width: 6px; }
+#notif-list::-webkit-scrollbar-thumb { background: var(--ink-faint); }
+
+/* unit card */
+.unitcard { display: flex; gap: 8px; padding: 6px; border: 1px solid var(--ink); background: var(--paper); align-items: center; }
+.unitcard .portrait { width: 48px; height: 48px; }
+
+/* tech / civic trees */
+.tree-wrap { position: absolute; inset: 0; overflow: auto; background: var(--paper); }
+.tree-canvas { position: relative; width: 2200px; height: 1200px; }
+.node { position: absolute; width: 140px; min-height: 70px; background: var(--paper); border: var(--stroke) solid var(--ink); padding: 6px 8px; font-size: 10px; }
+.node.done { background: var(--paper-3); }
+.node.done::after { content: "✓"; position: absolute; top: 4px; right: 6px; font-family: var(--mono); font-size: 12px; }
+.node.active { border-color: var(--accent); border-width: var(--stroke-heavy); background: var(--accent-soft); }
+.node.locked { color: var(--ink-faint); background: var(--paper-2); border-style: dashed; }
+.node .t { font-weight: 700; text-transform: uppercase; font-size: 10.5px; letter-spacing: .04em; }
+.node .cost { color: var(--ink-muted); font-size: 9px; margin-top: 2px; }
+.node .unlocks { margin-top: 4px; font-size: 9px; color: var(--ink-muted); }
+
+.edge { position: absolute; height: 1.5px; background: var(--ink); transform-origin: 0 50%; }
+.edge.done { background: var(--ink); }
+.edge.locked { background: repeating-linear-gradient(90deg, var(--ink-muted) 0 4px, transparent 4px 8px); height: 1px; }
+.edge.active { background: var(--accent); height: 2px; }
+
+/* city screen */
+.city-main-grid {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: 280px 1fr 300px;
+  gap: 8px; padding: 8px;
+}
+.city-left {
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1.5px solid var(--ink); background: var(--paper);
+}
+.city-left-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-bottom: 1px dashed var(--ink); flex-shrink: 0;
+}
+.city-row {
+  display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+  padding: 7px 10px; border: 1px solid transparent; cursor: pointer; font-family: var(--mono); font-size: 10.5px;
+}
+.city-row:hover { background: var(--paper-2); }
+.city-row.active { background: var(--accent-soft); border-color: var(--accent); }
+.city-row .cr-name { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.city-row .cr-pop { color: var(--ink-muted); font-size: 9.5px; }
+.city-row .cr-yields { font-size: 9px; color: var(--ink-muted); grid-column: 1 / -1; }
+.city-row .cr-tag { font-size: 8.5px; padding: 1px 5px; border: 1px solid var(--ink-muted); color: var(--ink-muted); text-transform: uppercase; }
+.city-row.active .cr-tag { border-color: var(--accent); color: var(--accent); }
+
+.city-center-col {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.city-center-head {
+  flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 1.5px solid var(--ink); border-bottom: none;
+  background: var(--paper); font-family: var(--mono);
+}
+.city-center-scroll {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  border: 1.5px solid var(--ink); background: var(--paper-2);
+  padding: 8px;
+}
+.city-center-scroll::-webkit-scrollbar { width: 8px; }
+.city-center-scroll::-webkit-scrollbar-thumb { background: var(--ink-faint); }
+.city-card { margin: 0; flex-shrink: 0; }
+.city-center-tiles { border: none !important; background: var(--paper); }
+
+/* ===== CITY TILE HEX VIEW ===== */
+.city-tile-grid {
+  position: relative;
+  height: 380px;
+  overflow: hidden;
+  background: var(--paper-2);
+}
+
+.city-right {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* yields display in city */
+.yield-block {
+  border: 1px solid var(--ink); padding: 5px 8px; text-align: center; background: var(--paper);
+}
+.yield-block .yk { font-family: var(--mono); font-size: 9px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .05em; }
+.yield-block .yv { font-family: var(--mono); font-size: 16px; font-weight: 700; display: block; }
+
+/* district status chips in city */
+.district-block {
+  border: 1px solid var(--ink); padding: 5px 8px; font-family: var(--mono); font-size: 10px;
+}
+.district-block.built { border-color: var(--good); background: #f0f5ee; }
+.district-block.queued { border-color: var(--warn); border-style: dashed; }
+.district-block.available { border-color: var(--ink); border-style: dashed; }
+.district-block.locked { border-color: var(--ink-faint); color: var(--ink-faint); }
+.district-block .dn { font-weight: 700; font-size: 10.5px; }
+.district-block .ds { font-size: 9px; color: var(--ink-muted); }
+
+/* building group by district */
+.bld-district-group { margin-bottom: 10px; }
+.bld-district-group .bld-district-label {
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--ink-muted); border-bottom: 1px dashed var(--ink); padding-bottom: 3px; margin-bottom: 4px;
+}
+.bld-district-group .bld-row {
+  display: flex; align-items: center; gap: 8px; padding: 3px 0;
+  border-bottom: 1px dotted var(--ink-faint); font-family: var(--mono); font-size: 10.5px;
+}
+.bld-district-group .bld-row:last-child { border-bottom: none; }
+.bld-district-group .bld-name { flex: 1; }
+.bld-district-group .bld-yields { color: var(--ink-muted); font-size: 9.5px; }
+.bld-district-group .bld-status { font-size: 8.5px; padding: 1px 5px; border: 1px solid var(--ink-muted); }
+.bld-district-group .bld-status.built { border-color: var(--good); color: var(--good); }
+.bld-district-group .bld-status.queued { border-color: var(--warn); color: var(--warn); }
+/* loyalty/religion source rows */
+.lr-row {
+  display: grid; grid-template-columns: 1fr 36px; gap: 4px; align-items: center;
+  border-left: 3px solid transparent; padding: 3px 6px;
+  font-family: var(--mono); font-size: 10px;
+}
+.lr-row.positive { border-color: var(--good); background: #f0f5ee; }
+.lr-row.negative { border-color: var(--bad);  background: #f5eeee; }
+.lr-row.neutral  { border-color: var(--ink-faint); }
+.lr-row .lr-label { color: var(--ink-soft); line-height: 1.2; }
+.lr-row .lr-sublabel { font-size: 8.5px; color: var(--ink-muted); }
+.lr-row .lr-value { text-align: right; font-weight: 700; font-size: 11px; }
+.lr-row.positive .lr-value { color: var(--good); }
+.lr-row.negative .lr-value { color: var(--bad); }
+.lr-group-label { font-family: var(--mono); font-size: 8.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-muted); padding: 5px 6px 2px; border-bottom: 1px dashed var(--ink-faint); margin-bottom: 2px; }
+.lr-sort.active { background: var(--ink); color: var(--paper); }
+.lr-summary-chip { border: 1px solid var(--ink); padding: 4px 8px; font-family: var(--mono); font-size: 10px; background: var(--paper); text-align: center; }
+.lr-summary-chip .sk { font-size: 8.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .05em; display: block; }
+.lr-summary-chip .sv { font-size: 14px; font-weight: 700; display: block; }
+
+.city-hex { width: 90px; height: 104px; }
+.city-hex .hex-terrain { font-size: 8px; }
+.city-hex .hex-yields { font-size: 8px; }
+
+
+/* diplomacy */
+.dipl-grid { position: absolute; inset: 0; display: grid; grid-template-columns: 280px 1fr 280px; gap: 8px; padding: 8px; }
+.civ-row { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid var(--ink); cursor: pointer; background: var(--paper); }
+.civ-row.active { background: var(--accent-soft); border-color: var(--accent); }
+.civ-row .portrait { width: 40px; height: 40px; }
+
+.exch-table { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 6px; align-items: center; }
+.exch-col { border: 1px solid var(--ink); min-height: 160px; padding: 6px; background: var(--paper); }
+
+/* empire overview */
+.overview-grid { position: absolute; inset: 8px; display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: auto 1fr 180px; gap: 8px; }
+.span-3 { grid-column: span 3; } .span-4 { grid-column: span 4; } .span-6 { grid-column: span 6; } .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
+
+table.data { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 10px; }
+table.data th, table.data td { text-align: left; padding: 3px 6px; border-bottom: 1px dashed var(--ink-muted); }
+table.data th { font-size: 9px; text-transform: uppercase; color: var(--ink-muted); letter-spacing: .06em; border-bottom: 1px solid var(--ink); }
+table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.data tr.selected td { background: var(--accent-soft); }
+
+/* victory */
+.vic-grid { position: absolute; inset: 8px; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: auto 1fr auto; gap: 8px; }
+.vic-col { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.vic-col h3 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.vic-col .big { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+.rank-list { font-family: var(--mono); font-size: 10px; }
+.rank-list .row { display: grid; grid-template-columns: 16px 1fr 40px; padding: 2px 0; border-bottom: 1px dashed var(--ink-muted); }
+.rank-list .row.me { font-weight: 700; color: var(--accent); }
+
+/* ring meter */
+.ring { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--ink); font-family: var(--mono); font-size: 11px; font-weight: 700; position: relative; }
+
+/* unit panel screen layout */
+.unit-grid { position: absolute; inset: 8px; display: grid; grid-template-columns: 320px 1fr 300px; gap: 8px; }
+
+/* ------ small responsive cushion ------ */
+@media (max-width: 1200px) { .dock-left, .dock-right { width: 220px; } }
+
+/* ===== GOVERNMENT / POLICY SCREEN ===== */
+.govt-grid {
+  position: absolute; inset: 8px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+}
+.govt-header {
+  grid-column: 1 / -1;
+  display: flex; align-items: stretch; gap: 8px;
+}
+.govt-info {
+  flex: 1; display: flex; align-items: center; gap: 16px;
+  padding: 8px 14px;
+}
+.govt-info .gi-name  { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.govt-info .gi-era   { font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .06em; }
+.govt-info .gi-bonus { font-size: 10.5px; color: var(--ink-soft); border-left: 2px solid var(--ink-faint); padding-left: 12px; margin-left: 4px; }
+.govt-slot-bar {
+  display: flex; align-items: center; gap: 6px; padding: 0 14px;
+}
+.slot-badge {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px 10px; border: 1.5px solid var(--ink);
+}
+.slot-badge .sb-count { font-size: 18px; font-weight: 700; font-family: var(--mono); line-height: 1; }
+.slot-badge .sb-label { font-size: 8.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.slot-badge.mil   { border-color: var(--good); }
+.slot-badge.eco   { border-color: var(--warn); }
+.slot-badge.dip   { border-color: var(--accent); }
+.slot-badge.wc    { border-color: var(--ink-muted); }
+
+/* active slots panel (left col) */
+.policy-slots-panel {
+  overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+}
+.slot-group { display: flex; flex-direction: column; gap: 4px; }
+.slot-group-label {
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--ink-muted); padding: 4px 0 2px; border-bottom: 1px dashed var(--ink-faint);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.slot-group-label .sg-count { font-weight: 700; color: var(--ink); }
+.policy-card {
+  border: 1.5px solid var(--ink); background: var(--paper);
+  padding: 7px 10px; cursor: pointer;
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: start; gap: 4px;
+  font-family: var(--mono);
+  transition: background .08s;
+}
+.policy-card:hover { background: var(--paper-2); }
+.policy-card.active { background: var(--accent-soft); border-color: var(--accent); border-width: 2px; }
+.policy-card.empty  { border-style: dashed; color: var(--ink-faint); background: var(--paper-2); cursor: default; }
+.policy-card.dark-age { border-color: var(--bad); background: #f7efef; }
+.policy-card .pc-name   { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.policy-card .pc-effect { font-size: 9.5px; color: var(--ink-muted); margin-top: 2px; }
+.policy-card .pc-remove { font-size: 9px; color: var(--ink-muted); border: 1px solid var(--ink-muted); padding: 1px 5px; white-space: nowrap; }
+.policy-card .pc-remove:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.policy-card.empty .pc-name { font-weight: 400; font-size: 10px; letter-spacing: 0; }
+
+/* available catalogue (right col) */
+.policy-catalogue {
+  overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px;
+}
+.cat-section { display: flex; flex-direction: column; gap: 4px; }
+.cat-section-label {
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--ink-muted); padding: 4px 0 3px;
+  border-bottom: 1.5px solid var(--ink); margin-bottom: 2px;
+  display: flex; align-items: center; gap: 6px;
+}
+.cat-section-label .cs-era  { font-size: 8px; color: var(--ink-faint); letter-spacing: .04em; }
+.cat-section-label .cs-dark { color: var(--bad); font-weight: 700; }
+.cat-row {
+  display: grid; grid-template-columns: 20px 1fr 80px auto;
+  gap: 8px; align-items: center;
+  border: 1px solid var(--ink); padding: 5px 9px;
+  background: var(--paper); font-family: var(--mono); font-size: 10.5px;
+  cursor: pointer;
+}
+.cat-row:hover { background: var(--paper-2); }
+.cat-row.active  { background: var(--accent-soft); border-color: var(--accent); border-left: 3px solid var(--accent); }
+.cat-row.locked  { opacity: .5; cursor: not-allowed; }
+.cat-row.dark-age { border-color: var(--bad); background: #faf3f3; }
+.cat-row .cr-type  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cat-row .cr-type.mil { background: var(--good); }
+.cat-row .cr-type.eco { background: var(--warn); }
+.cat-row .cr-type.dip { background: var(--accent); }
+.cat-row .cr-type.wc  { background: var(--ink-muted); border-radius: 0; transform: rotate(45deg); }
+.cat-row .cr-name  { font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+.cat-row .cr-effect{ font-size: 9px; color: var(--ink-muted); }
+.cat-row .cr-unlock{ font-size: 8.5px; color: var(--ink-faint); text-align: right; }
+.cat-row .cr-action { white-space: nowrap; }
+.cat-row .cr-btn {
+  border: 1.5px solid var(--ink); background: var(--paper); padding: 2px 8px;
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .04em; cursor: pointer;
+}
+.cat-row .cr-btn:hover { background: var(--ink); color: var(--paper); }
+.cat-row .cr-btn.active-btn { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.cat-row .cr-btn.locked-btn { opacity: .4; cursor: not-allowed; }
+
+</style>
+</head>
+<body class="clean">
+
+<!-- SVG filters for hand-drawn effect -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="rough">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" scale="1.6"/>
+    </filter>
+    <filter id="rough-line">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="5"/>
+      <feDisplacementMap in="SourceGraphic" scale="1.2"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <div class="brand"><span class="dot"></span> 4X · wireframes</div>
+  <div class="tabs" id="tabs"></div>
+  <div class="meta"><span data-mono>v0.1 · 1440×900</span></div>
+</div>
+
+<div class="stage">
+
+<!-- ================================================= -->
+<!-- SCREEN 1: MAIN HUD / MAP                          -->
+<!-- ================================================= -->
+<div class="screen" id="scr-hud" data-screen="hud">
+
+  <!-- hex field — virtualized, infinite-scroll cylindrical world -->
+  <div class="hexfield" id="hexfield">
+    <svg class="hex-svg" id="hex-svg">
+      <defs>
+        <pattern id="fog-pattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <rect width="6" height="6" fill="#eceae0"/>
+          <rect width="6" height="3" fill="#e2dfd3"/>
+        </pattern>
+        <pattern id="oob-pattern" patternUnits="userSpaceOnUse" width="8" height="8">
+          <rect width="8" height="8" fill="#e2dfd3"/>
+          <text x="0" y="7" font-family="JetBrains Mono, monospace" font-size="8" fill="#9a9a9a">×</text>
+        </pattern>
+        <pattern id="flood2-pattern" patternUnits="userSpaceOnUse" width="10" height="10">
+          <rect width="10" height="10" fill="#f5f2ea"/>
+          <rect width="10" height="2" y="4" fill="#dce4ee"/>
+        </pattern>
+        <pattern id="flood3-pattern" patternUnits="userSpaceOnUse" width="6" height="6">
+          <rect width="6" height="6" fill="#f5f2ea"/>
+          <rect width="6" height="2" y="2" fill="#c6d2e4"/>
+        </pattern>
+      </defs>
+    </svg>
+    <div class="hex-labels" id="hex-labels"></div>
+
+    <div class="zoom-ctl">
+      <button id="zoom-in" title="zoom in">+</button>
+      <button id="zoom-out" title="zoom out">−</button>
+      <button id="zoom-reset" title="reset" style="font-size:10px;">⌖</button>
+    </div>
+
+    <div class="edge-legend">
+      <div class="row"><span class="swatch river"></span><span>river edge</span></div>
+      <div class="row"><span class="swatch cliff"></span><span>cliff edge</span></div>
+      <div class="row"><span class="swatch coast"></span><span>coastline</span></div>
+      <div class="row"><span class="swatch wonder"></span><span>nat. wonder</span></div>
+      <div class="row"><span class="swatch border"></span><span>civ border</span></div>
+    </div>
+  </div>
+
+  <!-- TOP RESOURCE BAR -->
+  <div class="dock-top">
+    <!-- resource bar — populated by loadPlayerState() from player-state.json -->
+    <div class="res-bar box heavy" id="res-bar">
+      <div class="turnpill"><span class="label">Turn</span><span class="v" id="rb-turn">—</span><span class="muted" id="rb-turn-max"></span></div>
+      <div class="sep"></div>
+      <div id="rb-resources" style="display:flex; align-items:baseline; gap:14px;"></div>
+      <div class="sep"></div>
+      <div id="rb-era" style="display:flex; align-items:baseline; gap:14px;"></div>
+    </div>
+    <button class="btn primary" style="min-width: 150px;">END TURN ⏎</button>
+  </div>
+  <!-- ANNOTATION: persistent top resource bar — driven by player-state.json -->
+
+  <!-- RADIAL CONTEXT MENU — shown on hex click, hidden by default -->
+  <div id="radial-root" style="position:absolute; pointer-events:none; z-index:30;"></div>
+  <!-- ANNOTATION: radial menu appears at click position; nested submenus replace outer ring -->
+
+  <!-- TABBED DRAWER: notifications · turn queue · research · civics -->
+  <div class="drawer" id="drawer" data-tab="">
+    <div class="drawer-tabs">
+      <div class="drawer-tab-group" data-group="context">
+        <button class="drawer-tab" data-tab="tile" data-group="context">
+          <span class="dt-icon">⬢</span>
+          <span class="dt-label">Tile</span>
+          <span class="dt-badge" id="tile-badge">C5</span>
+        </button>
+        <button class="drawer-tab" data-tab="unit" data-group="context">
+          <span class="dt-icon">♟</span>
+          <span class="dt-label">Unit</span>
+          <span class="dt-badge" id="unit-badge">Warrior</span>
+        </button>
+        <button class="drawer-tab" data-tab="map" data-group="context">
+          <span class="dt-icon">▦</span>
+          <span class="dt-label">Map</span>
+          <span class="dt-badge" id="map-badge">0.4×</span>
+        </button>
+        <div class="drawer-spacer"></div>
+      </div>
+      <div class="drawer-tab-group" data-group="feed">
+        <button class="drawer-tab" data-tab="notif" data-group="feed">
+          <span class="dt-icon">◎</span>
+          <span class="dt-label">Notifications</span>
+          <span class="dt-badge" id="notif-count">11</span>
+        </button>
+        <button class="drawer-tab" data-tab="queue" data-group="feed">
+          <span class="dt-icon">◆</span>
+          <span class="dt-label">Turn Queue</span>
+          <span class="dt-badge" id="queue-count">5</span>
+        </button>
+        <button class="drawer-tab" data-tab="research" data-group="feed">
+          <span class="dt-icon">🔬</span>
+          <span class="dt-label">Research</span>
+          <span class="dt-badge" id="research-badge">→ Bronze</span>
+        </button>
+        <button class="drawer-tab" data-tab="civics" data-group="feed">
+          <span class="dt-icon">🎭</span>
+          <span class="dt-label">Civics</span>
+          <span class="dt-badge" id="civics-badge">→ Code</span>
+        </button>
+        <div class="drawer-spacer"></div>
+        <button class="drawer-tab close-tab" id="drawer-close" title="Collapse">▾ close</button>
+      </div>
+    </div>
+
+    <div class="drawer-body" id="drawer-body">
+      <!-- TILE -->
+      <div class="drawer-pane" data-pane="tile" data-group="context">
+        <div class="drawer-pane-head">
+          <span class="label">Tile inspector · <span id="tile-coord">C5</span></span>
+          <div class="drawer-pane-actions">
+            <span class="chip">owned · Alexandria</span>
+            <button class="btn sm">Recenter</button>
+            <button class="btn sm">Work tile</button>
+          </div>
+        </div>
+        <div class="drawer-split">
+          <div class="drawer-col">
+            <div class="panel box" style="border:none; padding:0;">
+              <div class="kv">
+                <span class="k">Terrain</span><span class="v">Plains</span>
+                <span class="k">Feature</span><span class="v">—</span>
+                <span class="k">Resource</span><span class="v">Horses (strat.)</span>
+                <span class="k">Yields</span><span class="v">2F · 1P</span>
+                <span class="k">Appeal</span><span class="v">+1 (Breathtaking)</span>
+                <span class="k">Flood risk</span><span class="v">None</span>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-col">
+            <div class="panel box" style="border:none; padding:0;">
+              <div class="kv">
+                <span class="k">Owner</span><span class="v">Alexandria</span>
+                <span class="k">Worked by</span><span class="v">—</span>
+                <span class="k">Improv.</span><span class="v">Pasture (available)</span>
+                <span class="k">Movement</span><span class="v">1 MP</span>
+                <span class="k">Adjacency</span><span class="v">+1 F (Wheat B5) · +1 G (River C4)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UNIT -->
+      <div class="drawer-pane" data-pane="unit" data-group="context">
+        <div class="drawer-pane-head">
+          <span class="label">Selected unit · <span id="unit-name">Warrior · Alpha</span></span>
+          <div class="drawer-pane-actions">
+            <span class="chip">HP 24/30</span>
+            <span class="chip">MP 2/2</span>
+            <span class="chip">XP 12/15</span>
+            <button class="btn sm">Prev unit</button>
+            <button class="btn sm">Next unit</button>
+          </div>
+        </div>
+        <div class="drawer-split">
+          <div class="drawer-col">
+            <div class="unitcard" style="border-width:2px;">
+              <div class="portrait ph">unit</div>
+              <div style="flex:1;">
+                <div class="v">Warrior · "Alpha"</div>
+                <div class="k muted">Melee · Ancient · C6</div>
+                <div class="bar accent" style="margin-top:4px;"><span style="width:80%"></span></div>
+                <div class="k muted" style="margin-top:3px;">HP 24/30 · MP 2/2 · XP 12/15</div>
+              </div>
+            </div>
+            <div class="label" style="margin-top:8px;">Promotions</div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+              <span class="chip filled">Battlecry</span>
+              <span class="chip">Tortoise</span>
+              <span class="chip">Commando</span>
+            </div>
+          </div>
+          <div class="drawer-col">
+            <div class="label">Actions</div>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 4px;">
+              <button class="btn sm">Move</button>
+              <button class="btn sm">Attack</button>
+              <button class="btn sm">Fortify</button>
+              <button class="btn sm">Sleep</button>
+              <button class="btn sm">Heal</button>
+              <button class="btn sm">Promote</button>
+              <button class="btn sm">Upgrade</button>
+              <button class="btn sm">Disband</button>
+              <button class="btn sm">Auto-explore</button>
+            </div>
+            <div class="hr dashed"></div>
+            <div class="label">Combat preview</div>
+            <div class="k muted" style="font-size:10px; margin-top:3px;">
+              vs Barbarian Warrior (D6): expected 18 → 12 (win 72%)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div class="drawer-pane" data-pane="map" data-group="context">
+        <div class="drawer-pane-head">
+          <span class="label">World map · zoom <span id="map-zoom">0.4×</span></span>
+          <div class="drawer-pane-actions">
+            <span class="chip" id="map-cities-chip">— cities</span>
+            <span class="chip" id="map-enemies-chip">— enemies visible</span>
+            <button class="btn sm">Center camera</button>
+            <button class="btn sm">Reset overlays</button>
+          </div>
+        </div>
+        <div class="drawer-split">
+          <div class="drawer-col" style="flex: 2;">
+            <!-- minimap populated by renderMinimapPane() from map-overlays.json -->
+            <div class="minimap box dashed" style="height: 100%; min-height: 180px;" id="minimap-container">
+              <div class="mm-grid"></div>
+            </div>
+          </div>
+          <div class="drawer-col">
+            <div class="label">Overlays</div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+              <!-- overlay chips populated by renderOverlayChips() from map-overlays.json -->
+            </div>
+            <div class="hr dashed"></div>
+            <div class="label">Camera</div>
+            <div class="hex-coords" id="hex-coords" style="position:static; background:transparent; border:none; padding:4px 0;">
+              <span class="label" style="display:block; font-size:9px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .06em;" id="map-world-label">world wraps E↔W · poles clamped</span>
+              <span data-mono style="font-family: var(--mono); font-size: 11px;">x: <span id="cam-x">0</span> · y: <span id="cam-y">0</span> · zoom: <span id="cam-z">1.00</span>×</span>
+            </div>
+            <div class="hr dashed"></div>
+            <div class="label">Legend</div>
+            <div class="kv" style="margin-top:4px;">
+              <span class="k">● city</span><span class="v">your empire</span>
+              <span class="k">● enemy</span><span class="v">hostile</span>
+              <span class="k">□ view</span><span class="v">camera rect</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="drawer-pane" data-pane="notif" data-group="feed">
+        <div class="drawer-pane-head">
+          <span class="label">Notifications feed</span>
+          <div class="drawer-pane-actions">
+            <span class="chip">unread <span id="notif-unread">11</span></span>
+            <button class="btn sm" id="notif-clear">Clear all</button>
+          </div>
+        </div>
+        <div class="drawer-list" id="notif-list"></div>
+      </div>
+
+      <!-- TURN QUEUE -->
+      <div class="drawer-pane" data-pane="queue" data-group="feed">
+        <div class="drawer-pane-head">
+          <span class="label">Pending actions for turn 142</span>
+          <div class="drawer-pane-actions">
+            <span class="chip">required <span id="queue-required">1</span></span>
+            <span class="chip">skippable <span id="queue-skippable">4</span></span>
+            <button class="btn sm" id="queue-skip-all">Skip all skippable</button>
+          </div>
+        </div>
+        <div class="drawer-list" id="queue-list"></div>
+      </div>
+
+      <!-- RESEARCH -->
+      <div class="drawer-pane" data-pane="research" data-group="feed">
+        <div class="drawer-pane-head">
+          <span class="label">
+            Research · now: <span id="research-current">Bronze Working (84/200 🔬, 3t)</span>
+          </span>
+          <div class="drawer-pane-actions">
+            <span class="chip">SCI/t <span id="research-rate">+47</span></span>
+            <span class="chip">queued <span id="research-queue-count">0</span></span>
+            <button class="btn sm" id="research-open-tree">Open tree</button>
+            <button class="btn sm" id="research-clear-queue">Clear queue</button>
+          </div>
+        </div>
+        <div class="drawer-list" id="research-list"></div>
+      </div>
+
+      <!-- CIVICS -->
+      <div class="drawer-pane" data-pane="civics" data-group="feed">
+        <div class="drawer-pane-head">
+          <span class="label">
+            Civic · now: <span id="civics-current">Code of Laws (54/80 🎭, 2t)</span>
+          </span>
+          <div class="drawer-pane-actions">
+            <span class="chip">CULT/t <span id="civics-rate">+32</span></span>
+            <span class="chip">queued <span id="civics-queue-count">0</span></span>
+            <button class="btn sm" id="civics-open-tree">Open tree</button>
+            <button class="btn sm" id="civics-clear-queue">Clear queue</button>
+          </div>
+        </div>
+        <div class="drawer-list" id="civics-list"></div>
+      </div>
+    </div>
+  </div>
+  <!-- ANNOTATION: bottom: always-visible progress + collapsible Notifications / Turn Queue tabs -->
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 2: CITY                                    -->
+<!-- ================================================= -->
+<div class="screen" id="scr-city" data-screen="city">
+
+  <!-- city screen uses a 3-col layout: city list | center (tiles + cards) | production -->
+  <div class="city-main-grid">
+
+    <!-- ===== LEFT: city list + aggregate toggle ===== -->
+    <div class="city-left">
+      <div class="city-left-head">
+        <span class="label" style="font-size:11px;">Cities <span id="city-list-count" class="tag">2</span></span>
+        <button class="btn sm" id="city-aggregate-btn">Aggregate</button>
+      </div>
+
+      <!-- city rows — populated by JS from city-data.json -->
+      <div id="city-list-panel" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding:8px;">
+        <!-- populated by renderCityList() -->
+      </div>
+
+      <!-- aggregate view — hidden by default -->
+      <div id="city-aggregate-panel" style="display:none; flex:1; overflow-y:auto; padding:8px;">
+        <div class="panel box" style="border:none; padding:0;">
+          <div class="label" style="margin-bottom:4px;">Empire totals</div>
+          <div class="kv" id="city-agg-kv"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CENTER: hex tiles + info cards ===== -->
+    <div class="city-center-col">
+      <!-- city name header bar -->
+      <div class="city-center-head">
+        <span class="v" id="city-center-name" style="font-size:14px;">Alexandria</span>
+        <span class="tag" id="city-center-tag">capital · pop 7</span>
+        <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
+          <button class="btn sm" id="city-rename-btn">Rename</button>
+          <button class="btn sm" id="city-goto-btn">Go to on map</button>
+        </div>
+      </div>
+
+      <!-- scrollable center cards -->
+      <div class="city-center-scroll">
+
+        <!-- TILE VIEW CARD — live hex view, radius 5 from city, owned tiles highlighted -->
+        <div class="panel box city-card" id="city-tiles-card">
+          <h3>City tiles <span class="tag">radius 5 · ★ center · ● working · ○ idle · dim = unowned</span></h3>
+          <div class="city-tile-grid" id="city-tile-grid" style="position:relative; overflow:hidden;">
+            <!-- populated by renderCityHexView() -->
+          </div>
+        </div>
+
+        <!-- yields card -->
+        <div class="panel box city-card" id="city-yields-card">
+          <h3>Yields</h3>
+          <div style="display:grid; grid-template-columns: repeat(6,1fr); gap:6px;" id="city-yields-grid">
+            <!-- populated by JS -->
+          </div>
+          <div class="hr dashed"></div>
+          <div class="kv" id="city-growth-kv"></div>
+        </div>
+
+        <!-- citizens + specialists card -->
+        <div class="panel box city-card" id="city-citizens-card">
+          <h3>Citizens &amp; Specialists</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="kv" id="city-citizens-kv"></div>
+            <div>
+              <div class="label">Focus</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;" id="city-focus-chips"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- districts card -->
+        <div class="panel box city-card" id="city-districts-card">
+          <h3>Districts</h3>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px;" id="city-districts-grid">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- buildings by district -->
+        <div class="panel box city-card" id="city-buildings-card">
+          <h3>Buildings &amp; Wonders <span class="tag">by district</span></h3>
+          <div id="city-buildings-content"><!-- populated by JS --></div>
+        </div>
+
+        <!-- loyalty + religion card -->
+        <div class="panel box city-card" id="city-loyalty-card">
+          <h3 style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            Loyalty &amp; Religion
+            <span style="display:flex; gap:3px; margin-left:auto;" id="lr-sort-btns">
+              <button class="btn sm lr-sort active" data-sort="city">By city</button>
+              <button class="btn sm lr-sort" data-sort="religion">By religion</button>
+              <button class="btn sm lr-sort" data-sort="civ">By civ</button>
+            </span>
+          </h3>
+          <!-- summary row -->
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:8px;" id="lr-summary"></div>
+          <div class="hr dashed"></div>
+          <!-- two columns: loyalty sources | religion pressure -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" id="lr-body">
+            <div>
+              <div class="label" style="margin-bottom:4px;">Loyalty sources</div>
+              <div id="city-loyalty-list" style="display:flex; flex-direction:column; gap:3px;"></div>
+            </div>
+            <div>
+              <div class="label" style="margin-bottom:4px;">Religious pressure</div>
+              <div id="city-religion-list" style="display:flex; flex-direction:column; gap:3px;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.city-center-scroll -->
+    </div><!-- /.city-center-col -->
+
+    <!-- ===== RIGHT: production queue ===== -->
+    <div class="city-right">
+      <div class="panel box heavy" style="flex:1; overflow:auto;">
+        <h3>Production · <span id="city-prod-name">Alexandria</span></h3>
+        <div id="city-prod-current" style="margin-bottom:8px;">
+          <!-- current item populated by JS -->
+        </div>
+        <div class="hr dashed"></div>
+        <div class="label">Queue</div>
+        <div id="city-prod-queue" style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+          <!-- queue items populated by JS -->
+        </div>
+        <div class="hr dashed"></div>
+        <button class="btn primary" style="width:100%;">+ ADD TO QUEUE</button>
+      </div>
+    </div>
+
+  </div><!-- /.city-main-grid -->
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- SCREEN 3: TECH TREE                               -->
+<!-- ================================================= -->
+<div class="screen" id="scr-tech" data-screen="tech">
+  <div class="dock-top" style="height:44px;">
+    <div class="res-bar box heavy">
+      <div class="turnpill"><span class="label">Tech</span><span class="v">Bronze Working</span></div>
+      <div class="sep"></div>
+      <div class="res"><span class="k">SCI/t</span><span class="v">+47</span></div>
+      <div class="res"><span class="k">ERA</span><span class="v">Classical</span></div>
+      <div class="res"><span class="k">COMPLETED</span><span class="v">14 / 87</span></div>
+      <div class="sep"></div>
+      <div class="res"><span class="k">ZOOM</span><span class="v">100%</span></div>
+    </div>
+    <button class="btn">FILTER</button>
+    <button class="btn">SEARCH</button>
+  </div>
+
+  <div class="tree-wrap" style="top: 60px; bottom: 8px;">
+    <div class="tree-canvas">
+      <!-- Era column markers -->
+      <div style="position:absolute; top:0; left:40px; right:0; display:flex; font-family: var(--mono); font-size: 10px; color: var(--ink-muted); text-transform: uppercase;">
+        <div style="width: 300px; border-right: 1px dashed var(--ink); padding: 6px;">Ancient</div>
+        <div style="width: 300px; border-right: 1px dashed var(--ink); padding: 6px;">Classical</div>
+        <div style="width: 300px; border-right: 1px dashed var(--ink); padding: 6px;">Medieval</div>
+        <div style="width: 300px; border-right: 1px dashed var(--ink); padding: 6px;">Renaissance</div>
+        <div style="width: 300px; border-right: 1px dashed var(--ink); padding: 6px;">Industrial</div>
+        <div style="width: 300px; padding: 6px;">Modern+</div>
+      </div>
+
+      <!-- Ancient -->
+      <div class="node done" style="left: 40px; top: 60px;"><div class="t">Pottery</div><div class="cost">25 🔬</div><div class="unlocks">Granary</div></div>
+      <div class="node done" style="left: 40px; top: 160px;"><div class="t">Animal Husb.</div><div class="cost">25 🔬</div><div class="unlocks">Pasture · Horses</div></div>
+      <div class="node done" style="left: 40px; top: 260px;"><div class="t">Mining</div><div class="cost">25 🔬</div><div class="unlocks">Mine · Quarry</div></div>
+      <div class="node done" style="left: 40px; top: 360px;"><div class="t">Sailing</div><div class="cost">50 🔬</div><div class="unlocks">Galley · Harbor</div></div>
+      <div class="node done" style="left: 40px; top: 460px;"><div class="t">Astronomy</div><div class="cost">50 🔬</div><div class="unlocks">Plantation</div></div>
+      <div class="node done" style="left: 40px; top: 560px;"><div class="t">Masonry</div><div class="cost">80 🔬</div><div class="unlocks">Walls · Pyramids</div></div>
+
+      <!-- Classical -->
+      <div class="node done" style="left: 220px; top: 110px;"><div class="t">Writing</div><div class="cost">50 🔬</div><div class="unlocks">Library</div></div>
+      <div class="node active" style="left: 220px; top: 210px;"><div class="t">Bronze Working</div><div class="cost">84 / 200 🔬</div><div class="unlocks">Swordsman · Iron</div><div class="bar accent" style="margin-top:4px;"><span style="width:42%"></span></div></div>
+      <div class="node done" style="left: 220px; top: 310px;"><div class="t">Wheel</div><div class="cost">80 🔬</div><div class="unlocks">Road · Chariot</div></div>
+      <div class="node" style="left: 220px; top: 410px;"><div class="t">Horse Riding</div><div class="cost">120 🔬</div><div class="unlocks">Horseman</div></div>
+      <div class="node" style="left: 220px; top: 510px;"><div class="t">Currency</div><div class="cost">120 🔬</div><div class="unlocks">Market · Trade routes</div></div>
+
+      <!-- Medieval -->
+      <div class="node" style="left: 400px; top: 60px;"><div class="t">Mathematics</div><div class="cost">200 🔬</div><div class="unlocks">Catapult</div></div>
+      <div class="node" style="left: 400px; top: 160px;"><div class="t">Iron Working</div><div class="cost">200 🔬</div><div class="unlocks">Legion</div></div>
+      <div class="node" style="left: 400px; top: 260px;"><div class="t">Engineering</div><div class="cost">200 🔬</div><div class="unlocks">Aqueduct</div></div>
+      <div class="node" style="left: 400px; top: 360px;"><div class="t">Construction</div><div class="cost">200 🔬</div><div class="unlocks">Colosseum</div></div>
+      <div class="node" style="left: 400px; top: 460px;"><div class="t">Ship Building</div><div class="cost">200 🔬</div><div class="unlocks">Quadrireme</div></div>
+
+      <!-- Renaissance -->
+      <div class="node locked" style="left: 580px; top: 110px;"><div class="t">Machinery</div><div class="cost">300 🔬</div><div class="unlocks">Crossbow</div></div>
+      <div class="node locked" style="left: 580px; top: 210px;"><div class="t">Military Eng.</div><div class="cost">300 🔬</div><div class="unlocks">Siege Tower</div></div>
+      <div class="node locked" style="left: 580px; top: 310px;"><div class="t">Education</div><div class="cost">300 🔬</div><div class="unlocks">University</div></div>
+      <div class="node locked" style="left: 580px; top: 410px;"><div class="t">Banking</div><div class="cost">300 🔬</div><div class="unlocks">Bank</div></div>
+      <div class="node locked" style="left: 580px; top: 510px;"><div class="t">Cartography</div><div class="cost">300 🔬</div><div class="unlocks">Caravel</div></div>
+
+      <!-- Industrial -->
+      <div class="node locked" style="left: 760px; top: 160px;"><div class="t">Gunpowder</div><div class="cost">500 🔬</div><div class="unlocks">Musketman</div></div>
+      <div class="node locked" style="left: 760px; top: 260px;"><div class="t">Metallurgy</div><div class="cost">500 🔬</div><div class="unlocks">Field Cannon</div></div>
+      <div class="node locked" style="left: 760px; top: 360px;"><div class="t">Steam Power</div><div class="cost">500 🔬</div><div class="unlocks">Factory</div></div>
+      <div class="node locked" style="left: 760px; top: 460px;"><div class="t">Sanitation</div><div class="cost">500 🔬</div><div class="unlocks">Sewer</div></div>
+
+      <!-- Modern+ -->
+      <div class="node locked" style="left: 940px; top: 210px;"><div class="t">Electricity</div><div class="cost">700 🔬</div><div class="unlocks">Radio</div></div>
+      <div class="node locked" style="left: 940px; top: 310px;"><div class="t">Combustion</div><div class="cost">700 🔬</div><div class="unlocks">Tank</div></div>
+      <div class="node locked" style="left: 940px; top: 410px;"><div class="t">Flight</div><div class="cost">700 🔬</div><div class="unlocks">Biplane</div></div>
+
+      <!-- Edges (simplified) -->
+      <div class="edge done"   style="left: 180px; top: 130px; width: 40px;"></div>
+      <div class="edge active" style="left: 180px; top: 235px; width: 40px;"></div>
+      <div class="edge done"   style="left: 180px; top: 335px; width: 40px;"></div>
+      <div class="edge done"   style="left: 180px; top: 435px; width: 40px;"></div>
+      <div class="edge done"   style="left: 180px; top: 535px; width: 40px;"></div>
+
+      <div class="edge locked" style="left: 360px; top: 85px;  width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 185px; width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 285px; width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 385px; width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 485px; width: 40px;"></div>
+
+      <div class="edge locked" style="left: 540px; top: 135px; width: 40px;"></div>
+      <div class="edge locked" style="left: 540px; top: 235px; width: 40px;"></div>
+      <div class="edge locked" style="left: 540px; top: 335px; width: 40px;"></div>
+      <div class="edge locked" style="left: 540px; top: 435px; width: 40px;"></div>
+
+      <div class="edge locked" style="left: 720px; top: 185px; width: 40px;"></div>
+      <div class="edge locked" style="left: 720px; top: 285px; width: 40px;"></div>
+      <div class="edge locked" style="left: 720px; top: 385px; width: 40px;"></div>
+
+      <div class="edge locked" style="left: 900px; top: 235px; width: 40px;"></div>
+      <div class="edge locked" style="left: 900px; top: 335px; width: 40px;"></div>
+      <div class="edge locked" style="left: 900px; top: 435px; width: 40px;"></div>
+    </div>
+  </div>
+  <!-- ANNOTATION: pan (drag) · zoom (wheel) · columns = eras -->
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 4: CIVICS TREE                             -->
+<!-- ================================================= -->
+<div class="screen" id="scr-civics" data-screen="civics">
+  <div class="dock-top" style="height:44px;">
+    <div class="res-bar box heavy">
+      <div class="turnpill"><span class="label">Civic</span><span class="v">Code of Laws</span></div>
+      <div class="sep"></div>
+      <div class="res"><span class="k">CULT/t</span><span class="v">+32</span></div>
+      <div class="res"><span class="k">GOVT</span><span class="v">Chiefdom</span></div>
+      <div class="res"><span class="k">POLICIES</span><span class="v">2 mil · 2 eco · 1 dip · 0 wild</span></div>
+      <div class="sep"></div>
+      <div class="res"><span class="k">LEGACY</span><span class="v">3 unlocked</span></div>
+    </div>
+    <button class="btn">POLICIES</button>
+    <button class="btn">GOVT CHANGE</button>
+  </div>
+
+  <div class="tree-wrap" style="top: 60px; bottom: 8px;">
+    <div class="tree-canvas" style="width: 1600px; height: 900px;">
+      <!-- column headers -->
+      <div style="position:absolute; top:0; left:40px; right:0; display:flex; font-family: var(--mono); font-size: 10px; color: var(--ink-muted); text-transform: uppercase;">
+        <div style="width: 260px; border-right: 1px dashed var(--ink); padding: 6px;">Foundational</div>
+        <div style="width: 260px; border-right: 1px dashed var(--ink); padding: 6px;">Tribal</div>
+        <div style="width: 260px; border-right: 1px dashed var(--ink); padding: 6px;">Political</div>
+        <div style="width: 260px; border-right: 1px dashed var(--ink); padding: 6px;">Cultural</div>
+        <div style="width: 260px; padding: 6px;">Global</div>
+      </div>
+
+      <div class="node done" style="left: 40px; top: 70px;"><div class="t">Foraging</div><div class="cost">20 🎭</div><div class="unlocks">Gather policy</div></div>
+      <div class="node done" style="left: 40px; top: 180px;"><div class="t">Mysticism</div><div class="cost">40 🎭</div><div class="unlocks">Holy Site</div></div>
+      <div class="node done" style="left: 40px; top: 290px;"><div class="t">Craftsmanship</div><div class="cost">40 🎭</div><div class="unlocks">Builder policy</div></div>
+
+      <div class="node done" style="left: 220px; top: 70px;"><div class="t">Early Empire</div><div class="cost">60 🎭</div><div class="unlocks">Settler +50%</div></div>
+      <div class="node active" style="left: 220px; top: 180px;"><div class="t">Code of Laws</div><div class="cost">54 / 80 🎭</div><div class="unlocks">Govt: Autocracy · Classical Rep.</div><div class="bar" style="margin-top:4px;"><span style="width:68%"></span></div></div>
+      <div class="node done" style="left: 220px; top: 290px;"><div class="t">Military Trad.</div><div class="cost">60 🎭</div><div class="unlocks">Strategos policy</div></div>
+
+      <div class="node" style="left: 400px; top: 70px;"><div class="t">State Workforce</div><div class="cost">100 🎭</div><div class="unlocks">Urban Planning</div></div>
+      <div class="node" style="left: 400px; top: 180px;"><div class="t">Political Phil.</div><div class="cost">100 🎭</div><div class="unlocks">+Govt slots</div></div>
+      <div class="node" style="left: 400px; top: 290px;"><div class="t">Drama & Poetry</div><div class="cost">100 🎭</div><div class="unlocks">Theatre Sq.</div></div>
+
+      <div class="node locked" style="left: 580px; top: 130px;"><div class="t">Games & Recreation</div><div class="cost">200 🎭</div><div class="unlocks">Entertainment</div></div>
+      <div class="node locked" style="left: 580px; top: 240px;"><div class="t">Recorded History</div><div class="cost">200 🎭</div><div class="unlocks">+Govt slots</div></div>
+
+      <div class="node locked" style="left: 760px; top: 180px;"><div class="t">Medieval Faires</div><div class="cost">300 🎭</div><div class="unlocks">Trade +2 G</div></div>
+
+      <!-- edges -->
+      <div class="edge done"   style="left: 180px; top: 95px; width: 40px;"></div>
+      <div class="edge active" style="left: 180px; top: 205px; width: 40px;"></div>
+      <div class="edge done"   style="left: 180px; top: 315px; width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 95px; width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 205px; width: 40px;"></div>
+      <div class="edge locked" style="left: 360px; top: 315px; width: 40px;"></div>
+    </div>
+  </div>
+
+  <!-- policy slots strip -->
+  <div class="dock-bottom" style="bottom: 8px; height: auto; padding: 0;">
+    <div class="panel box" style="flex:1;">
+      <h3>Active government — Chiefdom <span class="tag">2 mil · 2 eco · 1 dip · 0 wild</span></h3>
+      <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+        <div class="box" style="padding:6px 8px;"><div class="label">Military</div><div class="v">Discipline</div><div class="k muted">+5 vs barb</div></div>
+        <div class="box" style="padding:6px 8px;"><div class="label">Military</div><div class="v">Survey</div><div class="k muted">+1 sight</div></div>
+        <div class="box" style="padding:6px 8px;"><div class="label">Economic</div><div class="v">God King</div><div class="k muted">+1 🔬 +1 †</div></div>
+        <div class="box" style="padding:6px 8px;"><div class="label">Economic</div><div class="v">Ilkum</div><div class="k muted">Builder +30%</div></div>
+        <div class="box" style="padding:6px 8px;"><div class="label">Diplomatic</div><div class="v">Diplomatic League</div><div class="k muted">+1 envoy</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 5: UNIT / ARMY                             -->
+<!-- ================================================= -->
+<div class="screen" id="scr-unit" data-screen="unit" data-screen-label="05 Unit/Army">
+  <div class="unit-grid">
+
+    <!-- left: unit list — populated by renderUnitScreen() from unit-data.json -->
+    <div class="panel box heavy" style="overflow:auto;">
+      <h3>Units <span class="tag" id="unit-screen-count">—</span></h3>
+      <div style="display:flex; gap:4px; margin-bottom:6px;" id="unit-filter-chips">
+        <span class="chip filled" data-filter="all">all</span>
+        <span class="chip" data-filter="military">military</span>
+        <span class="chip" data-filter="civilian">civilian</span>
+        <span class="chip" data-filter="naval">naval</span>
+        <span class="chip" data-filter="idle">idle</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px;" id="unit-screen-list"></div>
+    </div>
+
+    <!-- center: unit detail — populated by renderUnitScreenDetail() -->
+    <div class="panel box heavy" style="overflow:auto;" id="unit-screen-detail">
+      <div class="k muted" style="padding:20px; text-align:center;">Select a unit from the list</div>
+    </div>
+
+    <!-- right: army + combat preview — populated by renderArmyPanel() from army-data.json -->
+    <div class="panel box" style="overflow:auto;" id="army-panel">
+      <div class="k muted" style="padding:20px; text-align:center;">Loading…</div>
+    </div>
+
+  </div>
+  <!-- ANNOTATION: 3-col unit screen: list · detail · army/combat -->
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 6: DIPLOMACY                               -->
+<!-- ================================================= -->
+<div class="screen" id="scr-dipl" data-screen="dipl">
+  <div class="dipl-grid">
+
+    <!-- LEFT: civ list -->
+    <div class="panel box heavy" style="overflow:auto;">
+      <h3>Known civs <span class="tag">6</span></h3>
+      <div class="civ-row active"><div class="portrait ph">C1</div><div style="flex:1;"><div class="v">Caria</div><div class="k muted">Friendly · +12</div></div></div>
+      <div class="civ-row"><div class="portrait ph">C2</div><div style="flex:1;"><div class="v">Nubia</div><div class="k muted">Neutral · 0</div></div></div>
+      <div class="civ-row"><div class="portrait ph">C3</div><div style="flex:1;"><div class="v">Persia</div><div class="k muted">Unfriendly · −8</div></div></div>
+      <div class="civ-row"><div class="portrait ph">C4</div><div style="flex:1;"><div class="v">Gaul</div><div class="k muted">At War · −30</div></div></div>
+      <div class="civ-row"><div class="portrait ph">C5</div><div style="flex:1;"><div class="v">Scythia</div><div class="k muted">Neutral · +2</div></div></div>
+      <div class="civ-row"><div class="portrait ph">C6</div><div style="flex:1;"><div class="v">Phoenicia</div><div class="k muted">Friendly · +18</div></div></div>
+
+      <div class="hr dashed"></div>
+      <h3 style="border:none;">City-States</h3>
+      <div class="civ-row"><div class="portrait ph">CS</div><div style="flex:1;"><div class="v">Kandy</div><div class="k muted">Suzerain · 6 env</div></div></div>
+      <div class="civ-row"><div class="portrait ph">CS</div><div style="flex:1;"><div class="v">Akkad</div><div class="k muted">2 env</div></div></div>
+    </div>
+
+    <!-- CENTER: active civ -->
+    <div class="panel box heavy" style="overflow:auto;">
+      <h3>Caria <span class="tag">Ruler: Artemisia</span></h3>
+      <div style="display:grid; grid-template-columns: 110px 1fr; gap:12px;">
+        <div class="ph" style="height:120px;">leader<br/>portrait</div>
+        <div class="kv">
+          <span class="k">Relation</span><span class="v">Friendly (+12)</span>
+          <span class="k">Agenda</span><span class="v">Sea-farer</span>
+          <span class="k">Govt</span><span class="v">Classical Rep.</span>
+          <span class="k">Cities</span><span class="v">5 known</span>
+          <span class="k">Military</span><span class="v">Est. weak</span>
+          <span class="k">Science</span><span class="v">Est. avg</span>
+          <span class="k">Trade routes</span><span class="v">2 to us (+6G)</span>
+          <span class="k">Treaties</span><span class="v">Open borders · Research agr.</span>
+        </div>
+      </div>
+
+      <div class="hr dashed"></div>
+      <div class="label">Modifiers</div>
+      <div style="display:flex; flex-direction:column; gap: 3px; margin-top: 4px;">
+        <div class="notif good">+8 Delegation received</div>
+        <div class="notif good">+6 Trade partner</div>
+        <div class="notif good">+4 Shared religion</div>
+        <div class="notif bad">−6 Different government</div>
+      </div>
+
+      <div class="hr dashed"></div>
+      <div class="label">Actions</div>
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
+        <button class="btn">Make deal</button>
+        <button class="btn">Alliance</button>
+        <button class="btn">Declare War</button>
+        <button class="btn">Denounce</button>
+        <button class="btn">Open borders</button>
+        <button class="btn">Research agr.</button>
+        <button class="btn">Joint war</button>
+        <button class="btn">Gift unit</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: deal exchange -->
+    <div class="panel box" style="overflow:auto;">
+      <h3>Exchange <span class="tag">draft deal</span></h3>
+      <div class="exch-table">
+        <div>
+          <div class="label">You give</div>
+          <div class="exch-col">
+            <div class="chip filled">−50 G</div>
+            <div class="chip filled" style="margin-top:4px;">−2 G/t (10t)</div>
+            <div class="chip filled" style="margin-top:4px;">Horses (str.)</div>
+            <div class="box dashed" style="margin-top: 8px; padding: 4px 6px; color: var(--ink-muted); font-size: 10px;">+ add item</div>
+          </div>
+        </div>
+        <div style="text-align:center; font-family: var(--hand); font-size: 26px;">⇌</div>
+        <div>
+          <div class="label">They give</div>
+          <div class="exch-col">
+            <div class="chip filled">Iron (str.)</div>
+            <div class="chip filled" style="margin-top:4px;">+1 Envoy</div>
+            <div class="box dashed" style="margin-top: 8px; padding: 4px 6px; color: var(--ink-muted); font-size: 10px;">+ add item</div>
+          </div>
+        </div>
+      </div>
+      <div class="hr dashed"></div>
+      <div class="kv">
+        <span class="k">Balance</span><span class="v">Roughly equal</span>
+        <span class="k">Their mood</span><span class="v">Willing</span>
+        <span class="k">Duration</span><span class="v">10 turns</span>
+      </div>
+      <div style="display:flex; gap: 6px; margin-top: 8px;">
+        <button class="btn primary" style="flex:1;">Propose</button>
+        <button class="btn" style="flex:1;">Clear</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 7: EMPIRE OVERVIEW                         -->
+<!-- ================================================= -->
+<div class="screen" id="scr-overview" data-screen="overview">
+  <div class="overview-grid">
+
+    <!-- Top strip: summary stats -->
+    <div class="span-3 panel box heavy"><div class="label">Cities</div><div class="v" style="font-size:22px;">5</div><div class="k muted">2 happy · 2 content · 1 unhappy</div></div>
+    <div class="span-3 panel box heavy"><div class="label">Population</div><div class="v" style="font-size:22px;">27</div><div class="k muted">+2.1/turn avg</div></div>
+    <div class="span-3 panel box heavy"><div class="label">Treasury</div><div class="v" style="font-size:22px;">1,284 G</div><div class="k muted">+14/t · 92 turns to bankrupt</div></div>
+    <div class="span-3 panel box heavy"><div class="label">Military</div><div class="v" style="font-size:22px;">12 units</div><div class="k muted">str index 148 · rank 3/6</div></div>
+
+    <!-- Main table: cities -->
+    <div class="span-8 panel box" style="overflow:auto;">
+      <h3>Cities <span class="tag">sortable</span></h3>
+      <table class="data">
+        <thead><tr>
+          <th>City</th><th>Pop</th><th>Prod</th><th class="num">F</th><th class="num">P</th><th class="num">G</th><th class="num">🔬</th><th class="num">🎭</th><th class="num">†</th><th>Housing</th><th>Amen</th><th>Loyalty</th>
+        </tr></thead>
+        <tbody>
+          <tr class="selected"><td>Alexandria ★</td><td>7</td><td>Library (4t)</td><td class="num">+12</td><td class="num">+14</td><td class="num">+6</td><td class="num">+11</td><td class="num">+7</td><td class="num">+2</td><td>9/11</td><td>+2</td><td>100%</td></tr>
+          <tr><td>Memphis</td><td>5</td><td>Walls (3t)</td><td class="num">+6</td><td class="num">+9</td><td class="num">+4</td><td class="num">+5</td><td class="num">+2</td><td class="num">+1</td><td>7/8</td><td>0</td><td>98%</td></tr>
+          <tr><td>Thebes</td><td>6</td><td>Market (2t)</td><td class="num">+8</td><td class="num">+7</td><td class="num">+8</td><td class="num">+6</td><td class="num">+4</td><td class="num">+1</td><td>8/9</td><td>+1</td><td>100%</td></tr>
+          <tr><td>Giza</td><td>4</td><td>Pyramids (18t)</td><td class="num">+4</td><td class="num">+11</td><td class="num">+2</td><td class="num">+3</td><td class="num">+2</td><td class="num">+4</td><td class="num">6/7</td><td>0</td><td>92%</td></tr>
+          <tr><td>Aswan</td><td>5</td><td>Builder (1t)</td><td class="num">+7</td><td class="num">+5</td><td class="num">+3</td><td class="num">+4</td><td class="num">+2</td><td class="num">0</td><td>7/8</td><td>−1</td><td>88% ⚠</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Right column: resources + yields chart -->
+    <div class="span-4" style="display:flex; flex-direction:column; gap:8px;">
+      <div class="panel box">
+        <h3>Strategic resources</h3>
+        <div class="kv">
+          <span class="k">Iron</span><span class="v">3 (+1/t)</span>
+          <span class="k">Horses</span><span class="v">2 (+1/t)</span>
+          <span class="k">Niter</span><span class="v">0 (locked)</span>
+          <span class="k">Coal</span><span class="v">0 (locked)</span>
+        </div>
+        <div class="hr dashed"></div>
+        <h3 style="border:none;">Luxuries</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+          <span class="chip">Pearls</span><span class="chip">Wine</span><span class="chip">Marble</span><span class="chip">Silk (trade)</span>
+        </div>
+      </div>
+      <div class="panel box" style="flex:1;">
+        <h3>Yields over time</h3>
+        <!-- low-fi SVG chart -->
+        <svg viewBox="0 0 300 120" style="width:100%; height: 120px;">
+          <rect x="0" y="0" width="300" height="120" fill="transparent" stroke="none"/>
+          <g stroke="#9a9a9a" stroke-dasharray="3,3" stroke-width="1">
+            <line x1="0" y1="30" x2="300" y2="30"/>
+            <line x1="0" y1="60" x2="300" y2="60"/>
+            <line x1="0" y1="90" x2="300" y2="90"/>
+          </g>
+          <polyline fill="none" stroke="#1a1a1a" stroke-width="1.5"
+            points="0,90 30,82 60,78 90,70 120,65 150,55 180,50 210,44 240,38 270,32 300,28"/>
+          <polyline fill="none" stroke="#2b4a6b" stroke-width="1.5"
+            points="0,100 30,95 60,85 90,82 120,70 150,68 180,55 210,52 240,42 270,38 300,30"/>
+          <polyline fill="none" stroke="#6b6b6b" stroke-width="1.5" stroke-dasharray="4,3"
+            points="0,95 30,92 60,88 90,80 120,75 150,72 180,65 210,60 240,55 270,50 300,48"/>
+        </svg>
+        <div class="k muted" style="font-size:9px;">— Science  — Culture  ⋯ Gold  ·  T100 → T142</div>
+      </div>
+    </div>
+
+    <!-- Bottom: trade routes + religion -->
+    <div class="span-6 panel box">
+      <h3>Trade routes <span class="tag">3 / 5</span></h3>
+      <table class="data">
+        <thead><tr><th>From</th><th>To</th><th>Yields</th><th>Turns</th></tr></thead>
+        <tbody>
+          <tr><td>Alexandria</td><td>Caria · Halicarnassus</td><td>+3G +1F +1🔬</td><td>12/21</td></tr>
+          <tr><td>Thebes</td><td>Phoenicia · Tyre</td><td>+4G +2🎭</td><td>5/18</td></tr>
+          <tr><td>Memphis</td><td>Alexandria (int.)</td><td>+2F +1P</td><td>ongoing</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="span-6 panel box">
+      <h3>Religion <span class="tag">not founded</span></h3>
+      <div class="kv">
+        <span class="k">Pantheon</span><span class="v">God of the Sea (+1 F coast)</span>
+        <span class="k">Religion</span><span class="v">— (req. Great Prophet)</span>
+        <span class="k">Prophet progress</span><span class="v">2 / 4 🪄</span>
+        <span class="k">Foreign relig.</span><span class="v">Hellenism in Memphis (12%)</span>
+      </div>
+    </div>
+  </div>
+  <!-- ANNOTATION: overview = information-dense dashboard, 12-col grid -->
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 9: GOVERNMENT / POLICIES                   -->
+<!-- ================================================= -->
+<div class="screen" id="scr-govt" data-screen="govt" data-screen-label="09 Government">
+
+  <div class="govt-grid">
+
+    <!-- ===== HEADER: govt name + slot counts + change button ===== -->
+    <div class="govt-header">
+      <div class="govt-info box heavy" id="govt-info-bar">
+        <div>
+          <div class="gi-era" id="govt-era">Ancient</div>
+          <div class="gi-name" id="govt-name">Chiefdom</div>
+        </div>
+        <div class="gi-bonus" id="govt-bonus">Legacy: +1 Envoy when you earn a Civic</div>
+        <div class="govt-slot-bar" id="govt-slot-bar">
+          <div class="slot-badge mil"><span class="sb-count" id="sb-mil">2</span><span class="sb-label">Military</span></div>
+          <div class="slot-badge eco"><span class="sb-count" id="sb-eco">2</span><span class="sb-label">Economic</span></div>
+          <div class="slot-badge dip"><span class="sb-count" id="sb-dip">1</span><span class="sb-label">Diplomatic</span></div>
+          <div class="slot-badge wc"><span class="sb-count" id="sb-wc">0</span><span class="sb-label">Wildcard</span></div>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:6px; padding-right:6px;">
+          <button class="btn" id="govt-change-btn">Change govt</button>
+          <button class="btn primary" id="govt-confirm-btn">Confirm policies</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LEFT: active policy slots ===== -->
+    <div class="panel box heavy policy-slots-panel" id="policy-slots-panel">
+      <!-- populated by renderGovernmentPolicies() -->
+    </div>
+
+    <!-- ===== RIGHT: available policy catalogue ===== -->
+    <div class="panel box policy-catalogue" id="policy-catalogue">
+      <!-- populated by renderGovernmentPolicies() -->
+    </div>
+
+  </div>
+
+  <!-- Government change modal — hidden by default -->
+  <div id="govt-change-modal" style="display:none; position:absolute; inset:0; background:rgba(245,242,234,.92); z-index:40; display:none; align-items:center; justify-content:center;">
+    <div class="box heavy" style="width:580px; padding:16px; background:var(--paper);">
+      <h3 style="margin:0 0 10px;">Change Government <span class="tag">anarchy: 1 turn</span></h3>
+      <div id="govt-options-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <div style="display:flex; gap:8px; margin-top:12px; justify-content:flex-end;">
+        <button class="btn" id="govt-modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================= -->
+<!-- SCREEN 8: VICTORY                                 -->
+<!-- ================================================= -->
+<div class="screen" id="scr-victory" data-screen="victory">
+  <div class="vic-grid">
+
+    <!-- Top strip summary -->
+    <div style="grid-column: 1 / -1;" class="panel box heavy">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="label">Victory progress · Turn 142 of 500</div>
+          <div class="v" style="font-size: 18px;">Leading: Science (68%) — you</div>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center;">
+          <span class="chip">Score: 1,284</span>
+          <span class="chip">Rank: 2 / 6</span>
+          <span class="chip accent">Projected winner: You</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 victory columns -->
+    <div class="vic-col box heavy">
+      <h3>Science</h3>
+      <div class="ring" style="box-shadow: inset 0 0 0 6px var(--accent);">68%</div>
+      <div class="kv">
+        <span class="k">Req</span><span class="v">Space race</span>
+        <span class="k">Step 1</span><span class="v">✓ Rocketry</span>
+        <span class="k">Step 2</span><span class="v">… Satellites</span>
+        <span class="k">Step 3</span><span class="v">— Moon Landing</span>
+        <span class="k">Step 4</span><span class="v">— Mars</span>
+      </div>
+      <div class="bar accent"><span style="width:68%"></span></div>
+    </div>
+
+    <div class="vic-col box">
+      <h3>Culture</h3>
+      <div class="ring">41%</div>
+      <div class="kv">
+        <span class="k">Tourists</span><span class="v">14 / 34</span>
+        <span class="k">Wonders</span><span class="v">2 built</span>
+        <span class="k">Works</span><span class="v">6 great</span>
+      </div>
+      <div class="bar"><span style="width:41%"></span></div>
+    </div>
+
+    <div class="vic-col box">
+      <h3>Domination</h3>
+      <div class="ring">25%</div>
+      <div class="kv">
+        <span class="k">Capitals</span><span class="v">1 / 6</span>
+        <span class="k">Own cap</span><span class="v">✓ Alexandria</span>
+        <span class="k">At war</span><span class="v">Gaul</span>
+      </div>
+      <div class="bar"><span style="width:25%"></span></div>
+    </div>
+
+    <div class="vic-col box">
+      <h3>Religion</h3>
+      <div class="ring">0%</div>
+      <div class="kv">
+        <span class="k">Religion</span><span class="v">not founded</span>
+        <span class="k">Prophet</span><span class="v">2 / 4</span>
+      </div>
+      <div class="bar"><span style="width:0%"></span></div>
+    </div>
+
+    <div class="vic-col box">
+      <h3>Diplomatic</h3>
+      <div class="ring">18%</div>
+      <div class="kv">
+        <span class="k">DVP</span><span class="v">3 / 20</span>
+        <span class="k">Envoys</span><span class="v">9 total</span>
+        <span class="k">Suzerain</span><span class="v">1 city-st.</span>
+      </div>
+      <div class="bar"><span style="width:18%"></span></div>
+    </div>
+
+    <!-- Bottom: leaderboard -->
+    <div style="grid-column: 1 / -1;" class="panel box">
+      <h3>Leaderboard</h3>
+      <div class="rank-list">
+        <div class="row me"><span>1</span><span>You (Egypt) — Sci 68 · Cul 41 · Dom 25 · Rel 0 · Dip 18</span><span class="num">1,284</span></div>
+        <div class="row"><span>2</span><span>Caria — Sci 52 · Cul 48 · Dom 10 · Rel 22 · Dip 34</span><span class="num">1,102</span></div>
+        <div class="row"><span>3</span><span>Phoenicia — Sci 40 · Cul 30 · Dom 12 · Rel 0 · Dip 44</span><span class="num">988</span></div>
+        <div class="row"><span>4</span><span>Persia — Sci 45 · Cul 22 · Dom 50 · Rel 15 · Dip 10</span><span class="num">940</span></div>
+        <div class="row"><span>5</span><span>Nubia — Sci 30 · Cul 28 · Dom 20 · Rel 60 · Dip 12</span><span class="num">812</span></div>
+        <div class="row"><span>6</span><span>Gaul — Sci 25 · Cul 10 · Dom 55 · Rel 0 · Dip 4</span><span class="num">640</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /.stage -->
+
+  <div class="k muted" style="font-size: 10px;">Use the top tabs to switch screens. Click a hex on the Main HUD to select.</div>
+</div>
+
+<script>
+// Tabs + tiny interactions
+
+const SCREENS = [
+  { id: "hud",      label: "Main HUD" },
+  { id: "city",     label: "City" },
+  { id: "tech",     label: "Tech Tree" },
+  { id: "civics",   label: "Civics" },
+  { id: "unit",     label: "Unit/Army" },
+  { id: "dipl",     label: "Diplomacy" },
+  { id: "overview", label: "Empire Overview" },
+  { id: "victory",  label: "Victory" },
+  { id: "govt",     label: "Government" },
+];
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.dataset.screen === id));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === id));
+  try { localStorage.setItem("wf:screen", id); } catch(e) {}
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  // build tabs
+  const tabs = document.getElementById("tabs");
+  SCREENS.forEach(s => {
+    const el = document.createElement("div");
+    el.className = "tab"; el.dataset.tab = s.id; el.textContent = s.label;
+    el.onclick = () => showScreen(s.id);
+    tabs.appendChild(el);
+  });
+
+  // restore screen
+  const saved = (() => { try { return localStorage.getItem("wf:screen"); } catch(e) { return null; } })();
+  showScreen(saved && SCREENS.find(s=>s.id===saved) ? saved : "hud");
+
+  // ===== HEX WORLD =====
+  initHexWorld();
+  loadPlayerState();
+  loadUnitData();
+  loadCityData();
+  loadCityTiles();
+  initNotifications();
+  initDrawer();
+  loadTechCivicData();
+  loadTurnQueue();
+  loadDiplomacy();
+  loadEmpireOverview();
+  loadVictory();
+  loadGovernmentPolicies();
+  loadArmyData();
+  loadMapOverlays();
+});
+
+/* =========================================================
+   HEX WORLD — JSON-driven
+   - Data shape: see world-snapshot.json (schema: world-snapshot/v1)
+   - Tiles are sparse; missing tiles render as "undiscovered" (distinct from fog)
+   - world.wrapX → cylindrical E↔W; world.wrapY=false → clamped poles (oob past)
+   - Edge kinds come straight from tile.edges, no heuristics
+   ========================================================= */
+
+const HEX_R = 46;
+const SQRT3 = Math.sqrt(3);
+const DIRS = ["NE","E","SE","SW","W","NW"]; // for debug only
+const EDGE_KEYS = ["N","NE","SE","S","SW","NW"]; // pointy-top edges
+
+// world state — filled from JSON
+let WORLD = null;       // { width, height, wrapX, wrapY, ... }
+let TILES = new Map();  // key = `${wq},${r}` -> tile
+let cam = { x: 14, y: 6, zoom: 1.0, sel: { q: 14, r: 6 } };
+let dragState = null;
+
+async function loadWorld(url = "world-snapshot.json") {
+  // Real API: fetch(url).then(r => r.json())
+  // For the mock we fetch the local JSON; if that fails (file://), fall back to inline copy.
+  let data;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("not ok");
+    data = await res.json();
+  } catch(e) {
+    data = { world: { width:80, height:28, wrapX:true, wrapY:false, seed:1337, turn:142 }, camera: { x:14, y:6, zoom:1.0, selection:{ q:14, r:6 } }, tiles: [] };
+  }
+  ingestWorld(data);
+}
+
+function ingestWorld(data) {
+  WORLD = data.world;
+  TILES.clear();
+  for (const t of data.tiles) {
+    const wq = ((t.q % WORLD.width) + WORLD.width) % WORLD.width;
+    // normalize: ensure edges object exists with empty arrays
+    const edges = {};
+    for (const k of EDGE_KEYS) edges[k] = (t.edges && t.edges[k]) || [];
+    TILES.set(`${wq},${t.r}`, { ...t, wq, edges });
+  }
+  if (data.camera) {
+    cam.x = data.camera.x ?? cam.x;
+    cam.y = data.camera.y ?? cam.y;
+    cam.zoom = data.camera.zoom ?? cam.zoom;
+    if (data.camera.selection) cam.sel = data.camera.selection;
+  }
+}
+
+function tileAt(q, r) {
+  if (!WORLD) return { oob: true, q, r };
+  const wq = ((q % WORLD.width) + WORLD.width) % WORLD.width;
+  if (!WORLD.wrapY && (r < 0 || r >= WORLD.height)) return { oob: true, q, r, wq };
+  const cached = TILES.get(`${wq},${r}`);
+  if (cached) return { ...cached, q, r };
+  // missing from snapshot → undiscovered
+  return { unloaded: true, q, r, wq, edges: { N:[],NE:[],SE:[],S:[],SW:[],NW:[] } };
+}
+
+// Pointy-top axial → pixel
+function hexCenter(q, r, R) {
+  const w = SQRT3 * R;
+  const h = 1.5 * R;
+  return { x: (q + (r & 1) * 0.5) * w, y: r * h, w, h };
+}
+
+function hexPolygonPoints(cx, cy, R) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 180) * (-90 + 60 * i);
+    pts.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]);
+  }
+  return pts;
+}
+
+// Vertex indices for each named edge (pointy-top, starting top vertex = 0)
+// Verts (i): 0=top, 1=upper-right, 2=lower-right, 3=bottom, 4=lower-left, 5=upper-left
+const EDGE_VERT_PAIRS = {
+  NE: [0, 1],
+  SE: [1, 2],
+  S:  [2, 3],   // aka "SSE" / bottom
+  SW: [3, 4],
+  NW: [4, 5],
+  N:  [5, 0],
+};
+
+function render() {
+  const field = document.getElementById("hexfield");
+  const svg   = document.getElementById("hex-svg");
+  const labelLayer = document.getElementById("hex-labels");
+  if (!field || !svg || !WORLD) return;
+
+  const W = field.clientWidth;
+  const H = field.clientHeight;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  const R = HEX_R * cam.zoom;
+  const hw = SQRT3 * R;
+  const hh = 1.5 * R;
+
+  const tilesX = Math.ceil(W / hw) + 4;
+  const tilesY = Math.ceil(H / hh) + 4;
+  const q0 = Math.floor(cam.x - tilesX / 2);
+  const q1 = Math.ceil(cam.x + tilesX / 2);
+  const r0 = Math.floor(cam.y - tilesY / 2);
+  const r1 = Math.ceil(cam.y + tilesY / 2);
+
+  const defs = svg.querySelector("defs");
+  while (svg.lastChild && svg.lastChild !== defs) svg.removeChild(svg.lastChild);
+  labelLayer.innerHTML = "";
+
+  const { x: cx0, y: cy0 } = hexCenter(cam.x, cam.y, R);
+  const offX = W / 2 - cx0;
+  const offY = H / 2 - cy0;
+  const ns = "http://www.w3.org/2000/svg";
+
+  for (let r = r0; r <= r1; r++) {
+    for (let q = q0; q <= q1; q++) {
+      const t = tileAt(q, r);
+      const { x, y } = hexCenter(q, r, R);
+      const cx = x + offX, cy = y + offY;
+      const pts = hexPolygonPoints(cx, cy, R - 1);
+      const poly = document.createElementNS(ns, "polygon");
+      poly.setAttribute("points", pts.map(p => p.join(",")).join(" "));
+      let cls = "hex-poly";
+      if (t.oob)                cls += " oob";
+      else if (t.unloaded)      cls += " fog";  // reuse fog style for unloaded
+      else if (t.fog)           cls += " fog";
+      else if (t.city)          cls += " city";
+      else if (t.unit)          cls += " unit";
+      else if (t.flood >= 3)    cls += " flood-3";
+      else if (t.flood === 2)   cls += " flood-2";
+      if (!t.oob && !t.unloaded && cam.sel.q === t.wq && cam.sel.r === r) cls += " selected";
+      poly.setAttribute("class", cls);
+      poly.dataset.q = t.wq; poly.dataset.r = r;
+      poly.addEventListener("click", (e) => {
+        if (dragState && dragState.moved) return;
+        if (t.oob || t.unloaded) return;
+        cam.sel = { q: t.wq, r };
+        render();
+        // open Tile drawer tab and populate it
+        onTileClick(t, e.clientX, e.clientY);
+      });
+      svg.appendChild(poly);
+
+      // edges — straight from data
+      if (!t.oob && !t.unloaded && t.edges) {
+        for (const ek of EDGE_KEYS) {
+          const kinds = t.edges[ek] || [];
+          if (kinds.length === 0) continue;
+          const [vi1, vi2] = EDGE_VERT_PAIRS[ek];
+          const [px1, py1] = pts[vi1];
+          const [px2, py2] = pts[vi2];
+          // if multiple kinds, draw each (in order: border → coast → cliff → river → wonder for z)
+          const order = ["border","coast","cliff","river","wonder"];
+          const sorted = [...kinds].sort((a,b) => order.indexOf(a) - order.indexOf(b));
+          for (const kind of sorted) {
+            const line = document.createElementNS(ns, "line");
+            line.setAttribute("x1", px1); line.setAttribute("y1", py1);
+            line.setAttribute("x2", px2); line.setAttribute("y2", py2);
+            line.setAttribute("class", "hex-edge " + kind);
+            svg.appendChild(line);
+          }
+        }
+      }
+
+      // labels
+      if (cam.zoom >= 0.7) {
+        const lab = document.createElement("div");
+        lab.className = "hex-label" + ((t.oob || t.unloaded || t.fog) ? " dim" : "");
+        lab.style.left = (cx - R) + "px";
+        lab.style.top  = (cy - R * 0.85) + "px";
+        lab.style.width = (R * 2) + "px";
+        lab.style.height = (R * 1.7) + "px";
+        if (t.oob) {
+          lab.innerHTML = `<div class="hl-id">r${r}</div><div class="hl-terrain">— OOB —</div><div class="hl-foot">past pole</div>`;
+        } else if (t.unloaded) {
+          lab.innerHTML = `<div class="hl-id">${t.wq},${r}</div><div class="hl-terrain">undiscovered</div>`;
+        } else if (t.fog) {
+          lab.innerHTML = `<div class="hl-id">${t.wq},${r}</div><div class="hl-terrain">FOG</div>`;
+        } else {
+          const ys = t.yields || {};
+          const yieldStr = [ys.f?`${ys.f}F`:"", ys.p?`${ys.p}P`:"", ys.g?`${ys.g}G`:""].filter(Boolean).join(" ");
+          lab.innerHTML = `
+            <div class="hl-id">${t.wq},${r}</div>
+            ${t.city ? `<div class="hl-city">${t.city.name}</div>` : `<div class="hl-terrain">${t.terrain || "—"}</div>`}
+            ${yieldStr ? `<div class="hl-yields">${yieldStr}</div>` : ""}
+            ${t.resource ? `<div class="hl-res">${t.resource}</div>` : ""}
+            ${t.unit ? `<div class="hl-foot">◆ ${t.unit.kind}${t.unit.hp ? " " + t.unit.hp : ""}</div>` : ""}
+            ${t.flood >= 2 && !t.unit ? `<div class="hl-flood">flood ${t.flood}</div>` : ""}
+            ${t.wonder ? `<div class="hl-res">★ ${t.wonder.name}</div>` : ""}
+          `;
+        }
+        labelLayer.appendChild(lab);
+      }
+    }
+  }
+
+  document.getElementById("cam-x").textContent = Math.round(cam.x);
+  document.getElementById("cam-y").textContent = Math.round(cam.y);
+  document.getElementById("cam-z").textContent = cam.zoom.toFixed(2);
+}
+
+function initHexWorld() {
+  const field = document.getElementById("hexfield");
+  if (!field) return;
+
+  field.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    field.setPointerCapture(e.pointerId);
+    dragState = { x: e.clientX, y: e.clientY, camX: cam.x, camY: cam.y, moved: false };
+    field.classList.add("dragging");
+  });
+  field.addEventListener("pointermove", (e) => {
+    if (!dragState) return;
+    const dx = e.clientX - dragState.x;
+    const dy = e.clientY - dragState.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) dragState.moved = true;
+    const R = HEX_R * cam.zoom;
+    const hw = SQRT3 * R, hh = 1.5 * R;
+    cam.x = dragState.camX - dx / hw;
+    const yMax = WORLD ? WORLD.height + 2 : 30;
+    cam.y = Math.max(-3, Math.min(yMax, dragState.camY - dy / hh));
+    render();
+  });
+  const endDrag = () => {
+    if (!dragState) return;
+    setTimeout(() => { dragState = null; field.classList.remove("dragging"); }, 0);
+  };
+  field.addEventListener("pointerup", endDrag);
+  field.addEventListener("pointercancel", endDrag);
+  field.addEventListener("pointerleave", endDrag);
+
+  field.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = -Math.sign(e.deltaY) * 0.12;
+    cam.zoom = Math.max(0.45, Math.min(2.0, cam.zoom + delta));
+    render();
+  }, { passive: false });
+
+  document.getElementById("zoom-in").onclick    = () => { cam.zoom = Math.min(2.0, cam.zoom + 0.15); render(); };
+  document.getElementById("zoom-out").onclick   = () => { cam.zoom = Math.max(0.45, cam.zoom - 0.15); render(); };
+  document.getElementById("zoom-reset").onclick = () => { cam.zoom = 1.0; cam.x = 14; cam.y = 6; render(); };
+
+  window.addEventListener("keydown", (e) => {
+    if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    const step = 1.5;
+    const yMax = WORLD ? WORLD.height + 2 : 30;
+    if (e.key === "ArrowLeft")  { cam.x -= step; render(); }
+    if (e.key === "ArrowRight") { cam.x += step; render(); }
+    if (e.key === "ArrowUp")    { cam.y = Math.max(-3, cam.y - step); render(); }
+    if (e.key === "ArrowDown")  { cam.y = Math.min(yMax, cam.y + step); render(); }
+  });
+
+  window.addEventListener("resize", render);
+
+  loadWorld().then(() => {
+    requestAnimationFrame(render);
+    setTimeout(render, 100);
+  });
+}
+// Notifications fallback — mirrors notifications.json (used when fetch() fails e.g. file:// origin)
+
+// ===== NOTIFICATIONS (JSON-driven) =====
+// Schema: notifications/v1 — see notifications.json
+let NOTIFS = [];
+
+async function loadNotifications(url = "notifications.json") {
+  let data;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("not ok");
+    data = await res.json();
+  } catch(e) {
+    data = { notifications: [] };
+  }
+  NOTIFS = (data.notifications || []).slice();
+  renderNotifications();
+}
+
+function renderNotifications() {
+  const list = document.getElementById("notif-list");
+  const count = document.getElementById("notif-count");
+  if (!list) return;
+  count.textContent = NOTIFS.length + (NOTIFS.length === 1 ? " new" : " new");
+  if (NOTIFS.length === 0) {
+    list.innerHTML = `<div class="k muted" style="padding:10px; text-align:center;">— all caught up —</div>`;
+    return;
+  }
+  list.innerHTML = "";
+  NOTIFS.forEach(n => {
+    const el = document.createElement("div");
+    el.className = "notif " + (n.kind || "");
+    const gotoLabel = n.target
+      ? (n.target.q !== undefined ? `→ ${n.target.q},${n.target.r}` : `→ ${n.target.screen}`)
+      : "—";
+    el.innerHTML = `
+      <div class="body">
+        <div class="t">${n.title}</div>
+        <div class="d">${n.desc}</div>
+      </div>
+      <button class="goto ${n.target ? "" : "disabled"}" data-id="${n.id}">${gotoLabel}</button>
+    `;
+    list.appendChild(el);
+  });
+  list.querySelectorAll(".goto").forEach(btn => {
+    btn.onclick = () => {
+      const n = NOTIFS.find(x => x.id === btn.dataset.id);
+      if (!n || !n.target) return;
+      if (n.target.screen && n.target.screen !== "hud") {
+        showScreen(n.target.screen);
+      } else if (n.target.q !== undefined) {
+        showScreen("hud");
+        if (typeof cam !== "undefined") {
+          cam.x = n.target.q; cam.y = n.target.r; cam.sel = { q: n.target.q, r: n.target.r };
+          if (typeof render === "function") render();
+        }
+      }
+      // dismiss after navigating
+      NOTIFS = NOTIFS.filter(x => x.id !== n.id);
+      renderNotifications();
+    };
+  });
+}
+
+function initNotifications() {
+  const clearBtn = document.getElementById("notif-clear");
+  if (clearBtn) clearBtn.onclick = () => { NOTIFS = []; renderNotifications(); };
+  loadNotifications();
+}
+
+// ===== TECH / CIVIC =====
+// Data is loaded from tech-tree.json and civics-tree.json.
+// The tree-canvas nodes in the HTML are decorative fixed layouts; the drawer lists
+// (research / civics panes) are fully driven by these runtime arrays.
+// Schema: tech-tree/v1  →  tech-tree.json
+//         civics-tree/v1 → civics-tree.json
+
+window.TECH_DATA = [];
+window.CIVIC_DATA = [];
+window.RESEARCH_QUEUE = [];
+window.CIVIC_QUEUE = [];
+
+async function loadTechCivicData() {
+  let techData, civicData;
+  try { const r = await fetch("tech-tree.json");   if (!r.ok) throw 0; techData  = await r.json(); } catch(e) { techData  = null; }
+  try { const r = await fetch("civics-tree.json"); if (!r.ok) throw 0; civicData = await r.json(); } catch(e) { civicData = null; }
+
+  if (techData) {
+    window.TECH_DATA = techData.techs || [];
+    window.RESEARCH_QUEUE = (techData.research_queue || []).slice();
+  }
+  if (civicData) {
+    window.CIVIC_DATA = civicData.civics || [];
+    window.CIVIC_QUEUE = (civicData.civic_queue || []).slice();
+    // patch civics screen header from JSON
+    const govt = civicData.government;
+    if (govt) {
+      const s = govt.slots;
+      document.querySelectorAll("#scr-civics .res-bar .turnpill .v").forEach(el => { el.textContent = govt.name; });
+      document.querySelectorAll("#scr-civics .res").forEach(el => {
+        const k = el.querySelector(".k");
+        if (k && k.textContent === "POLICIES") el.querySelector(".v").textContent =
+          `${s.military} mil · ${s.economic} eco · ${s.diplomatic} dip · ${s.wildcard} wild`;
+        if (k && k.textContent === "LEGACY") el.querySelector(".v").textContent = `${civicData.legacy_unlocked} unlocked`;
+      });
+      // policy slots strip
+      const policyGrid = document.querySelector("#scr-civics .dock-bottom .panel > div[style*='grid']");
+      if (policyGrid && govt.policies) {
+        policyGrid.innerHTML = govt.policies.map(p => `
+          <div class="box" style="padding:6px 8px;">
+            <div class="label">${p.slot.charAt(0).toUpperCase()+p.slot.slice(1)}</div>
+            <div class="v">${p.name}</div>
+            <div class="k muted">${p.effect}</div>
+          </div>`).join("");
+      }
+    }
+  }
+  initTechCivicPanes();
+}
+
+function _techItemHTML(tech, queueIds, kind /* 'tech' | 'civic' */) {
+  const icon = kind === "tech" ? "🔬" : "🎭";
+  const qPos = queueIds.indexOf(tech.id);
+  let cls = "titem";
+  let badgeHTML = "";
+  if (tech.status === "current") {
+    cls += " current";
+    badgeHTML = `<div class="qpos" title="Researching">▶</div>`;
+  } else if (tech.status === "done") {
+    cls += " done";
+    badgeHTML = `<div class="qpos" title="Completed">✓</div>`;
+  } else if (tech.status === "locked") {
+    cls += " locked";
+    badgeHTML = `<div class="qpos empty" title="Locked — prerequisites missing">·</div>`;
+  } else if (qPos >= 0) {
+    cls += " queued";
+    badgeHTML = `<div class="qpos" title="Queue position ${qPos + 1}">${qPos + 1}</div>`;
+  } else {
+    badgeHTML = `<div class="qpos empty" title="Not queued">—</div>`;
+  }
+
+  // Cost/progress column
+  let costHTML = "";
+  if (tech.status === "current") {
+    const pct = Math.round((tech.progress / tech.cost) * 100);
+    costHTML = `
+      <div class="tcost">
+        <div>${tech.progress}/${tech.cost} ${icon}</div>
+        <div class="c-era">${tech.era} · ${pct}%</div>
+      </div>`;
+  } else if (tech.status === "done") {
+    costHTML = `<div class="tcost"><div>—</div><div class="c-era">${tech.era}</div></div>`;
+  } else {
+    costHTML = `<div class="tcost"><div>${tech.cost} ${icon}</div><div class="c-era">${tech.era}</div></div>`;
+  }
+
+  // Action buttons
+  let actionsHTML = "";
+  if (tech.status === "done") {
+    actionsHTML = `<div class="tactions"><button class="tbtn disabled">completed</button></div>`;
+  } else if (tech.status === "current") {
+    actionsHTML = `<div class="tactions"><button class="tbtn disabled">researching</button></div>`;
+  } else if (tech.status === "locked") {
+    actionsHTML = `<div class="tactions"><button class="tbtn disabled">locked</button></div>`;
+  } else if (qPos >= 0) {
+    actionsHTML = `
+      <div class="tactions">
+        <button class="tbtn primary" data-id="${tech.id}" data-act="now">Research now</button>
+        <button class="tbtn queued-btn" data-id="${tech.id}" data-act="dequeue">Remove #${qPos + 1}</button>
+      </div>`;
+  } else {
+    actionsHTML = `
+      <div class="tactions">
+        <button class="tbtn primary" data-id="${tech.id}" data-act="now">Research now</button>
+        <button class="tbtn" data-id="${tech.id}" data-act="enqueue">+ Queue</button>
+      </div>`;
+  }
+
+  return `
+    <div class="${cls}" data-id="${tech.id}">
+      ${badgeHTML}
+      <div class="tmain">
+        <div class="tt">${tech.name}</div>
+        <div class="td">Unlocks: ${tech.unlocks}</div>
+      </div>
+      ${costHTML}
+      ${actionsHTML}
+    </div>
+  `;
+}
+
+function renderResearchList() {
+  const list = document.getElementById("research-list");
+  const countEl = document.getElementById("research-queue-count");
+  const currentEl = document.getElementById("research-current");
+  const badge = document.getElementById("research-badge");
+  if (!list) return;
+
+  // Sort: current first, then available (era order), then locked, done at bottom
+  const order = { current: 0, available: 1, locked: 2, done: 3 };
+  const sorted = [...window.TECH_DATA].sort((a, b) => {
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    return 0;
+  });
+
+  list.innerHTML = sorted.map(t => _techItemHTML(t, window.RESEARCH_QUEUE, "tech")).join("");
+  countEl.textContent = window.RESEARCH_QUEUE.length;
+
+  const cur = window.TECH_DATA.find(t => t.status === "current");
+  if (cur) {
+    const turns = Math.ceil((cur.cost - cur.progress) / 47);
+    currentEl.textContent = `${cur.name} (${cur.progress}/${cur.cost} 🔬, ${turns}t)`;
+    badge.textContent = `→ ${cur.name.split(" ")[0]}`;
+  }
+
+  _wireTechButtons(list, window.RESEARCH_QUEUE, window.TECH_DATA, renderResearchList, "tech");
+}
+
+function renderCivicsList() {
+  const list = document.getElementById("civics-list");
+  const countEl = document.getElementById("civics-queue-count");
+  const currentEl = document.getElementById("civics-current");
+  const badge = document.getElementById("civics-badge");
+  if (!list) return;
+
+  const order = { current: 0, available: 1, locked: 2, done: 3 };
+  const sorted = [...window.CIVIC_DATA].sort((a, b) => {
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    return 0;
+  });
+
+  list.innerHTML = sorted.map(c => _techItemHTML(c, window.CIVIC_QUEUE, "civic")).join("");
+  countEl.textContent = window.CIVIC_QUEUE.length;
+
+  const cur = window.CIVIC_DATA.find(c => c.status === "current");
+  if (cur) {
+    const turns = Math.ceil((cur.cost - cur.progress) / 32);
+    currentEl.textContent = `${cur.name} (${cur.progress}/${cur.cost} 🎭, ${turns}t)`;
+    badge.textContent = `→ ${cur.name.split(" ")[0]}`;
+  }
+
+  _wireTechButtons(list, window.CIVIC_QUEUE, window.CIVIC_DATA, renderCivicsList, "civic");
+}
+
+function _wireTechButtons(list, queue, data, rerender, kind) {
+  list.querySelectorAll(".tbtn[data-act]").forEach(btn => {
+    if (btn.classList.contains("disabled")) return;
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const act = btn.dataset.act;
+      const tech = data.find(t => t.id === id);
+      if (!tech) return;
+
+      if (act === "now") {
+        // Swap current → available, put queued-now at position 0 & make current
+        const cur = data.find(t => t.status === "current");
+        if (cur) cur.status = "available";
+        // remove from queue if present
+        const idx = queue.indexOf(id);
+        if (idx >= 0) queue.splice(idx, 1);
+        tech.status = "current";
+        if (!tech.progress) tech.progress = 0;
+      } else if (act === "enqueue") {
+        if (!queue.includes(id)) queue.push(id);
+      } else if (act === "dequeue") {
+        const idx = queue.indexOf(id);
+        if (idx >= 0) queue.splice(idx, 1);
+      }
+      rerender();
+    };
+  });
+}
+
+function initTechCivicPanes() {
+  const clearR = document.getElementById("research-clear-queue");
+  if (clearR) clearR.onclick = () => { window.RESEARCH_QUEUE.length = 0; renderResearchList(); };
+  const clearC = document.getElementById("civics-clear-queue");
+  if (clearC) clearC.onclick = () => { window.CIVIC_QUEUE.length = 0; renderCivicsList(); };
+
+  const openTechTree = document.getElementById("research-open-tree");
+  if (openTechTree) openTechTree.onclick = () => { showScreen("tech"); setDrawerTab(""); };
+  const openCivTree = document.getElementById("civics-open-tree");
+  if (openCivTree) openCivTree.onclick = () => { showScreen("civics"); setDrawerTab(""); };
+
+  renderResearchList();
+  renderCivicsList();
+}
+// ===== TURN QUEUE =====
+// Schema: turn-queue/v1 — see turn-queue.json
+// Actions that must be resolved this turn. Non-skippable ones (required: true)
+// hide the skip button and block end-turn.
+let QUEUE = [];
+
+async function loadTurnQueue(url = "turn-queue.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = { items: [] }; }
+  QUEUE = (data.items || []).slice();
+  renderQueue();
+}
+
+function renderQueue() {
+  const list = document.getElementById("queue-list");
+  const count = document.getElementById("queue-count");
+  const reqCount = document.getElementById("queue-required");
+  const skipCount = document.getElementById("queue-skippable");
+  if (!list) return;
+
+  const pending = QUEUE.filter(q => !q.done);
+  const required = pending.filter(q => q.required);
+  const skippable = pending.filter(q => !q.required);
+  count.textContent = pending.length;
+  reqCount.textContent = required.length;
+  skipCount.textContent = skippable.length;
+
+  if (pending.length === 0) {
+    list.innerHTML = `<div class="k muted" style="padding:16px; text-align:center;">— all actions resolved, end turn ready —</div>`;
+    return;
+  }
+
+  // required first, then others in original order
+  const ordered = [...required, ...skippable];
+  list.innerHTML = "";
+  ordered.forEach((q, i) => {
+    const el = document.createElement("div");
+    el.className = "qitem " + (q.kind || "") + (q.required ? " required" : "");
+    const tag = q.required ? "required" : (q.kind || "action");
+    const skipBtn = q.required
+      ? `<button class="qbtn disabled" title="This action is required this turn">Skip (locked)</button>`
+      : `<button class="qbtn skip" data-id="${q.id}" data-act="skip">${q.skipLabel || "Skip"}</button>`;
+    el.innerHTML = `
+      <div class="qidx">${String(i + 1).padStart(2, "0")}</div>
+      <div class="qmain">
+        <div class="qt">${q.title}</div>
+        <div class="qd">${q.desc}</div>
+      </div>
+      <span class="qtag">${tag}</span>
+      <div class="qactions">
+        <button class="qbtn primary" data-id="${q.id}" data-act="goto">Go to</button>
+        ${skipBtn}
+      </div>
+    `;
+    list.appendChild(el);
+  });
+
+  list.querySelectorAll(".qbtn[data-act]").forEach(btn => {
+    btn.onclick = () => {
+      const q = QUEUE.find(x => x.id === btn.dataset.id);
+      if (!q) return;
+      if (btn.dataset.act === "goto" && q.target) {
+        if (q.target.screen && q.target.screen !== "hud") {
+          showScreen(q.target.screen);
+        } else if (q.target.q !== undefined) {
+          showScreen("hud");
+          if (typeof cam !== "undefined") {
+            cam.x = q.target.q; cam.y = q.target.r;
+            cam.sel = { q: ((q.target.q % WORLD_W) + WORLD_W) % WORLD_W, r: q.target.r };
+            if (typeof render === "function") render();
+          }
+        }
+        // collapse drawer so the user can see where they landed
+        setDrawerTab("");
+      } else if (btn.dataset.act === "skip" && !q.required) {
+        QUEUE = QUEUE.filter(x => x.id !== q.id);
+        renderQueue();
+      }
+    };
+  });
+}
+
+// ===== DRAWER CONTROL =====
+// Two tab groups: 'context' (tile / unit / map) and 'feed' (notif / queue / research / civics).
+// One active tab per group; both groups can be open at once, splitting the drawer body 50/50.
+// activeTabs = { context: <tab id or null>, feed: <tab id or null> }
+const _activeTabs = { context: null, feed: null };
+
+function _tabGroup(tabId) {
+  // look up from the tab button's data-group attribute
+  const btn = document.querySelector(`.drawer-tab[data-tab="${tabId}"]`);
+  return btn ? btn.dataset.group : null;
+}
+
+function _applyDrawerState() {
+  const drawer = document.getElementById("drawer");
+  if (!drawer) return;
+  const anyOpen = !!(_activeTabs.context || _activeTabs.feed);
+  const bothOpen = !!(_activeTabs.context && _activeTabs.feed);
+  drawer.classList.toggle("open", anyOpen);
+  drawer.classList.toggle("both-open", bothOpen);
+
+  // reflect as data-tab so legacy CSS / deep links still work (prefers feed when both)
+  drawer.dataset.tab = _activeTabs.feed || _activeTabs.context || "";
+
+  // tabs: active if they match their group's active
+  drawer.querySelectorAll(".drawer-tab[data-tab][data-group]").forEach(t => {
+    const g = t.dataset.group;
+    t.classList.toggle("active", _activeTabs[g] === t.dataset.tab);
+  });
+
+  // panes: active if they match their group's active
+  drawer.querySelectorAll(".drawer-pane[data-pane][data-group]").forEach(p => {
+    const g = p.dataset.group;
+    p.classList.toggle("active", _activeTabs[g] === p.dataset.pane);
+  });
+}
+
+// Primary API: toggle one tab. Clicking the already-active tab in a group closes that group.
+function toggleDrawerTab(tabId) {
+  if (!tabId) { _activeTabs.context = null; _activeTabs.feed = null; _applyDrawerState(); return; }
+  const group = _tabGroup(tabId);
+  if (!group) return;
+  _activeTabs[group] = (_activeTabs[group] === tabId) ? null : tabId;
+  _applyDrawerState();
+}
+
+// Backward-compat: `setDrawerTab("")` closes everything; `setDrawerTab("tile")` opens that tab.
+function setDrawerTab(tabId) {
+  if (!tabId) { _activeTabs.context = null; _activeTabs.feed = null; _applyDrawerState(); return; }
+  const group = _tabGroup(tabId);
+  if (!group) return;
+  _activeTabs[group] = tabId;
+  _applyDrawerState();
+}
+
+function initDrawer() {
+  const drawer = document.getElementById("drawer");
+  if (!drawer) return;
+  drawer.querySelectorAll(".drawer-tab[data-tab]").forEach(tab => {
+    tab.onclick = () => toggleDrawerTab(tab.dataset.tab);
+  });
+  const close = document.getElementById("drawer-close");
+  if (close) close.onclick = () => setDrawerTab("");
+
+  const skipAll = document.getElementById("queue-skip-all");
+  if (skipAll) skipAll.onclick = () => {
+    QUEUE = QUEUE.filter(q => q.required);
+    renderQueue();
+  };
+
+  renderQueue();
+  _applyDrawerState(); // default: both closed
+}
+
+// ===== DIPLOMACY =====
+// Schema: diplomacy/v1 — see diplomacy.json
+let DIPL_DATA = null;
+
+async function loadDiplomacy(url = "diplomacy.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = null; }
+  if (!data) return;
+  DIPL_DATA = data;
+  renderDiplomacy(data);
+}
+
+function renderDiplomacy(d) {
+  // ── civ list ──
+  const civList = document.querySelector("#scr-dipl .panel.box.heavy");
+  if (civList) {
+    const h3 = civList.querySelector("h3");
+    if (h3) h3.innerHTML = `Known civs <span class="tag">${d.civs.length}</span>`;
+
+    // remove old civ-rows
+    civList.querySelectorAll(".civ-row").forEach(el => el.remove());
+    // hr separator
+    const hr = civList.querySelector(".hr");
+
+    d.civs.forEach(c => {
+      const row = document.createElement("div");
+      row.className = "civ-row" + (c.id === d.active_civ ? " active" : "");
+      row.dataset.civId = c.id;
+      row.innerHTML = `
+        <div class="portrait ph">${c.name.slice(0,2)}</div>
+        <div style="flex:1;">
+          <div class="v">${c.name}</div>
+          <div class="k muted">${c.relation} · ${c.relation_score >= 0 ? "+" : ""}${c.relation_score}</div>
+        </div>`;
+      row.onclick = () => { selectCiv(c.id); };
+      if (hr) civList.insertBefore(row, hr);
+      else civList.appendChild(row);
+    });
+
+    // city-states
+    const csHeader = civList.querySelector("h3:not(:first-child)") || (() => {
+      const el = document.createElement("h3"); el.style.border = "none";
+      el.textContent = "City-States"; civList.appendChild(el); return el;
+    })();
+    civList.querySelectorAll(".civ-row[data-cs]").forEach(el => el.remove());
+    d.city_states.forEach(cs => {
+      const row = document.createElement("div");
+      row.className = "civ-row"; row.dataset.cs = cs.id;
+      row.innerHTML = `
+        <div class="portrait ph">CS</div>
+        <div style="flex:1;">
+          <div class="v">${cs.name}</div>
+          <div class="k muted">${cs.suzerain ? "Suzerain" : ""} · ${cs.envoys} env</div>
+        </div>`;
+      civList.appendChild(row);
+    });
+  }
+
+  // ── active civ detail ──
+  selectCiv(d.active_civ, d);
+}
+
+function selectCiv(civId, d) {
+  d = d || DIPL_DATA;
+  if (!d) return;
+  const civ = d.civs.find(c => c.id === civId);
+  if (!civ) return;
+
+  document.querySelectorAll("#scr-dipl .civ-row").forEach(r =>
+    r.classList.toggle("active", r.dataset.civId === civId));
+
+  const center = document.querySelector("#scr-dipl .dipl-grid > .panel.box.heavy:nth-child(2)");
+  if (!center) return;
+
+  center.innerHTML = `
+    <h3>${civ.name} <span class="tag">Ruler: ${civ.leader}</span></h3>
+    <div style="display:grid; grid-template-columns: 110px 1fr; gap:12px;">
+      <div class="ph" style="height:120px;">leader<br/>portrait</div>
+      <div class="kv">
+        <span class="k">Relation</span><span class="v">${civ.relation} (${civ.relation_score >= 0 ? "+" : ""}${civ.relation_score})</span>
+        <span class="k">Agenda</span><span class="v">${civ.agenda}</span>
+        <span class="k">Govt</span><span class="v">${civ.government}</span>
+        <span class="k">Cities</span><span class="v">${civ.cities_known} known</span>
+        <span class="k">Military</span><span class="v">Est. ${civ.military_est}</span>
+        <span class="k">Science</span><span class="v">Est. ${civ.science_est}</span>
+        ${civ.trade_routes ? `<span class="k">Trade routes</span><span class="v">${civ.trade_routes} to us (${civ.trade_yields})</span>` : ""}
+        ${civ.treaties.length ? `<span class="k">Treaties</span><span class="v">${civ.treaties.join(" · ")}</span>` : ""}
+      </div>
+    </div>
+    <div class="hr dashed"></div>
+    <div class="label">Modifiers</div>
+    <div style="display:flex; flex-direction:column; gap:3px; margin-top:4px;">
+      ${(civ.modifiers || []).map(m =>
+        `<div class="notif ${m.kind}">${m.value >= 0 ? "+" : ""}${m.value} ${m.desc}</div>`
+      ).join("")}
+    </div>
+    <div class="hr dashed"></div>
+    <div class="label">Actions</div>
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:4px; margin-top:4px;">
+      <button class="btn">Make deal</button>
+      <button class="btn">Alliance</button>
+      <button class="btn">Declare War</button>
+      <button class="btn">Denounce</button>
+      <button class="btn">Open borders</button>
+      <button class="btn">Research agr.</button>
+      <button class="btn">Joint war</button>
+      <button class="btn">Gift unit</button>
+    </div>`;
+
+  // ── deal panel ──
+  renderDealDraft(d.deal_draft);
+}
+
+function renderDealDraft(deal) {
+  if (!deal) return;
+  const right = document.querySelector("#scr-dipl .dipl-grid > .panel.box:last-child");
+  if (!right) return;
+  right.innerHTML = `
+    <h3>Exchange <span class="tag">draft deal</span></h3>
+    <div class="exch-table">
+      <div>
+        <div class="label">You give</div>
+        <div class="exch-col">
+          ${deal.you_give.map(i => `<div class="chip filled" style="margin-bottom:4px;">${i}</div>`).join("")}
+          <div class="box dashed" style="margin-top:8px; padding:4px 6px; color:var(--ink-muted); font-size:10px;">+ add item</div>
+        </div>
+      </div>
+      <div style="text-align:center; font-family:var(--hand); font-size:26px;">⇌</div>
+      <div>
+        <div class="label">They give</div>
+        <div class="exch-col">
+          ${deal.they_give.map(i => `<div class="chip filled" style="margin-bottom:4px;">${i}</div>`).join("")}
+          <div class="box dashed" style="margin-top:8px; padding:4px 6px; color:var(--ink-muted); font-size:10px;">+ add item</div>
+        </div>
+      </div>
+    </div>
+    <div class="hr dashed"></div>
+    <div class="kv">
+      <span class="k">Balance</span><span class="v">${deal.balance}</span>
+      <span class="k">Their mood</span><span class="v">${deal.mood}</span>
+      <span class="k">Duration</span><span class="v">${deal.duration_turns ? deal.duration_turns + " turns" : "Permanent"}</span>
+    </div>
+    <div style="display:flex; gap:6px; margin-top:8px;">
+      <button class="btn primary" style="flex:1;">Propose</button>
+      <button class="btn" style="flex:1;">Clear</button>
+    </div>`;
+}
+
+// ===== EMPIRE OVERVIEW =====
+// Schema: empire-overview/v1 — see empire-overview.json
+
+async function loadEmpireOverview(url = "empire-overview.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = null; }
+  if (!data) return;
+  renderEmpireOverview(data);
+}
+
+function renderEmpireOverview(d) {
+  const grid = document.querySelector("#scr-overview .overview-grid");
+  if (!grid) return;
+
+  const s = d.summary;
+  // Top summary cards
+  const cards = grid.querySelectorAll(".span-3.panel.box.heavy");
+  if (cards[0]) cards[0].innerHTML = `<div class="label">Cities</div><div class="v" style="font-size:22px;">${s.cities}</div><div class="k muted">${s.cities_happy} happy · ${s.cities_content} content · ${s.cities_unhappy} unhappy</div>`;
+  if (cards[1]) cards[1].innerHTML = `<div class="label">Population</div><div class="v" style="font-size:22px;">${s.population}</div><div class="k muted">+${s.pop_growth_avg}/turn avg</div>`;
+  if (cards[2]) cards[2].innerHTML = `<div class="label">Treasury</div><div class="v" style="font-size:22px;">${s.treasury.toLocaleString()} G</div><div class="k muted">${s.treasury_per_turn >= 0 ? "+" : ""}${s.treasury_per_turn}/t${s.treasury_bankrupt_turns ? " · " + s.treasury_bankrupt_turns + " turns to bankrupt" : ""}</div>`;
+  if (cards[3]) cards[3].innerHTML = `<div class="label">Military</div><div class="v" style="font-size:22px;">${s.military_units} units</div><div class="k muted">str index ${s.military_strength} · rank ${s.military_rank}/${s.military_rank_of}</div>`;
+
+  // City table
+  const tbody = grid.querySelector("table.data tbody");
+  if (tbody) {
+    tbody.innerHTML = d.cities.map((c, i) => `
+      <tr${i === 0 ? ' class="selected"' : ""}>
+        <td>${c.name}${c.capital ? " ★" : ""}</td>
+        <td>${c.pop}</td>
+        <td>${c.production_item} (${c.production_turns}t)</td>
+        <td class="num">+${c.yields.f}</td>
+        <td class="num">+${c.yields.p}</td>
+        <td class="num">+${c.yields.g}</td>
+        <td class="num">+${c.yields.sci}</td>
+        <td class="num">+${c.yields.cul}</td>
+        <td class="num">+${c.yields.faith}</td>
+        <td>${c.housing.used}/${c.housing.max}</td>
+        <td>${c.amenities >= 0 ? "+" : ""}${c.amenities}</td>
+        <td>${c.loyalty_pct}%${c.loyalty_warn ? " ⚠" : ""}</td>
+      </tr>`).join("");
+  }
+
+  // Strategic resources
+  const stratKV = grid.querySelector(".panel.box .kv");
+  if (stratKV) {
+    stratKV.innerHTML = d.strategic_resources.map(r =>
+      `<span class="k">${r.name}</span><span class="v">${r.value} (${r.era_locked ? "locked" : "+" + r.per_turn + "/t"})</span>`
+    ).join("");
+  }
+
+  // Luxuries
+  const luxDiv = grid.querySelector(".panel.box div[style*='flex-wrap']");
+  if (luxDiv) {
+    luxDiv.innerHTML = d.luxury_resources.map(l => `<span class="chip">${l}</span>`).join("");
+  }
+
+  // Trade routes
+  const tradeTbody = grid.querySelectorAll("table.data tbody")[1];
+  if (tradeTbody) {
+    tradeTbody.innerHTML = d.trade_routes.map(t => `
+      <tr>
+        <td>${t.from}</td>
+        <td>${t.to}</td>
+        <td>${t.yields}</td>
+        <td>${t.turns_done !== null ? t.turns_done + "/" + t.turns_total : "ongoing"}</td>
+      </tr>`).join("");
+    const tradeH3 = tradeTbody.closest(".panel").querySelector("h3");
+    if (tradeH3) tradeH3.innerHTML = `Trade routes <span class="tag">${d.trade_routes.length} / ${d.trade_slots_total}</span>`;
+  }
+
+  // Religion
+  const relKV = grid.querySelectorAll(".panel.box .kv")[1];
+  if (relKV && d.religion) {
+    const rel = d.religion;
+    relKV.innerHTML = `
+      <span class="k">Pantheon</span><span class="v">${rel.pantheon || "—"}</span>
+      <span class="k">Religion</span><span class="v">${rel.founded ? "Founded" : "— (req. Great Prophet)"}</span>
+      <span class="k">Prophet progress</span><span class="v">${rel.prophet_progress} / ${rel.prophet_needed} 🪄</span>
+      <span class="k">Foreign relig.</span><span class="v">${rel.foreign_in_cities || "—"}</span>`;
+    const relH3 = relKV.closest(".panel").querySelector("h3");
+    if (relH3) relH3.innerHTML = `Religion <span class="tag">${rel.founded ? "founded" : "not founded"}</span>`;
+  }
+
+  // Yields chart — redraw SVG polylines from sparkline data
+  const chartSVG = grid.querySelector("svg[viewBox]");
+  if (chartSVG && d.yields_chart && d.yields_chart.length > 1) {
+    const pts = d.yields_chart;
+    const W = 300, H = 120;
+    const minV = 0;
+    const maxV = Math.max(...pts.flatMap(p => [p.science, p.culture, p.gold])) * 1.15;
+    const px = (i) => Math.round((i / (pts.length - 1)) * W);
+    const py = (v) => Math.round(H - ((v - minV) / (maxV - minV)) * (H - 10) - 5);
+    const line = (key, stroke, dash) =>
+      `<polyline fill="none" stroke="${stroke}" stroke-width="1.5" ${dash ? `stroke-dasharray="${dash}"` : ""}
+        points="${pts.map((p,i) => `${px(i)},${py(p[key])}`).join(" ")}"/>`;
+    chartSVG.innerHTML = `
+      <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+      <g stroke="#9a9a9a" stroke-dasharray="3,3" stroke-width="1">
+        <line x1="0" y1="${Math.round(H*0.25)}" x2="${W}" y2="${Math.round(H*0.25)}"/>
+        <line x1="0" y1="${Math.round(H*0.5)}"  x2="${W}" y2="${Math.round(H*0.5)}"/>
+        <line x1="0" y1="${Math.round(H*0.75)}" x2="${W}" y2="${Math.round(H*0.75)}"/>
+      </g>
+      ${line("science", "#1a1a1a")}
+      ${line("culture", "#2b4a6b")}
+      ${line("gold",    "#6b6b6b", "4,3")}`;
+  }
+}
+
+// ===== VICTORY =====
+// Schema: victory/v1 — see victory.json
+
+async function loadVictory(url = "victory.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = null; }
+  if (!data) return;
+  renderVictory(data);
+}
+
+function renderVictory(d) {
+  const grid = document.querySelector("#scr-victory .vic-grid");
+  if (!grid) return;
+
+  // Top summary strip
+  const topStrip = grid.querySelector("[style*='grid-column: 1 / -1']:first-child .panel, [style*='grid-column: 1 / -1']:first-child");
+  if (topStrip) {
+    const inner = topStrip.classList.contains("panel") ? topStrip : topStrip.querySelector(".panel");
+    if (inner) inner.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="label">Victory progress · Turn ${d.turn} of ${d.turn_max}</div>
+          <div class="v" style="font-size:18px;">Leading: ${d.conditions.find(c=>c.id===d.leading_condition)?.name || ""} (${d.leading_pct}%) — you</div>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center;">
+          <span class="chip">Score: ${d.score.toLocaleString()}</span>
+          <span class="chip">Rank: ${d.rank} / ${d.rank_of}</span>
+          <span class="chip accent">Projected winner: ${d.projected_winner}</span>
+        </div>
+      </div>`;
+  }
+
+  // Victory columns — find all .vic-col elements
+  const cols = grid.querySelectorAll(".vic-col");
+  d.conditions.forEach((cond, i) => {
+    if (!cols[i]) return;
+    const col = cols[i];
+    const isLeading = cond.id === d.leading_condition;
+    col.className = "vic-col box" + (isLeading ? " heavy" : "");
+    let detailHTML = "";
+    if (cond.steps) {
+      detailHTML = `<div class="kv">${cond.steps.map(s =>
+        `<span class="k">Step</span><span class="v">${s.done ? "✓" : "…"} ${s.label}</span>`).join("")}</div>`;
+    } else if (cond.stats) {
+      detailHTML = `<div class="kv">${Object.entries(cond.stats).map(([k,v]) =>
+        `<span class="k">${k}</span><span class="v">${v}</span>`).join("")}</div>`;
+    }
+    col.innerHTML = `
+      <h3>${cond.name}</h3>
+      <div class="ring"${isLeading ? ` style="box-shadow:inset 0 0 0 6px var(--accent);"` : ""}>${cond.player_pct}%</div>
+      ${detailHTML}
+      <div class="bar${isLeading ? " accent" : ""}"><span style="width:${cond.player_pct}%"></span></div>`;
+  });
+
+  // Leaderboard
+  const rankList = grid.querySelector(".rank-list");
+  if (rankList) {
+    rankList.innerHTML = d.leaderboard.map(row => {
+      const v = row.victory_pcts;
+      return `<div class="row${row.is_player ? " me" : ""}">
+        <span>${row.rank}</span>
+        <span>${row.name} — Sci ${v.science} · Cul ${v.culture} · Dom ${v.domination} · Rel ${v.religion} · Dip ${v.diplomatic}</span>
+        <span class="num">${row.score.toLocaleString()}</span>
+      </div>`;
+    }).join("");
+  }
+}
+// Schema: player-state/v1 — see player-state.json
+
+async function loadPlayerState(url = "player-state.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = { turn:142, turn_max:500, era:'Classical', era_progress:0.65, resources:{ gold:{value:1284,per_turn:14}, science:{value:null,per_turn:47}, culture:{value:null,per_turn:32}, faith:{value:null,per_turn:8}, food:{value:null,per_turn:12}, production:{value:null,per_turn:28} }, happiness:4, strategic:{Iron:3,Horses:2} }; }
+  renderPlayerState(data);
+}
+
+function renderPlayerState(s) {
+  const el = id => document.getElementById(id);
+  if (el("rb-turn")) el("rb-turn").textContent = s.turn;
+  if (el("rb-turn-max")) el("rb-turn-max").textContent = `/ ${s.turn_max}`;
+  const rb = el("rb-resources");
+  if (rb) {
+    const RES_LABELS = { gold: "GOLD", science: "SCI", culture: "CULT", faith: "FAITH", food: "FOOD", production: "PROD" };
+    rb.innerHTML = Object.entries(s.resources).map(([k, v]) => {
+      const val  = v.value != null ? v.value.toLocaleString() : "";
+      const per  = `+${v.per_turn}`;
+      const disp = val ? `${val}<span class="d"> ${per}/t</span>` : `<span class="v">${per}</span>`;
+      return `<div class="res"><span class="k">${RES_LABELS[k]}</span>${val ? `<span class="v">${val}</span><span class="d"> ${per}/t</span>` : `<span class="v">${per}</span>`}</div>`;
+    }).join("") + `<div class="sep"></div>`;
+  }
+  const era = el("rb-era");
+  if (era) {
+    const strat = Object.entries(s.strategic).map(([k,v]) => `${k.slice(0,2)} ${v}`).join(" · ");
+    era.innerHTML = `
+      <div class="res"><span class="k">ERA</span><span class="v">${s.era.toUpperCase()}</span><span class="d">(${Math.round(s.era_progress*100)}%)</span></div>
+      <div class="res"><span class="k">HAPPY</span><span class="v">${s.happiness >= 0 ? "+" : ""}${s.happiness}</span></div>
+      <div class="res"><span class="k">STRAT</span><span class="v">${strat}</span></div>
+    `;
+  }
+}
+
+// ===== CITY DATA =====
+// Schema: city-data/v1 — see city-data.json
+let CITY_DATA = [];
+let _selectedCityId = null;
+let _showAggregate = false;
+async function loadCityData(url = "city-data.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = { cities: [] }; }
+  CITY_DATA = data.cities || [];
+  _selectedCityId = CITY_DATA[0]?.id || null;
+  initCityScreen();
+}
+
+function initCityScreen() {
+  renderCityList();
+  renderCityDetail(CITY_DATA.find(c => c.id === _selectedCityId));
+
+  const aggBtn = document.getElementById("city-aggregate-btn");
+  if (aggBtn) aggBtn.onclick = () => {
+    _showAggregate = !_showAggregate;
+    aggBtn.classList.toggle("primary", _showAggregate);
+    document.getElementById("city-list-panel").style.display = _showAggregate ? "none" : "flex";
+    document.getElementById("city-aggregate-panel").style.display = _showAggregate ? "block" : "none";
+    if (_showAggregate) renderAggregate();
+  };
+
+  const gotoBtn = document.getElementById("city-goto-btn");
+  if (gotoBtn) gotoBtn.onclick = () => {
+    const c = CITY_DATA.find(x => x.id === _selectedCityId);
+    if (!c) return;
+    showScreen("hud");
+    if (typeof cam !== "undefined") {
+      cam.x = c.position.q; cam.y = c.position.r;
+      cam.sel = { q: c.position.q, r: c.position.r };
+      if (typeof render === "function") render();
+    }
+  };
+}
+
+function renderCityList() {
+  const panel = document.getElementById("city-list-panel");
+  const countEl = document.getElementById("city-list-count");
+  if (!panel) return;
+  if (countEl) countEl.textContent = CITY_DATA.length;
+  panel.innerHTML = CITY_DATA.map(c => {
+    const ys = c.yields;
+    const yieldStr = `${ys.food}F · ${ys.production}P · ${ys.gold}G · ${ys.science}🔬`;
+    const isActive = c.id === _selectedCityId;
+    return `
+      <div class="city-row${isActive ? " active" : ""}" data-city-id="${c.id}">
+        <div>
+          <div class="cr-name">${c.name}${c.capital ? " ★" : ""}</div>
+          <div class="cr-pop">Pop ${c.population} · ${c.citizens_working} working</div>
+          <div class="cr-yields">${yieldStr}</div>
+        </div>
+        <span class="cr-tag">${c.production.current.name} (${c.production.current.turns}t)</span>
+      </div>`;
+  }).join("");
+  panel.querySelectorAll(".city-row").forEach(row => {
+    row.onclick = () => {
+      _selectedCityId = row.dataset.cityId;
+      renderCityList();
+      renderCityDetail(CITY_DATA.find(c => c.id === _selectedCityId));
+    };
+  });
+}
+
+// City tile ownership lookup — keyed by city id, values are relative offsets with status.
+// Loaded from city-tiles.json (schema: city-tiles/v1).
+// Shape: { cityId: [ { offset:[dq,dr], status:"center"|"working"|"idle" }, … ] }
+let CITY_TILES = {};
+
+async function loadCityTiles(url = "city-tiles.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = { cities: [] }; }
+  CITY_TILES = {};
+  for (const c of (data.cities || [])) {
+    CITY_TILES[c.id] = (c.tiles || []).map(t => ({ offset: t.offset, status: t.status }));
+  }
+}
+
+// Convert offset (q,r) to cube coordinates for hex distance
+function offsetToCube(q, r) {
+  const x = q - Math.floor(r / 2);
+  const z = r;
+  return { x, y: -x - z, z };
+}
+function cubeDistance(q1, r1, q2, r2) {
+  const a = offsetToCube(q1, r1), b = offsetToCube(q2, r2);
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
+}
+
+function renderCityHexView(c) {
+  const container = document.getElementById("city-tile-grid");
+  if (!container || !WORLD) return;
+
+  const cityQ = c.position.q;
+  const cityR = c.position.r;
+  const VIEW_R = 5;    // render radius
+  const OWN_R  = 3;    // city territory radius (visual highlight)
+  const R      = 26;   // hex radius in px
+
+  // build ownership lookup: worldKey → status
+  const cityOwned = new Map();
+  (CITY_TILES[c.id] || []).forEach(t => {
+    const wq = ((cityQ + t.offset[0]) % WORLD.width + WORLD.width) % WORLD.width;
+    const wr = cityR + t.offset[1];
+    cityOwned.set(`${wq},${wr}`, t.status);
+  });
+
+  const W = container.clientWidth || 580;
+  const H = 380;
+
+  // clear + scaffold SVG + label layer
+  container.innerHTML = `
+    <svg class="hex-svg" style="position:absolute;top:0;left:0;width:${W}px;height:${H}px;"
+         viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" id="city-hex-svg">
+      <defs>
+        <pattern id="cfog" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <rect width="6" height="6" fill="#eceae0"/>
+          <rect width="6" height="3" fill="#e2dfd3"/>
+        </pattern>
+        <pattern id="cflood2" patternUnits="userSpaceOnUse" width="10" height="10">
+          <rect width="10" height="10" fill="#f5f2ea"/>
+          <rect width="10" height="2" y="4" fill="#dce4ee"/>
+        </pattern>
+        <pattern id="cflood3" patternUnits="userSpaceOnUse" width="6" height="6">
+          <rect width="6" height="6" fill="#f5f2ea"/>
+          <rect width="6" height="2" y="2" fill="#c6d2e4"/>
+        </pattern>
+      </defs>
+    </svg>
+    <div class="hex-labels" id="city-hex-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+  `;
+
+  const svg    = document.getElementById("city-hex-svg");
+  const labels = document.getElementById("city-hex-labels");
+  const ns     = "http://www.w3.org/2000/svg";
+
+  const { x: cx0, y: cy0 } = hexCenter(cityQ, cityR, R);
+  const offX = W / 2 - cx0;
+  const offY = H / 2 - cy0;
+
+  for (let dr = -(VIEW_R + 1); dr <= VIEW_R + 1; dr++) {
+    for (let dq = -(VIEW_R + 1); dq <= VIEW_R + 1; dq++) {
+      const q = cityQ + dq;
+      const r = cityR + dr;
+      const dist = cubeDistance(q, r, cityQ, cityR);
+      if (dist > VIEW_R + 1) continue;
+
+      const t = tileAt(q, r);
+      const { x, y } = hexCenter(q, r, R);
+      const px = x + offX, py = y + offY;
+      if (px < -R * 2 || px > W + R * 2 || py < -R * 2 || py > H + R * 2) continue;
+
+      const pts = hexPolygonPoints(px, py, R - 1.5);
+      const poly = document.createElementNS(ns, "polygon");
+      poly.setAttribute("points", pts.map(p => p.join(",")).join(" "));
+
+      const owned = cityOwned.get(`${t.wq},${r}`);
+      const edge  = dist > VIEW_R;   // just outside — shown dim as context fringe
+      const dim   = !owned && dist > OWN_R && !edge;
+
+      // fill + stroke logic
+      let fill = "var(--paper)", stroke = "var(--ink)", sw = "1.2", op = "1";
+      if (t.oob)                         { fill = "#e2dfd3"; stroke = "var(--ink-faint)"; sw = "1"; op = ".4"; }
+      else if (edge || t.unloaded)       { fill = "url(#cfog)";    stroke = "var(--ink-faint)"; sw = "1"; op = ".65"; }
+      else if (t.fog)                    { fill = "url(#cfog)";    stroke = "var(--ink-faint)"; sw = "1"; }
+      else if (owned === "center")       { fill = "#d9e8cc"; sw = "2.5"; }
+      else if (owned === "working")      { fill = "#eae5d2"; sw = "2"; }
+      else if (t.city)                   { fill = "#eae5d2"; sw = "2"; }
+      else if (t.unit)                   { fill = "#e7ecf2"; }
+      else if (t.flood >= 3)             { fill = "url(#cflood3)"; }
+      else if (t.flood === 2)            { fill = "url(#cflood2)"; }
+      if (dim)                           { op = "0.6"; }
+
+      poly.style.cssText = `fill:${fill};stroke:${stroke};stroke-width:${sw};opacity:${op};`;
+
+      // city territory border: dashed line at ownership radius boundary
+      if (dist === OWN_R + 1 && !t.oob) {
+        poly.style.strokeDasharray = "3 2";
+      }
+
+      svg.appendChild(poly);
+
+      // edge overlays (rivers, cliffs etc.)
+      if (!t.oob && !t.unloaded && !t.fog && dist <= VIEW_R && t.edges) {
+        for (const ek of EDGE_KEYS) {
+          const kinds = t.edges[ek] || [];
+          if (!kinds.length) continue;
+          const [vi1, vi2] = EDGE_VERT_PAIRS[ek];
+          const line = document.createElementNS(ns, "line");
+          line.setAttribute("x1", pts[vi1][0]); line.setAttribute("y1", pts[vi1][1]);
+          line.setAttribute("x2", pts[vi2][0]); line.setAttribute("y2", pts[vi2][1]);
+          line.setAttribute("class", "hex-edge " + kinds[0]);
+          svg.appendChild(line);
+        }
+      }
+
+      // labels (only within VIEW_R, skip fringe ring)
+      if (!t.oob && !edge) {
+        const lab = document.createElement("div");
+        lab.className = "hex-label" + ((t.unloaded || t.fog) ? " dim" : "");
+        lab.style.cssText = `left:${px - R}px;top:${py - R * 0.85}px;width:${R * 2}px;height:${R * 1.7}px;`;
+
+        if (t.unloaded || t.fog) {
+          lab.innerHTML = `<div class="hl-terrain" style="font-size:7px;">${t.unloaded ? "undiscovered" : "fog"}</div>`;
+        } else {
+          const ys = t.yields || {};
+          const yStr = [ys.f ? `${ys.f}F` : "", ys.p ? `${ys.p}P` : "", ys.g ? `${ys.g}G` : ""].filter(Boolean).join(" ");
+          const statusIcon = owned === "center" ? "★" : owned === "working" ? "●" : owned === "idle" ? "○" : "";
+          lab.innerHTML = `
+            <div class="hl-id" style="font-size:6.5px;">${t.wq},${r}</div>
+            ${t.city ? `<div class="hl-city" style="font-size:8px;">${t.city.name}</div>` : `<div class="hl-terrain" style="font-size:7.5px;">${t.terrain || "—"}</div>`}
+            ${yStr ? `<div class="hl-yields" style="font-size:7.5px;">${yStr}</div>` : ""}
+            ${t.resource ? `<div class="hl-res" style="font-size:7px;">${t.resource}</div>` : ""}
+            ${statusIcon ? `<div class="hl-foot" style="font-size:7px;">${statusIcon}</div>` : ""}
+          `;
+        }
+        labels.appendChild(lab);
+      }
+    }
+  }
+}
+
+function renderCityDetail(c) {
+  if (!c) return;
+
+  // populate tile hex view
+  renderCityHexView(c);
+  // header
+  const nameEl = document.getElementById("city-center-name");
+  const tagEl  = document.getElementById("city-center-tag");
+  const prodNameEl = document.getElementById("city-prod-name");
+  if (nameEl) nameEl.textContent = c.name;
+  if (tagEl) tagEl.textContent = `${c.capital ? "capital · " : ""}pop ${c.population}`;
+  if (prodNameEl) prodNameEl.textContent = c.name;
+
+  // yields card
+  const yg = document.getElementById("city-yields-grid");
+  if (yg) {
+    const YLABELS = { food: "Food", production: "Prod", gold: "Gold", science: "Sci", culture: "Cult", faith: "Faith" };
+    yg.innerHTML = Object.entries(c.yields).map(([k,v]) =>
+      `<div class="yield-block"><div class="yk">${YLABELS[k]||k}</div><span class="yv">+${v}</span></div>`
+    ).join("");
+  }
+  const gkv = document.getElementById("city-growth-kv");
+  if (gkv) {
+    const g = c.growth;
+    gkv.innerHTML = `
+      <span class="k">Growth</span><span class="v">${g.food_stored}/${g.food_needed} F · ${g.turns} turns</span>
+      <span class="k">Housing</span><span class="v">${c.housing.used}/${c.housing.max}</span>
+      <span class="k">Amenities</span><span class="v">${c.amenities >= 0 ? "+" : ""}${c.amenities}</span>
+      <span class="k">Appeal avg</span><span class="v">${c.appeal_avg >= 0 ? "+" : ""}${c.appeal_avg}</span>
+    `;
+  }
+
+  // citizens card
+  const ckv = document.getElementById("city-citizens-kv");
+  if (ckv) {
+    const spec = c.specialists;
+    ckv.innerHTML = `
+      <span class="k">Population</span><span class="v">${c.population}</span>
+      <span class="k">Working</span><span class="v">${c.citizens_working}</span>
+      <span class="k">Specialists</span><span class="v">${c.citizens_specialists}</span>
+      <span class="k">Unemployed</span><span class="v">${c.citizens_unemployed}</span>
+      ${Object.entries(spec).filter(([,v])=>v>0).map(([k,v])=>`<span class="k">${k.charAt(0).toUpperCase()+k.slice(1)}</span><span class="v">${v}</span>`).join("")}
+    `;
+  }
+  const fc = document.getElementById("city-focus-chips");
+  if (fc) {
+    const FOCUSES = ["default","food","prod","gold","sci"];
+    fc.innerHTML = FOCUSES.map(f =>
+      `<span class="chip${c.citizen_focus===f?" filled":""}">${f}</span>`
+    ).join("");
+  }
+
+  // districts card
+  const dg = document.getElementById("city-districts-grid");
+  if (dg) {
+    dg.innerHTML = (c.districts || []).map(d => {
+      const icons = { built: "✓", queued: "⋯", available: "avail", locked: "🔒" };
+      return `<div class="district-block ${d.status}">
+        <div class="dn">${d.name}</div>
+        <div class="ds">${icons[d.status] || d.status}${d.adj_bonus ? ` · adj +${d.adj_bonus}` : ""}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // buildings by district
+  const bc = document.getElementById("city-buildings-content");
+  if (bc) {
+    const byDistrict = {};
+    (c.buildings || []).forEach(b => {
+      if (!byDistrict[b.district]) byDistrict[b.district] = [];
+      byDistrict[b.district].push(b);
+    });
+    const DIST_LABELS = { city_center: "City Center", campus: "Campus", commerce: "Commercial Hub", harbor: "Harbor", theatre: "Theatre Sq." };
+    bc.innerHTML = Object.entries(byDistrict).map(([dist, blds]) => `
+      <div class="bld-district-group">
+        <div class="bld-district-label">${DIST_LABELS[dist] || dist}</div>
+        ${blds.map(b => `
+          <div class="bld-row">
+            <span class="bld-name">${b.name}</span>
+            <span class="bld-yields">${b.yields}</span>
+            <span class="bld-status ${b.status}">${b.status}</span>
+          </div>`).join("")}
+      </div>`).join("");
+  }
+
+  // loyalty + religion card
+  renderLoyaltyReligion(c, "city");
+
+  // wire sort buttons
+  document.querySelectorAll(".lr-sort").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".lr-sort").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderLoyaltyReligion(c, btn.dataset.sort);
+    };
+  });
+
+  // production queue
+  renderCityProduction(c);
+}
+
+function renderLoyaltyReligion(c, sort) {
+  // ── summary chips ──────────────────────────────────────────────
+  const summary = document.getElementById("lr-summary");
+  if (summary) {
+    const totalLoy = (c.loyalty_sources || []).reduce((a, s) => a + s.value, 0);
+    const totalPres = (c.religion_pressure || []).reduce((a, s) => a + s.value, 0);
+    const religions = [...new Set((c.religion_pressure || []).map(s => s.religion))];
+    summary.innerHTML = `
+      <div class="lr-summary-chip">
+        <span class="sk">Loyalty/t</span>
+        <span class="sv" style="color:${totalLoy >= 0 ? "var(--good)" : "var(--bad)"}">
+          ${totalLoy >= 0 ? "+" : ""}${totalLoy.toFixed(1)}
+        </span>
+      </div>
+      <div class="lr-summary-chip">
+        <span class="sk">Loyalty %</span>
+        <span class="sv">${c.loyalty.current}%</span>
+      </div>
+      <div class="lr-summary-chip">
+        <span class="sk">Majority religion</span>
+        <span class="sv" style="font-size:11px;">${c.religion.majority || (religions.length ? religions[0]+" (pressure)" : "—")}</span>
+      </div>
+    `;
+  }
+
+  // ── helper: group items by a key, return sorted groups ─────────
+  function groupBy(items, keyFn) {
+    const map = {};
+    items.forEach(item => {
+      const k = keyFn(item);
+      if (!map[k]) map[k] = [];
+      map[k].push(item);
+    });
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }
+
+  // ── loyalty source rows ─────────────────────────────────────────
+  const loyList = document.getElementById("city-loyalty-list");
+  if (loyList) {
+    const sources = c.loyalty_sources || [];
+
+    let html = "";
+    if (sort === "city") {
+      // group by city origin; own-city entries have city === c.name
+      const groups = groupBy(sources, s => s.city || "— (no city)");
+      groups.forEach(([grp, items]) => {
+        html += `<div class="lr-group-label">${grp}</div>`;
+        items.forEach(s => html += loyRow(s));
+      });
+    } else if (sort === "civ") {
+      const groups = groupBy(sources, s => s.civ || "—");
+      groups.forEach(([grp, items]) => {
+        html += `<div class="lr-group-label">${grp}</div>`;
+        items.forEach(s => html += loyRow(s));
+      });
+    } else {
+      // by value magnitude (flat, no grouping)
+      [...sources].sort((a,b) => Math.abs(b.value) - Math.abs(a.value))
+        .forEach(s => { html += loyRow(s); });
+    }
+    loyList.innerHTML = html || '<div class="k muted" style="font-size:10px;">No data</div>';
+  }
+
+  // ── religion pressure rows ──────────────────────────────────────
+  const relList = document.getElementById("city-religion-list");
+  if (relList) {
+    const pressures = c.religion_pressure || [];
+
+    let html = "";
+    if (sort === "religion") {
+      const groups = groupBy(pressures, s => s.religion);
+      groups.forEach(([grp, items]) => {
+        html += `<div class="lr-group-label">${grp}</div>`;
+        items.forEach(s => html += relRow(s));
+      });
+    } else if (sort === "civ") {
+      const groups = groupBy(pressures, s => s.civ || "—");
+      groups.forEach(([grp, items]) => {
+        html += `<div class="lr-group-label">${grp}</div>`;
+        items.forEach(s => html += relRow(s));
+      });
+    } else {
+      // by city (default — group by source city/trade-route)
+      [...pressures].sort((a,b) => b.value - a.value)
+        .forEach(s => { html += relRow(s); });
+    }
+    relList.innerHTML = html || '<div class="k muted" style="font-size:10px;">No pressure</div>';
+  }
+}
+
+function loyRow(s) {
+  const cls = s.value > 0 ? "positive" : s.value < 0 ? "negative" : "neutral";
+  const sign = s.value > 0 ? "+" : "";
+  return `<div class="lr-row ${cls}">
+    <div><div class="lr-label">${s.label}</div><div class="lr-sublabel">${s.civ}${s.city && s.city !== s.label ? " · " + s.city : ""}</div></div>
+    <div class="lr-value">${sign}${s.value.toFixed(1)}</div>
+  </div>`;
+}
+
+function relRow(s) {
+  return `<div class="lr-row positive">
+    <div><div class="lr-label">${s.religion}</div><div class="lr-sublabel">${s.source}</div></div>
+    <div class="lr-value">+${s.value}</div>
+  </div>`;
+}
+
+function renderCityProduction(c) {
+  const cur = document.getElementById("city-prod-current");
+  const queueEl = document.getElementById("city-prod-queue");
+  if (!c.production) return;
+  const p = c.production;
+  const pct = Math.round((p.current.progress / p.current.cost) * 100);
+  if (cur) cur.innerHTML = `
+    <div class="unitcard" style="border-width:2px;">
+      <div class="portrait ph" style="width:40px;height:40px;">${p.current.type.slice(0,3)}</div>
+      <div style="flex:1;">
+        <div class="v">${p.current.name}</div>
+        <div class="bar"><span style="width:${pct}%"></span></div>
+        <div class="k muted">${p.current.progress}/${p.current.cost} ⚙ · ${p.current.turns} turns</div>
+      </div>
+    </div>
+  `;
+  if (queueEl) queueEl.innerHTML = (p.queue || []).map(q =>
+    `<div class="notif">${q.pos}. ${q.name} · ${q.cost} ⚙</div>`
+  ).join("");
+}
+
+function renderAggregate() {
+  const kv = document.getElementById("city-agg-kv");
+  if (!kv || !CITY_DATA.length) return;
+  const sum = (k) => CITY_DATA.reduce((a, c) => a + (c.yields[k] || 0), 0);
+  const total = (k) => CITY_DATA.reduce((a, c) => a + (c[k] || 0), 0);
+  kv.innerHTML = `
+    <span class="k">Cities</span><span class="v">${CITY_DATA.length}</span>
+    <span class="k">Population</span><span class="v">${total("population")}</span>
+    <span class="k">Food/t</span><span class="v">+${sum("food")}</span>
+    <span class="k">Prod/t</span><span class="v">+${sum("production")}</span>
+    <span class="k">Gold/t</span><span class="v">+${sum("gold")}</span>
+    <span class="k">Science/t</span><span class="v">+${sum("science")}</span>
+    <span class="k">Culture/t</span><span class="v">+${sum("culture")}</span>
+    <span class="k">Faith/t</span><span class="v">+${sum("faith")}</span>
+    <span class="k">Avg loyalty</span><span class="v">${Math.round(CITY_DATA.reduce((a,c)=>a+c.loyalty.current,0)/CITY_DATA.length)}%</span>
+    <span class="k">Avg amenities</span><span class="v">${(CITY_DATA.reduce((a,c)=>a+c.amenities,0)/CITY_DATA.length).toFixed(1)}</span>
+  `;
+}
+
+// ===== UNIT DATA =====
+// Schema: unit-data/v1 — see unit-data.json
+let UNIT_DATA = [];
+
+async function loadUnitData(url = "unit-data.json") {
+  let data;
+  try { const r = await fetch(url); if (!r.ok) throw 0; data = await r.json(); }
+  catch(e) { data = { units: [] }; }
+  UNIT_DATA = data.units || [];
+  renderUnitPane();
+}
+
+function getUnitAtTile(wq, r) {
+  return UNIT_DATA.find(u => u.position && u.position.q === wq && u.position.r === r) || null;
+}
+
+function renderUnitPane(unit) {
+  // unit arg is optional — uses first idle unit if not specified
+  const u = unit || UNIT_DATA.find(u => u.status === "idle") || UNIT_DATA[0];
+  if (!u) return;
+
+  const badge = document.getElementById("unit-badge");
+  const nameEl = document.getElementById("unit-name");
+  if (badge) badge.textContent = u.kind;
+  if (nameEl) nameEl.textContent = u.name ? `${u.kind} · ${u.name}` : u.kind;
+
+  // stats block
+  const hpPct = Math.round((u.hp / u.hp_max) * 100);
+  const xpPct = u.xp_next ? Math.round((u.xp / u.xp_next) * 100) : 100;
+  const strLine = [
+    u.strength_melee  != null ? `Melee ${u.strength_melee}` : null,
+    u.strength_ranged != null ? `Ranged ${u.strength_ranged}` : null,
+  ].filter(Boolean).join(" · ");
+
+  // promotions
+  const promHTML = (u.promotions || []).map(p => `
+    <div style="border:1.5px solid ${p.chosen ? "var(--accent)" : p.locked ? "var(--ink-faint)" : "var(--ink)"}; padding:5px 8px; background:${p.chosen ? "var(--accent-soft)" : "var(--paper)"}; opacity:${p.locked ? ".45" : "1"};">
+      <div style="font-weight:700; font-size:10.5px; text-transform:uppercase;">${p.name}${p.chosen ? " ✓" : ""}${p.locked ? " 🔒" : ""}</div>
+      <div style="font-size:9px; color:var(--ink-muted);">${p.desc}</div>
+    </div>
+  `).join("");
+
+  // actions
+  const actHTML = (u.actions || []).map(a => `
+    <button class="btn sm" ${a.enabled ? "" : "disabled style=\"opacity:.38;\""} title="${a.hotkey ? "["+a.hotkey+"]" : ""}">${a.label}</button>
+  `).join("");
+
+  const pane = document.querySelector(".drawer-pane[data-pane='unit']");
+  if (!pane) return;
+  const split = pane.querySelector(".drawer-split");
+  if (!split) return;
+  split.innerHTML = `
+    <div class="drawer-col">
+      <div class="unitcard" style="border-width:2px;">
+        <div class="portrait ph" style="width:48px;height:48px;">${u.kind.slice(0,3)}</div>
+        <div style="flex:1;">
+          <div class="v">${u.kind}${u.name ? ' · "'+u.name+'"' : ""}</div>
+          <div class="k muted">${u.class} · ${u.era} · ${u.position.q},${u.position.r}</div>
+          <div class="bar accent" style="margin-top:4px;"><span style="width:${hpPct}%"></span></div>
+          <div class="k muted" style="margin-top:3px;">HP ${u.hp}/${u.hp_max} · MP ${u.mp}/${u.mp_max}${u.xp_next ? " · XP "+u.xp+"/"+u.xp_next : ""}</div>
+        </div>
+      </div>
+      ${strLine ? `<div class="k muted" style="margin-top:6px; font-size:10px;">${strLine} · Sight ${u.sight} · ${u.upkeep_gold}G/t upkeep</div>` : ""}
+      <div class="label" style="margin-top:8px;">Promotions</div>
+      <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">${promHTML || '<div class="k muted" style="font-size:10px;">— none yet —</div>'}</div>
+    </div>
+    <div class="drawer-col">
+      <div class="label">Actions</div>
+      <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:4px; margin-top:4px;">${actHTML}</div>
+      <div class="hr dashed"></div>
+      <div class="label">Combat preview</div>
+      <div class="k muted" style="font-size:10px; margin-top:3px;">
+        ${u.strength_melee ? `vs Barbarian Warrior: est. −${Math.max(0,12-Math.floor(u.hp/3))} HP you · −14 HP them (win ~72%)` : "No melee capability"}
+      </div>
+    </div>
+  `;
+}
+
+// ===== TILE CLICK HANDLER =====
+// Called by hex render on each poly click. Opens Tile tab, populates it, shows radial menu.
+function onTileClick(tile, px, py) {
+  // populate tile pane
+  const coordEl = document.getElementById("tile-coord");
+  if (coordEl) coordEl.textContent = `${tile.wq},${tile.r}`;
+  const badge = document.getElementById("tile-badge");
+  if (badge) badge.textContent = `${tile.wq},${tile.r}`;
+
+  const ys = tile.yields || {};
+  const yieldStr = [ys.f?`${ys.f}F`:"", ys.p?`${ys.p}P`:"", ys.g?`${ys.g}G`:""].filter(Boolean).join(" · ") || "—";
+  const pane = document.querySelector(".drawer-pane[data-pane='tile']");
+  if (pane) {
+    const split = pane.querySelector(".drawer-split");
+    if (split) split.innerHTML = `
+      <div class="drawer-col">
+        <div class="panel box" style="border:none; padding:0;">
+          <div class="kv">
+            <span class="k">Coords</span><span class="v">${tile.wq}, ${tile.r}</span>
+            <span class="k">Terrain</span><span class="v">${tile.terrain || "—"}</span>
+            <span class="k">Yields</span><span class="v">${yieldStr}</span>
+            <span class="k">Resource</span><span class="v">${tile.resource || "—"}</span>
+            <span class="k">Appeal</span><span class="v">${tile.appeal != null ? (tile.appeal >= 0 ? "+"+tile.appeal : tile.appeal) : "—"}</span>
+            <span class="k">Flood risk</span><span class="v">${tile.flood ? "Level "+tile.flood : "None"}</span>
+          </div>
+        </div>
+      </div>
+      <div class="drawer-col">
+        <div class="panel box" style="border:none; padding:0;">
+          <div class="kv">
+            <span class="k">Owner</span><span class="v">${tile.owner || "—"}</span>
+            <span class="k">City</span><span class="v">${tile.city ? tile.city.name : "—"}</span>
+            <span class="k">Improvement</span><span class="v">${tile.improvement || "—"}</span>
+            <span class="k">Fog</span><span class="v">${tile.fog ? "Yes" : "No"}</span>
+            <span class="k">Wonder</span><span class="v">${tile.wonder ? tile.wonder.name : "—"}</span>
+            <span class="k">Unit</span><span class="v">${tile.unit ? tile.unit.kind : "—"}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // if there's a unit on this tile, also update the unit pane
+  const u = tile.unit ? UNIT_DATA.find(u => u.id === tile.unit.id) : null;
+  if (u) renderUnitPane(u);
+
+  // auto-open Tile tab (context group)
+  setDrawerTab("tile");
+
+  // show radial menu
+  showRadial(tile, px, py);
+}
+
+// ===== RADIAL CONTEXT MENU =====
+// Actions for a tile are derived from tile data + unit presence.
+// Each action: { label, sub?: [...], action?: fn, enabled?: bool }
+const RADIAL_RADIUS = 90;    // px from center to button center
+const RADIAL_CENTER_R = 20;  // close-button radius
+
+function getTileActions(tile) {
+  const hasUnit = !!tile.unit;
+  const isCity  = !!tile.city;
+  const actions = [];
+  if (hasUnit) {
+    actions.push({ label: "Move",    enabled: true,  sub: null });
+    actions.push({ label: "Attack",  enabled: true,  sub: null });
+    actions.push({ label: "Orders",  enabled: true,  sub: [
+      { label: "Fortify",  enabled: true  },
+      { label: "Sleep",    enabled: true  },
+      { label: "Promote",  enabled: true  },
+      { label: "Disband",  enabled: true  },
+      { label: "Upgrade",  enabled: false },
+    ]});
+  }
+  if (isCity) {
+    actions.push({ label: "City",    enabled: true,  sub: [
+      { label: "Manage",   enabled: true  },
+      { label: "Buy tile", enabled: true  },
+      { label: "Rename",   enabled: true  },
+    ]});
+  }
+  if (!hasUnit && !isCity) {
+    actions.push({ label: "Settle",  enabled: true,  sub: null });
+    actions.push({ label: "Build",   enabled: true,  sub: [
+      { label: "Farm",     enabled: true  },
+      { label: "Mine",     enabled: true  },
+      { label: "Pasture",  enabled: false },
+      { label: "Road",     enabled: true  },
+    ]});
+    actions.push({ label: "Pillage", enabled: false, sub: null });
+  }
+  actions.push({ label: "Inspect",  enabled: true, sub: null,
+    action: () => setDrawerTab("tile") });
+  return actions;
+}
+
+let _radialActive = false;
+
+function showRadial(tile, px, py) {
+  const root = document.getElementById("radial-root");
+  if (!root) return;
+  const field = document.getElementById("hexfield");
+  const rect  = field.getBoundingClientRect();
+  const cx = px - rect.left;
+  const cy = py - rect.top;
+  renderRadialRing(root, cx, cy, getTileActions(tile), tile, "Tile");
+}
+
+function renderRadialRing(root, cx, cy, actions, tile, centerLabel) {
+  root.innerHTML = "";
+  root.style.pointerEvents = "auto";
+  _radialActive = true;
+
+  // backdrop (click anywhere else to close)
+  const backdrop = document.createElement("div");
+  backdrop.className = "radial-backdrop";
+  backdrop.onclick = () => closeRadial();
+  root.appendChild(backdrop);
+
+  // center close button
+  const center = document.createElement("div");
+  center.className = "radial-center";
+  center.style.left = cx + "px";
+  center.style.top  = cy + "px";
+  center.textContent = centerLabel.length > 4 ? "✕" : centerLabel;
+  center.title = "Close";
+  center.onclick = (e) => { e.stopPropagation(); closeRadial(); };
+  root.appendChild(center);
+
+  // action buttons arranged radially
+  const n = actions.length;
+  const startAngle = -Math.PI / 2; // top
+  actions.forEach((act, i) => {
+    const angle = startAngle + (2 * Math.PI * i / n);
+    const bx = cx + RADIAL_RADIUS * Math.cos(angle);
+    const by = cy + RADIAL_RADIUS * Math.sin(angle);
+    const btn = document.createElement("div");
+    btn.className = "radial-btn" + (act.enabled === false ? " disabled" : "") + (act.sub ? " has-sub" : "");
+    btn.style.left = bx + "px";
+    btn.style.top  = by + "px";
+    btn.textContent = act.label;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (act.enabled === false) return;
+      if (act.sub) {
+        // replace ring with submenu
+        renderRadialRing(root, cx, cy, act.sub, tile, act.label);
+      } else {
+        if (act.action) act.action();
+        closeRadial();
+      }
+    };
+    root.appendChild(btn);
+  });
+}
+
+function closeRadial() {
+  const root = document.getElementById("radial-root");
+  if (root) { root.innerHTML = ""; root.style.pointerEvents = "none"; }
+  _radialActive = false;
+}
+
+</script>
+<script src="government.js"></script>
+<script src="unit-screen.js"></script>
+<script src="map-overlay.js"></script>
+</body>
+</html>

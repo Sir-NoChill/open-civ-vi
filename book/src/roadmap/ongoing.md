@@ -1,7 +1,22 @@
 # Ongoing Work
 
-> **Current task**: None — open4x-cli complete
-> **Status**: Idle
+> **Current task**: Web UI port — Phase 0 (scaffolding)
+> **Plan**: [book/src/roadmap/web-ui.md](./web-ui.md)
+> **Status**: In progress
+
+## Web UI port (Leptos + REST)
+
+- [ ] Phase 0 — Scaffolding
+  - [ ] `types/web.rs` skeleton
+  - [ ] `server/web_projection.rs` stubs
+  - [ ] `server/rest/` module + `/api/v1/health`
+  - [ ] `components/api/` with `http.rs` + stub
+  - [ ] trunk build instructions in `book/getting-started.md`
+- [ ] Phase 1 — HUD MVP
+- [ ] Phase 2 — Cities + Units
+- [ ] Phase 3 — Research & policy stacks
+- [ ] Phase 4 — Outer loop screens
+- [ ] Phase 5 — Cleanup
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
