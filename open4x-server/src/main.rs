@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use axum::Router;
-use axum::routing::get;
+use axum::routing::{get, post};
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
@@ -21,6 +21,11 @@ async fn main() {
         .route("/api/demo-game", get(demo_game_handler))
         // REST v1 (under construction — see book/src/roadmap/web-ui.md)
         .route("/api/v1/health", get(server::rest::handlers::health))
+        .route("/api/v1/player-state", get(server::rest::handlers::player_state))
+        .route("/api/v1/world/snapshot", get(server::rest::handlers::world_snapshot))
+        .route("/api/v1/world/tile/{q}/{r}", get(server::rest::handlers::world_tile))
+        .route("/api/v1/map/overlays", get(server::rest::handlers::map_overlays))
+        .route("/api/v1/turn/end", post(server::rest::handlers::end_turn))
         // Legacy /api/game/* (deprecated, removed in Phase 5)
         .route("/api/game/view", get(server::api::game_view))
         .route("/api/game/cities", get(server::api::cities))

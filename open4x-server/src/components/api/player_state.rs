@@ -1,4 +1,4 @@
-//! Stub binding for `GET /api/v1/player-state`. Real call lands in Phase 1.
+//! Binding for `GET /api/v1/player-state`.
 
 use crate::components::api::http::{ApiError, fetch_json};
 use crate::types::web::player_state::PlayerState;

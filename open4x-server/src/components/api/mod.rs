@@ -9,5 +9,7 @@
 
 pub mod http;
 pub mod player_state;
+pub mod turn;
+pub mod world;
 
 pub use http::{ApiError, fetch_json};
