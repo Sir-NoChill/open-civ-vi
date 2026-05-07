@@ -1,6 +1,6 @@
 # Web UI Roadmap — Leptos port of the `open4x-webui/` wireframe
 
-> **Status**: Phase 0 complete. Phase 1 next.
+> **Status**: Phase 0 + Phase 1 complete. Phase 2 next.
 > **Goal**: Replace the static `open4x-webui/` HTML wireframe with an interactive
 > Leptos/WASM frontend that lives in `open4x-server` and is driven by REST calls
 > against the same crate's `ssr` server. Single-player, declarative state on the
@@ -518,21 +518,36 @@ one libciv PR + one open4x-server PR.
 **Done when**: `cargo build --workspace` clean and the server boots with both
 `/api/game/*` (existing) and `/api/v1/health` reachable.
 
-### Phase 1 — HUD MVP
+### Phase 1 — HUD MVP ✅
 
 Goal: replace `pages/game.rs::TopBar` and `Sidebar` with REST-driven versions.
 Scope is intentionally small to validate the bindings layer end-to-end.
 
-1. Implement `build_player_state` projector + `GET /api/v1/player-state`.
-2. Implement `build_world_snapshot` + `GET /api/v1/world/snapshot`.
-3. Implement `components/api/{player_state,world}.rs`.
-4. Rewrite `components/hud/topbar.rs` to consume `Resource<PlayerState>`.
-5. Re-bind the existing `HexMap` to a `Resource<WorldSnapshot>` instead of
-   `GameView`.
-6. Wire `POST /api/v1/turn/end` and the End Turn button.
+1. [x] Implement `build_player_state` projector + `GET /api/v1/player-state`.
+2. [x] Implement `build_world_snapshot` + `GET /api/v1/world/snapshot`.
+3. [x] Implement `components/api/{player_state,world}.rs`.
+4. [x] Rewrite the HUD topbar (in new `pages/rest_game.rs::RestGamePage`) to
+   consume `LocalResource<PlayerState>`. Existing `pages/game.rs` (WS-based)
+   left intact so the AI demo / future MP path keeps working.
+5. [~] HexMap re-bound: deferred to Phase 2 — the existing `components/hexmap.rs`
+   is tightly coupled to `GameView`; the Phase 1 page renders a placeholder
+   showing tile counts to prove the snapshot fetch loop works. Phase 2 will
+   refactor `hexmap` to take a `WorldSnapshot` directly.
+6. [x] Wire `POST /api/v1/turn/end` and the End Turn button.
+
+**Bonus** (not in original Phase 1 list, needed for the loop to actually run):
+
+7. [x] `POST /api/v1/games/new` — bootstraps a single-player session and mints
+   a bearer token. Without this the new HUD has nothing to authenticate
+   against. Marked as a Phase 1 extension in the changelog.
+8. [x] WASM entry point — `lib.rs::start()` (gated on `csr`) calls
+   `console_error_panic_hook::set_once()` and mounts `RestGamePage` to
+   `<body>`. The Leptos crate had components but no actual `start` shim
+   before this; `trunk serve` would previously have produced an empty page.
 
 **Done when**: starting a single-player game shows the HUD bar populated from
-REST and clicking End Turn advances the turn without using the WebSocket.
+REST and clicking End Turn advances the turn without using the WebSocket. ✅
+Verified via `curl` against a live `target/release/open4x-server`.
 
 ### Phase 2 — Cities + Units (the core gameplay loop)
 
@@ -636,6 +651,45 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 1 — HUD MVP (2026-05-07)
+
+- **Commit `feat(open4x-server): wire HUD MVP REST surface (Phase 1, server-side)`**:
+  - Real `build_player_state(view, turn_limit)` projecting yields, gold, faith,
+    era, strategics out of `GameView.my_civ`.
+  - Real `build_world_snapshot(view, q, r, radius)` projecting board metadata,
+    cities, units, terrain labels, owner names, and per-tile fog. Topology →
+    `wrap_x`/`wrap_y` mapping. Optional radius cap at 32 (radius `0` = "no
+    filter"). 3 unit tests in `web_projection::tests` cover yields, topology,
+    and cube hex-distance radius filtering.
+  - REST handlers in `server/rest/handlers.rs` (`player_state`,
+    `world_snapshot`, `world_tile`, `map_overlays` stub, `end_turn`) backed by
+    `auth::auth_or_401` → `project_game_view`. End-turn calls
+    `GameRoom::resolve_turn` and returns the standard `MutationResponse` envelope.
+  - Client bindings `components/api/{player_state,world,turn}.rs` over the
+    Phase 0 `fetch_json` helper.
+- **Commit `feat(open4x-server): POST /api/v1/games/new bootstraps single-player session`**:
+  - Unauthenticated handler that creates a fresh `GameRoom` via
+    `build_server_session`, mints a random pubkey + bearer token, and returns
+    `{game_id, civ_id, token, turn}`. Required for the REST single-player loop
+    since there was no other way to obtain a bearer token without going through
+    the WS auth handshake.
+- **Commit `feat(open4x-server): REST-driven HUD topbar + map (Phase 1, client-side)`**:
+  - `components/api/games.rs` binding for `POST /games/new`.
+  - `pages/rest_game.rs::RestGamePage` — minimal Leptos page that bootstraps a
+    game on mount, owns three signals (`token`, `tick`, error trackers) and two
+    `LocalResource`s (`player_state`, `snapshot`) keyed on `tick`. End Turn
+    button bumps the tick to refetch every resource in parallel.
+  - `lib.rs::start()` — first actual WASM entry point in the crate. The Leptos
+    components existed before but were never mounted; `trunk serve` would
+    previously have rendered an empty `<body>`.
+  - HexMap rewrite intentionally deferred to Phase 2 — current page renders a
+    "World w × h · N tiles in view" placeholder so the snapshot fetch loop is
+    observable.
+  - Live smoke test against `target/release/open4x-server`: `/api/v1/health` →
+    OK, `POST /games/new` → token, `GET /player-state` → real yields, `GET
+    /world/snapshot?radius=2` → 4 tiles around origin, `POST /turn/end` →
+    `{turn: 1}`.
 
 ### Phase 0 — Scaffolding (2026-05-07)
 

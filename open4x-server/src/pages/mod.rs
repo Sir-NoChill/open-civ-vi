@@ -1,5 +1,8 @@
 pub mod game;
 pub mod replay;
+pub mod rest_game;
+
+pub use rest_game::RestGamePage;
 
 use leptos::prelude::*;
 use crate::components::session::{GameConfig, DemoConfig};

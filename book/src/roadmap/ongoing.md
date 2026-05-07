@@ -1,22 +1,21 @@
 # Ongoing Work
 
-> **Current task**: Web UI port — Phase 1 (HUD MVP)
+> **Current task**: Web UI port — Phase 2 (Cities + Units)
 > **Plan**: [book/src/roadmap/web-ui.md](./web-ui.md)
 > **Status**: In progress
 
 ## Web UI port (Leptos + REST)
 
 - [x] Phase 0 — Scaffolding
-- [ ] Phase 1 — HUD MVP
-  - [ ] `build_player_state` projector (real)
-  - [ ] `GET /api/v1/player-state`
-  - [ ] `build_world_snapshot` projector (real)
-  - [ ] `GET /api/v1/world/snapshot`
-  - [ ] `components/api/{player_state,world}.rs` real bindings
-  - [ ] `POST /api/v1/turn/end`
-  - [ ] HUD topbar consumes `Resource<PlayerState>`
-  - [ ] HexMap re-bound to `Resource<WorldSnapshot>`
+- [x] Phase 1 — HUD MVP (HexMap rebind deferred to Phase 2)
 - [ ] Phase 2 — Cities + Units
+  - [ ] `build_cities` / `build_city_tiles` / `build_units` projectors
+  - [ ] New `RulesEngine::available_unit_actions` / `preview_combat`
+  - [ ] New `GameAction::AssignCityFocus` / `RenameCity`
+  - [ ] REST routes for cities, units, combat preview
+  - [ ] `tabs/city.rs` REST-driven port
+  - [ ] `tabs/units.rs` (new)
+  - [ ] HexMap refactor: take `WorldSnapshot` instead of `GameView`
 - [ ] Phase 3 — Research & policy stacks
 - [ ] Phase 4 — Outer loop screens
 - [ ] Phase 5 — Cleanup
