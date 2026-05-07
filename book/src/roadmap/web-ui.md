@@ -1,8 +1,12 @@
 # Web UI Roadmap — Leptos port of the `open4x-webui/` wireframe
 
-> **Status**: Phase 0–4 server side complete. Client tabs (city/units/
-> diplomacy/empire/victory/government), HexMap rebind, and libciv extensions
-> still pending. Phase 5 cleanup at the end.
+> **Status**: Server-side reads + writes for all 5 phases complete (40
+> endpoints, 10 integration tests, 5 unit tests, both ssr/csr clippy clean).
+> Remaining: client tabs (city/units/diplomacy/empire/victory/government),
+> HexMap refactor, libciv extensions (preview_combat, available_unit_actions,
+> pending_actions, victory_progress, policy_catalogue, AssignCityFocus,
+> RenameCity, Cancel*, ChangeGovernment), NotificationRecord ring buffer,
+> and Phase 5 final cleanup (delete `open4x-webui/`, drop `/api/game/*`).
 > **Goal**: Replace the static `open4x-webui/` HTML wireframe with an interactive
 > Leptos/WASM frontend that lives in `open4x-server` and is driven by REST calls
 > against the same crate's `ssr` server. Single-player, declarative state on the
@@ -608,16 +612,20 @@ all render real data and accept user input.
 
 ### Phase 5 — Cleanup
 
-1. Delete `open4x-webui/` (or move to `docs/legacy-wireframe/` if we want to
-   keep it as a visual reference).
-2. Remove the `/api/game/*` legacy routes and `server/reports.rs` if nothing
-   else consumes them.
-3. Remove `/ws` from the single-player code path entirely. (Keep it for AI
-   demo and for the future multiplayer roadmap.)
-4. Add integration tests under `open4x-server/tests/rest_api.rs` that spin up
-   `AppState`, mint a token, and exercise each route. Aim for one test per
-   endpoint group.
-5. Document the API in `book/src/multiplayer/web-client.md`.
+1. [ ] Delete `open4x-webui/` (or move to `docs/legacy-wireframe/` if we
+   want to keep it as a visual reference).
+2. [ ] Remove the `/api/game/*` legacy routes and `server/reports.rs` if
+   nothing else consumes them. (Currently the integration tests still
+   read `/api/game/view` to look up unit-type IDs — gated on a new
+   `/api/v1/registry` endpoint that should expose the same data.)
+3. [ ] Remove `/ws` from the single-player code path entirely. (Keep it
+   for AI demo and for the future multiplayer roadmap.)
+4. [x] Add integration tests under `open4x-server/tests/rest_api.rs`
+   that spin up `AppState`, mint a token, and exercise each route. ✅
+   10 tests covering health/auth/games_new/player-state/world-snapshot/
+   cities/units/diplomacy/turn-queue/victory/end-turn/research/
+   production round-trip. All green.
+5. [ ] Document the API in `book/src/multiplayer/web-client.md`.
 
 **Done when**: `cargo test -p open4x-server --features ssr` covers every
 endpoint and the wireframe directory is gone.
@@ -662,6 +670,38 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 5 partial — REST integration tests (2026-05-07)
+
+- **Commit `feat(open4x-server): RestGamePage surfaces full API state (Phase 1+ client)`**:
+  expanded the demo HUD to read every Phase 2-4 slice (cities, units,
+  tech, turn queue) and added a "Pick Research" helper button. Cleared
+  the 3 pre-existing csr clippy warnings as a drive-by.
+- **Commit `feat(open4x-server): integration tests for /api/v1 surface (Phase 5 prep)`**:
+  - Extracted the `/api/v1` route table into
+    `server::rest::v1_router()` so `main.rs` and the test rig share one
+    source of truth. `main.rs` now `.nest("/api/v1", v1_router())`.
+  - Added `open4x-server/tests/rest_api.rs` with 10 in-process
+    integration tests that hit the router via `tower::ServiceExt::oneshot`
+    (no TCP listener, no port, parallel-safe). Coverage:
+    - `health_is_unauthenticated`
+    - `unauthenticated_endpoint_rejects_missing_token` (401 path)
+    - `games_new_mints_token_and_player_state_uses_it`
+    - `world_snapshot_returns_tiles_and_dimensions`
+    - `cities_units_and_diplomacy_round_trip`
+    - `end_turn_blocks_when_required_action_pending` (400 + structured
+      `unresolved_required_actions` body)
+    - `end_turn_advances_after_research_chosen` (200 + turn 0 → 1)
+    - `production_queue_and_cancel_round_trip` (POST + DELETE)
+    - `turn_queue_lists_required_choose_research_on_fresh_game`
+    - `victory_includes_six_conditions_and_ranks_player`
+  - `tower`, `http-body-util`, and `hex` added as `[dev-dependencies]`.
+  - **Note**: `production_queue_and_cancel_round_trip` still pulls a
+    unit-type id from the legacy `/api/game/view` endpoint because
+    `/api/v1` doesn't yet expose `unit_type_defs` directly. Phase 5 task
+    2 (drop legacy `/api/game/*`) is gated on adding a
+    `GET /api/v1/registry` endpoint that exposes the unit/building
+    catalogues — flagged in the changelog.
 
 ### Phase 4 — End Turn 400 enforcement (2026-05-07)
 

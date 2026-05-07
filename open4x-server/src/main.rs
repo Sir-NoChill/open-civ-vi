@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use axum::Router;
-use axum::routing::{delete, get, post};
+use axum::routing::get;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
@@ -19,35 +19,8 @@ async fn main() {
         .route("/ws", get(server::ws::ws_handler))
         .route("/health", get(|| async { "ok" }))
         .route("/api/demo-game", get(demo_game_handler))
-        // REST v1 (under construction — see book/src/roadmap/web-ui.md)
-        .route("/api/v1/health", get(server::rest::handlers::health))
-        .route("/api/v1/games/new", post(server::rest::handlers::new_game))
-        .route("/api/v1/player-state", get(server::rest::handlers::player_state))
-        .route("/api/v1/world/snapshot", get(server::rest::handlers::world_snapshot))
-        .route("/api/v1/world/tile/{q}/{r}", get(server::rest::handlers::world_tile))
-        .route("/api/v1/map/overlays", get(server::rest::handlers::map_overlays))
-        .route("/api/v1/cities", get(server::rest::handlers::cities))
-        .route("/api/v1/cities/{id}", get(server::rest::handlers::city_detail))
-        .route("/api/v1/cities/{id}/tiles", get(server::rest::handlers::city_tiles))
-        .route("/api/v1/units", get(server::rest::handlers::units))
-        .route("/api/v1/units/{id}", get(server::rest::handlers::unit_detail))
-        .route("/api/v1/armies", get(server::rest::handlers::armies))
-        .route("/api/v1/combat/preview", get(server::rest::handlers::combat_preview))
-        .route("/api/v1/cities/{id}/production", post(server::rest::handlers::queue_production))
-        .route("/api/v1/cities/{id}/production/{pos}", delete(server::rest::handlers::cancel_production))
-        .route("/api/v1/units/{id}/action", post(server::rest::handlers::unit_action))
-        .route("/api/v1/tech", get(server::rest::handlers::tech))
-        .route("/api/v1/tech/research", post(server::rest::handlers::tech_research))
-        .route("/api/v1/civics", get(server::rest::handlers::civics))
-        .route("/api/v1/civics/research", post(server::rest::handlers::civic_research))
-        .route("/api/v1/government", get(server::rest::handlers::government))
-        .route("/api/v1/diplomacy", get(server::rest::handlers::diplomacy))
-        .route("/api/v1/diplomacy/civs/{id}", get(server::rest::handlers::diplomacy_civ))
-        .route("/api/v1/empire/overview", get(server::rest::handlers::empire_overview))
-        .route("/api/v1/victory", get(server::rest::handlers::victory))
-        .route("/api/v1/notifications", get(server::rest::handlers::notifications))
-        .route("/api/v1/turn-queue", get(server::rest::handlers::turn_queue))
-        .route("/api/v1/turn/end", post(server::rest::handlers::end_turn))
+        // REST v1 — see book/src/roadmap/web-ui.md
+        .nest("/api/v1", server::rest::v1_router())
         // Legacy /api/game/* (deprecated, removed in Phase 5)
         .route("/api/game/view", get(server::api::game_view))
         .route("/api/game/cities", get(server::api::cities))

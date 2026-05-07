@@ -55,3 +55,8 @@ csr = [
     "dep:js-sys", "dep:wasm-bindgen-futures", "dep:web-sys",
     "dep:serde-wasm-bindgen", "dep:getrandom",
 ]
+
+[dev-dependencies]
+tower           = { version = "0.5", features = ["util"] }
+http-body-util  = "0.1"
+hex             = "0.4"

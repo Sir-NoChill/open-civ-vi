@@ -17,10 +17,11 @@
 - [~] Phase 4 — server reads done; libciv pending_actions / victory_progress
       + NotificationRecord ring buffer + tabs/{diplomacy,empire,victory}.rs
       + drawers + 400-on-required-turn-end pending
-- [ ] Phase 5 — Cleanup
+- [~] Phase 5 — Cleanup
   - [ ] Delete or move open4x-webui/
   - [ ] Drop /api/game/* legacy routes + server/reports.rs
-  - [ ] Integration tests in open4x-server/tests/rest_api.rs
+        (gated on /api/v1/registry exposing unit_type_defs)
+  - [x] Integration tests in open4x-server/tests/rest_api.rs (10 tests)
   - [ ] Document API in book/src/multiplayer/web-client.md
 - [ ] Phase 3 — Research & policy stacks
 - [ ] Phase 4 — Outer loop screens
