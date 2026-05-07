@@ -239,9 +239,26 @@ pub struct EndTurnView {
 pub async fn end_turn(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
-) -> Result<impl IntoResponse, ApiError> {
+) -> Result<axum::response::Response, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let libciv_civ_id = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    // Block end-turn if any turn-queue item is required (per plan §4.3).
+    // Returns 400 with the structured body { error, items } per the spec.
+    let view = view_only(&state, game_id, civ_id)?;
+    let queue = web_projection::build_turn_queue(&view);
+    let required: Vec<_> = queue
+        .items
+        .into_iter()
+        .filter(|i| i.required)
+        .collect();
+    if !required.is_empty() {
+        let body = serde_json::json!({
+            "error": "unresolved_required_actions",
+            "items": required,
+        });
+        return Ok((StatusCode::BAD_REQUEST, Json(body)).into_response());
+    }
 
     let mut room = state
         .games
@@ -270,7 +287,8 @@ pub async fn end_turn(
                 ended: false,
             },
         }),
-    ))
+    )
+        .into_response())
 }
 
 // ── /cities ──────────────────────────────────────────────────────────────────

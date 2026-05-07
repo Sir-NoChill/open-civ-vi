@@ -600,8 +600,8 @@ government, slot policies, and confirm — all through REST.
    `advance_turn` deltas. `/notifications` currently returns an empty list.
 4. [ ] New tabs: `tabs/diplomacy.rs`, `tabs/empire.rs`, `tabs/victory.rs`.
 5. [ ] Drawers: `components/hud/{notifications,turn_queue,overlays}_drawer.rs`.
-6. [ ] Block End Turn when `turn-queue` has `required: true` items —
-   `POST /api/v1/turn/end` returns 400 with the structured payload.
+6. [x] Block End Turn when `turn-queue` has `required: true` items —
+   `POST /api/v1/turn/end` returns 400 with the structured payload. ✅
 
 **Done when**: the wireframe's HUD drawers and the four outer-loop screens
 all render real data and accept user input.
@@ -662,6 +662,20 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 4 — End Turn 400 enforcement (2026-05-07)
+
+- **Commit `feat(open4x-server): enforce required turn-queue items on POST /turn/end (Phase 4 polish)`**:
+  - The end-turn handler now projects the turn queue *before* mutating
+    state. Any item with `required: true` causes a 400 with the body
+    `{"error":"unresolved_required_actions","items":[...]}` exactly as
+    §4.3 specifies. The previous implementation packed the items into
+    the generic `ApiErrorBody.message` field, which the wireframe
+    contract didn't expect.
+  - Smoke-tested:
+    - Fresh game → `POST /turn/end` → 400 with the
+      `choose_research` item (no tech queued yet).
+    - After `POST /tech/research` → 200 OK, `turn: 1`.
 
 ### Phase 4 — Outer-loop reads (2026-05-07)
 
