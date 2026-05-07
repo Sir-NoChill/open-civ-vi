@@ -21,6 +21,7 @@ async fn main() {
         .route("/api/demo-game", get(demo_game_handler))
         // REST v1 (under construction — see book/src/roadmap/web-ui.md)
         .route("/api/v1/health", get(server::rest::handlers::health))
+        .route("/api/v1/games/new", post(server::rest::handlers::new_game))
         .route("/api/v1/player-state", get(server::rest::handlers::player_state))
         .route("/api/v1/world/snapshot", get(server::rest::handlers::world_snapshot))
         .route("/api/v1/world/tile/{q}/{r}", get(server::rest::handlers::world_tile))

@@ -11,12 +11,15 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
+use tokio::sync::broadcast;
 
+use crate::server::api_token::{generate_token, ApiTokenRecord};
 use crate::server::projection::project_game_view;
 use crate::server::rest::auth::{auth_or_401, ApiError};
-use crate::server::state::AppState;
+use crate::server::state::{AppState, GameRoom, GameRoomConfig, PlayerRecord};
 use crate::server::web_projection;
 use crate::types::ids::{CivId, GameId};
+use crate::types::messages::{CreateGameRequest, GameStatus};
 use crate::types::view::GameView;
 use crate::types::web::{MutationResponse, TurnStatusBlock};
 
@@ -59,6 +62,119 @@ fn turn_status_block(state: &Arc<AppState>, game_id: GameId) -> TurnStatusBlock 
         .map(|r| r.state.turn)
         .unwrap_or(0);
     TurnStatusBlock { turn, ended: false }
+}
+
+// ── POST /games/new — bootstrap a single-player game over REST ───────────────
+
+#[derive(Deserialize, Default)]
+pub struct NewGameRequest {
+    #[serde(default)]
+    pub display_name: Option<String>,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(default)]
+    pub seed: Option<u64>,
+    #[serde(default)]
+    pub num_ai: Option<u32>,
+    #[serde(default)]
+    pub turn_limit: Option<u32>,
+}
+
+#[derive(Serialize)]
+pub struct NewGameResponse {
+    pub game_id: GameId,
+    pub civ_id: CivId,
+    pub token: String,
+    pub turn: u32,
+}
+
+/// `POST /api/v1/games/new` — create a fresh single-player game and mint a
+/// bearer token for it. Unauthenticated; intended for the single-player REST
+/// loop (multiplayer keeps using the WS auth handshake).
+pub async fn new_game(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<NewGameRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    use rand::Rng;
+
+    let display_name = req.display_name.clone().unwrap_or_else(|| "Player".into());
+
+    // Generate an anonymous pubkey for this single-player session.
+    let mut rng = rand::rng();
+    let pubkey: [u8; 32] = rng.random();
+
+    // Register a PlayerRecord so build_server_session can look it up.
+    state.players.insert(
+        pubkey,
+        PlayerRecord {
+            pubkey,
+            display_name: display_name.clone(),
+            selected_template: state.templates[0].id,
+            games_played: 0,
+        },
+    );
+
+    let game_id = GameId::from_ulid(ulid::Ulid::new());
+
+    let create_req = CreateGameRequest {
+        name: format!("{display_name}'s game"),
+        width: req.width.unwrap_or(40),
+        height: req.height.unwrap_or(24),
+        seed: req.seed.unwrap_or(42),
+        num_ai: req.num_ai.unwrap_or(1),
+        max_players: 1,
+        turn_limit: req.turn_limit.or(Some(500)),
+    };
+
+    let session = crate::server::session::build_server_session(&create_req, &pubkey, &state, game_id);
+    let civ_id = session
+        .players
+        .first()
+        .map(|s| s.civ_id)
+        .ok_or_else(|| crate::server::rest::auth::bad_request("no_player_slot", "session has no player"))?;
+
+    let (tx, _rx) = broadcast::channel(64);
+    let room = GameRoom {
+        game_id,
+        name: create_req.name.clone(),
+        state: session.state,
+        rules: libciv::DefaultRulesEngine,
+        players: session.players,
+        ai_agents: session.ai_agents,
+        status: GameStatus::InProgress,
+        config: GameRoomConfig {
+            max_players: 1,
+            turn_limit: create_req.turn_limit,
+        },
+        tx,
+    };
+
+    let initial_turn = room.state.turn;
+    state.games.insert(game_id, room);
+
+    // Mint and store the bearer token.
+    let token = generate_token();
+    state.api_tokens.insert(
+        token.clone(),
+        ApiTokenRecord {
+            token: token.clone(),
+            pubkey,
+            game_id,
+            civ_id: CivId::from_ulid(civ_id.as_ulid()),
+        },
+    );
+
+    Ok((
+        StatusCode::CREATED,
+        Json(NewGameResponse {
+            game_id,
+            civ_id: CivId::from_ulid(civ_id.as_ulid()),
+            token,
+            turn: initial_turn,
+        }),
+    ))
 }
 
 // ── /player-state ────────────────────────────────────────────────────────────
