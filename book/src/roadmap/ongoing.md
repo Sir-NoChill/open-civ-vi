@@ -1,22 +1,21 @@
 # Ongoing Work
 
-> **Current task**: Web UI port — Phase 2 (Cities + Units), client + libciv
+> **Current task**: Web UI port — Phase 4 server-side (diplomacy / empire / victory / notifications)
 > **Plan**: [book/src/roadmap/web-ui.md](./web-ui.md)
 > **Status**: In progress
 
 ## Web UI port (Leptos + REST)
 
 - [x] Phase 0 — Scaffolding
-- [x] Phase 1 — HUD MVP (HexMap rebind deferred to Phase 2)
-- [~] Phase 2 — Cities + Units (server-side reads + mutations done; client + libciv pending)
-  - [x] `build_cities` / `build_city_tiles` / `build_units` projectors
-  - [x] REST reads for cities, units, combat preview
-  - [x] REST writes: production queue, unit move/attack/found_city
-  - [ ] New `RulesEngine::available_unit_actions` / `preview_combat`
-  - [ ] New `GameAction::AssignCityFocus` / `RenameCity`
-  - [ ] `tabs/city.rs` REST-driven port
-  - [ ] `tabs/units.rs` (new)
-  - [ ] HexMap refactor: take `WorldSnapshot` instead of `GameView`
+- [x] Phase 1 — HUD MVP (HexMap rebind deferred)
+- [~] Phase 2 — Cities + Units (server-side done; libciv extensions + tabs pending)
+- [~] Phase 3 — Research & policy stacks (server-side done; tabs + Cancel*/ChangeGovernment pending)
+- [ ] Phase 4 — Outer loop screens
+  - [ ] build_diplomacy / build_empire_overview / build_victory projectors
+  - [ ] build_notifications, build_turn_queue, build_map_overlays
+  - [ ] NotificationRecord ring buffer in GameRoom
+  - [ ] new tabs (diplomacy, empire, victory) + drawers
+- [ ] Phase 5 — Cleanup
 - [ ] Phase 3 — Research & policy stacks
 - [ ] Phase 4 — Outer loop screens
 - [ ] Phase 5 — Cleanup

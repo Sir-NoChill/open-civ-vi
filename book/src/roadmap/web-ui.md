@@ -572,15 +572,17 @@ single-player.
 
 ### Phase 3 — Research & policy stacks
 
-1. Projectors: `build_tech_tree`, `build_civics_tree`, `build_government`,
-   `policy_catalogue`.
-2. New `GameAction` variants: `CancelResearch`, `CancelCivic`,
+1. [x] Projectors: `build_tech_tree`, `build_civics_tree`, `build_government`
+   (catalogue still empty; needs libciv exposure).
+2. [x] REST reads `GET /tech`, `GET /civics`, `GET /government`. ✅
+3. [x] REST mutations `POST /tech/research`, `POST /civics/research`. ✅
+4. [ ] New `GameAction` variants: `CancelResearch`, `CancelCivic`,
    `ChangeGovernment`. Bulk policy assignment via existing `AssignPolicy`
    applied N times in one route handler.
-3. Port `tabs/science.rs` and `tabs/culture.rs` to render full trees with
-   prereq lines (the wireframe's CSS gradients can be reused — copy them into
-   `index.html` `<style>`).
-4. Add `tabs/government.rs` with slot management + catalogue browser.
+5. [ ] Port `tabs/science.rs` and `tabs/culture.rs` to render full trees
+   with prereq lines (the wireframe's CSS gradients can be reused — copy
+   them into `index.html` `<style>`).
+6. [ ] Add `tabs/government.rs` with slot management + catalogue browser.
 
 **Done when**: the player can research a tech, complete a civic, change
 government, slot policies, and confirm — all through REST.
@@ -656,6 +658,29 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 3 — Tech / Civics / Government reads + research mutations (2026-05-07)
+
+- **Commit `feat(open4x-server): tech + civics REST surface (Phase 3 server)`**:
+  - `build_tech_tree` projects every tech node with status ∈ {done, current,
+    available, locked} computed from `researched_techs` + `research_queue`
+    front. Era is inferred heuristically from cost (50 → Ancient,
+    100–199 → Medieval, etc.) until libciv exposes era per node — flagged
+    in `era_for_tech_cost`.
+  - `build_civics_tree` mirrors the tech projection over
+    `civic_in_progress` + `completed_civics`.
+  - `build_government` projects current government, era, and a placeholder
+    slots block (2/2/1/0). Catalogue is empty until libciv ships a policy
+    catalogue helper — flagged for follow-up.
+  - REST handlers: `GET /tech`, `POST /tech/research` (→
+    `GameAction::QueueResearch`), `GET /civics`,
+    `POST /civics/research` (→ `GameAction::QueueCivic`),
+    `GET /government`.
+  - Client bindings `components/api/{tech,government}.rs`.
+  - Smoke-tested: `/tech` lists Bronze Working / Machinery / etc. with
+    correct status; `POST /tech/research` queued the first available tech
+    (queue went `[]` → `[<tech_id>]`); `/government` returned the Chiefdom
+    block.
 
 ### Phase 2 — Cities + Units (server side, 2026-05-07)
 

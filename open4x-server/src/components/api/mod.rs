@@ -9,8 +9,10 @@
 
 pub mod cities;
 pub mod games;
+pub mod government;
 pub mod http;
 pub mod player_state;
+pub mod tech;
 pub mod turn;
 pub mod units;
 pub mod world;

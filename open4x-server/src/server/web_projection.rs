@@ -496,15 +496,165 @@ pub fn build_combat_preview(
 }
 
 pub fn build_tech_tree(view: &GameView) -> tech_tree::TechTreeView {
-    tech_tree::TechTreeView::default()
+    let researched: std::collections::HashSet<_> = view.my_civ.researched_techs.iter().collect();
+    let queue_progress: std::collections::HashMap<_, _> = view
+        .my_civ
+        .research_queue
+        .iter()
+        .map(|p| (p.tech_id, p))
+        .collect();
+    let active = view.my_civ.research_queue.first().map(|p| p.tech_id);
+
+    let techs = view
+        .tech_tree
+        .nodes
+        .iter()
+        .map(|n| {
+            let prereq_ids: Vec<String> = n
+                .prerequisites
+                .iter()
+                .map(|p| p.as_ulid().to_string())
+                .collect();
+            let status = if researched.contains(&n.id) {
+                "done".to_string()
+            } else if Some(n.id) == active {
+                "current".to_string()
+            } else if n.prerequisites.iter().all(|p| researched.contains(p)) {
+                "available".to_string()
+            } else {
+                "locked".to_string()
+            };
+            let progress = queue_progress.get(&n.id).map(|p| p.progress);
+            tech_tree::TechNode {
+                id: n.id.as_ulid().to_string(),
+                name: n.name.clone(),
+                cost: n.cost,
+                progress,
+                unlocks: n.eureka_description.clone(),
+                era: era_for_tech_cost(n.cost),
+                status,
+                prereqs: prereq_ids,
+            }
+        })
+        .collect();
+
+    let research_queue = view
+        .my_civ
+        .research_queue
+        .iter()
+        .map(|p| p.tech_id.as_ulid().to_string())
+        .collect();
+
+    tech_tree::TechTreeView {
+        techs,
+        research_queue,
+    }
 }
 
 pub fn build_civics_tree(view: &GameView) -> civics_tree::CivicsTreeView {
-    civics_tree::CivicsTreeView::default()
+    let completed: std::collections::HashSet<_> = view.my_civ.completed_civics.iter().collect();
+    let active = view.my_civ.civic_in_progress.as_ref().map(|p| p.civic_id);
+    let active_progress = view.my_civ.civic_in_progress.as_ref().map(|p| p.progress);
+
+    let civics = view
+        .civic_tree
+        .nodes
+        .iter()
+        .map(|n| {
+            let prereq_ids: Vec<String> = n
+                .prerequisites
+                .iter()
+                .map(|p| p.as_ulid().to_string())
+                .collect();
+            let status = if completed.contains(&n.id) {
+                "done".to_string()
+            } else if Some(n.id) == active {
+                "current".to_string()
+            } else if n.prerequisites.iter().all(|p| completed.contains(p)) {
+                "available".to_string()
+            } else {
+                "locked".to_string()
+            };
+            let progress = if Some(n.id) == active { active_progress } else { None };
+            civics_tree::CivicNode {
+                id: n.id.as_ulid().to_string(),
+                name: n.name.clone(),
+                cost: n.cost,
+                progress,
+                unlocks: n.inspiration_description.clone(),
+                era: era_for_tech_cost(n.cost),
+                status,
+                prereqs: prereq_ids,
+            }
+        })
+        .collect();
+
+    let civic_queue = active
+        .map(|id| vec![id.as_ulid().to_string()])
+        .unwrap_or_default();
+
+    civics_tree::CivicsTreeView {
+        civics,
+        civic_queue,
+    }
+}
+
+/// Heuristic era classification by cost — replaces server-side era lookup
+/// while libciv hasn't yet exposed era per node. Replaced in Phase 3 final
+/// pass with the real era field once `RulesEngine::tech_era(node)` lands.
+fn era_for_tech_cost(cost: u32) -> String {
+    match cost {
+        0..=49 => "Ancient".into(),
+        50..=99 => "Classical".into(),
+        100..=199 => "Medieval".into(),
+        200..=299 => "Renaissance".into(),
+        300..=499 => "Industrial".into(),
+        _ => "Modern+".into(),
+    }
 }
 
 pub fn build_government(view: &GameView) -> government::GovernmentPolicies {
-    government::GovernmentPolicies::default()
+    let government::GovernmentPolicies { catalogue, .. } = government::GovernmentPolicies::default();
+    let active_policies: Vec<government::ActivePolicy> = view
+        .my_civ
+        .active_policies
+        .iter()
+        .enumerate()
+        .map(|(i, pid)| government::ActivePolicy {
+            slot: format!("slot_{i}"),
+            id: pid.as_ulid().to_string(),
+            name: format!("Policy {}", i + 1),
+            effect: String::new(),
+        })
+        .collect();
+
+    let government = government::Government {
+        id: view
+            .my_civ
+            .current_government
+            .clone()
+            .map(|s| s.to_lowercase().replace(' ', "_"))
+            .unwrap_or_else(|| "chiefdom".into()),
+        name: view
+            .my_civ
+            .current_government
+            .clone()
+            .unwrap_or_else(|| "Chiefdom".into()),
+        era: format!("{:?}", view.my_civ.current_era),
+        slots: government::Slots {
+            military: 2,
+            economic: 2,
+            diplomatic: 1,
+            wildcard: 0,
+        },
+        legacy_bonus: String::new(),
+    };
+
+    government::GovernmentPolicies {
+        government,
+        active_policies,
+        catalogue,
+    }
 }
 
 pub fn build_diplomacy(view: &GameView) -> diplomacy::Diplomacy {

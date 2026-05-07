@@ -609,6 +609,103 @@ fn view_after_mutation_city(
         .ok_or_else(|| crate::server::rest::auth::not_found("city not found"))
 }
 
+// ── /tech ────────────────────────────────────────────────────────────────────
+
+pub async fn tech(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_tech_tree(&view)))
+}
+
+#[derive(Deserialize)]
+pub struct TechResearchBody {
+    pub tech_id: String,
+}
+
+pub async fn tech_research(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<TechResearchBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let tech_ulid: ulid::Ulid = body
+        .tech_id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid tech id"))?;
+    let tech = crate::types::ids::TechId::from_ulid(tech_ulid);
+    let action = crate::types::messages::GameAction::QueueResearch { tech };
+
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+    let view = view_only(&state, game_id, civ_id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view: web_projection::build_tech_tree(&view),
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
+// ── /civics ──────────────────────────────────────────────────────────────────
+
+pub async fn civics(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_civics_tree(&view)))
+}
+
+#[derive(Deserialize)]
+pub struct CivicResearchBody {
+    pub civic_id: String,
+}
+
+pub async fn civic_research(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<CivicResearchBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let civic_ulid: ulid::Ulid = body
+        .civic_id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid civic id"))?;
+    let civic = crate::types::ids::CivicId::from_ulid(civic_ulid);
+    let action = crate::types::messages::GameAction::QueueCivic { civic };
+
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+    let view = view_only(&state, game_id, civ_id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view: web_projection::build_civics_tree(&view),
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
+// ── /government ──────────────────────────────────────────────────────────────
+
+pub async fn government(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    Ok(Json(web_projection::build_government(&view)))
+}
+
 // ── /map/overlays (Phase 4 stub) ─────────────────────────────────────────────
 
 pub async fn map_overlays(
