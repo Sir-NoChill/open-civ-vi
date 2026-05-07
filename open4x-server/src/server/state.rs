@@ -1,5 +1,6 @@
 //! Server-wide shared state and per-game room state.
 
+use std::collections::VecDeque;
 use std::sync::Arc;
 
 use dashmap::DashMap;
@@ -44,6 +45,93 @@ pub struct GameRoom {
     pub config: GameRoomConfig,
     /// Broadcast channel for sending updates to connected players.
     pub tx: broadcast::Sender<ServerMessage>,
+    /// Per-civ ring buffer of notifications. Populated from `advance_turn`
+    /// deltas; capped per civ at `NOTIFICATION_CAP` (oldest evicted).
+    pub notifications: NotificationBuffer,
+}
+
+/// Bounded notification log keyed by civilization. Newest notification at the
+/// back (so iteration yields chronological order).
+pub const NOTIFICATION_CAP: usize = 64;
+
+/// Keyed by the **wire-side** `CivId` (`crate::types::ids::CivId`), not the
+/// libciv one — the projector reads this with the auth_or_401 result.
+pub type NotifCivId = crate::types::ids::CivId;
+
+#[derive(Debug, Clone, Default)]
+pub struct NotificationBuffer {
+    pub by_civ: std::collections::HashMap<NotifCivId, VecDeque<NotificationRecord>>,
+    pub next_id: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationRecord {
+    pub id: String,
+    pub turn: u32,
+    pub kind: NotificationKind,
+    pub category: &'static str,
+    pub title: String,
+    pub desc: String,
+    pub target: Option<NotificationTarget>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotificationKind {
+    Accent,
+    Good,
+    Warn,
+    Bad,
+    Neutral,
+}
+
+impl NotificationKind {
+    pub fn as_wire(self) -> &'static str {
+        match self {
+            Self::Accent => "accent",
+            Self::Good => "good",
+            Self::Warn => "warn",
+            Self::Bad => "bad",
+            Self::Neutral => "",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationTarget {
+    pub screen: String,
+    pub q: Option<i32>,
+    pub r: Option<i32>,
+}
+
+impl NotificationBuffer {
+    pub fn push(&mut self, civ: NotifCivId, mut rec: NotificationRecord) {
+        if rec.id.is_empty() {
+            self.next_id += 1;
+            rec.id = format!("n{}", self.next_id);
+        }
+        let q = self.by_civ.entry(civ).or_default();
+        if q.len() >= NOTIFICATION_CAP {
+            q.pop_front();
+        }
+        q.push_back(rec);
+    }
+
+    pub fn for_civ(&self, civ: NotifCivId) -> Vec<NotificationRecord> {
+        self.by_civ.get(&civ).map(|q| q.iter().cloned().collect()).unwrap_or_default()
+    }
+
+    pub fn dismiss(&mut self, civ: NotifCivId, id: &str) -> bool {
+        let Some(q) = self.by_civ.get_mut(&civ) else { return false };
+        let len_before = q.len();
+        q.retain(|r| r.id != id);
+        len_before != q.len()
+    }
+
+    pub fn dismiss_all(&mut self, civ: NotifCivId) {
+        if let Some(q) = self.by_civ.get_mut(&civ) {
+            q.clear();
+        }
+    }
 }
 
 pub struct GameRoomConfig {

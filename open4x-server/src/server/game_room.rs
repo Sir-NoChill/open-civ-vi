@@ -2,11 +2,199 @@
 
 use libciv::civ::ProductionItem;
 use libciv::game::recalculate_visibility;
+use libciv::game::diff::{GameStateDiff, StateDelta};
 use libciv::{CivId, RulesEngine, TurnEngine};
 
 use crate::types::messages::GameAction;
 
-use crate::server::state::GameRoom;
+use crate::server::state::{
+    GameRoom, NotificationKind, NotificationRecord, NotificationTarget,
+};
+
+/// Walk every StateDelta from the resolved turn and append notification
+/// records to the per-civ buffer. Player-visible events only — internal
+/// bookkeeping deltas (CitizenAssigned, GoldChanged etc.) are omitted to
+/// avoid spamming the feed.
+fn emit_notifications_from_diff(room: &mut GameRoom, diff: &GameStateDiff) {
+    let civ_ids: Vec<CivId> = room.players.iter().map(|s| s.civ_id).collect();
+    let turn = room.state.turn;
+
+    for delta in &diff.deltas {
+        match delta {
+            StateDelta::TechResearched { civ, tech } => {
+                if civ_ids.contains(civ) {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Accent,
+                        category: "research",
+                        title: "Research complete".into(),
+                        desc: format!("{tech} researched · choose next →"),
+                        target: Some(NotificationTarget { screen: "tech".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::CivicCompleted { civ, civic } => {
+                if civ_ids.contains(civ) {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Accent,
+                        category: "civic",
+                        title: "Civic unlocked".into(),
+                        desc: format!("{civic} complete"),
+                        target: Some(NotificationTarget { screen: "civics".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::EurekaTriggered { civ, tech } => {
+                if civ_ids.contains(civ) {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Good,
+                        category: "research",
+                        title: "Eureka!".into(),
+                        desc: format!("Boost toward {tech}"),
+                        target: Some(NotificationTarget { screen: "tech".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::InspirationTriggered { civ, civic } => {
+                if civ_ids.contains(civ) {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Good,
+                        category: "civic",
+                        title: "Inspiration!".into(),
+                        desc: format!("Boost toward {civic}"),
+                        target: Some(NotificationTarget { screen: "civics".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::CityFounded { city: _, coord, owner } => {
+                if civ_ids.contains(owner) {
+                    let api_civ = api_civ_id(*owner);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Good,
+                        category: "city",
+                        title: "City founded".into(),
+                        desc: format!("at ({}, {})", coord.q, coord.r),
+                        target: Some(NotificationTarget {
+                            screen: "hud".into(), q: Some(coord.q), r: Some(coord.r),
+                        }),
+                    });
+                }
+            }
+            StateDelta::CityCaptured { new_owner, old_owner, .. } => {
+                if civ_ids.contains(new_owner) {
+                    let api_civ = api_civ_id(*new_owner);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Good,
+                        category: "military",
+                        title: "City captured".into(),
+                        desc: "An enemy city has fallen.".into(),
+                        target: Some(NotificationTarget { screen: "overview".into(), q: None, r: None }),
+                    });
+                }
+                if civ_ids.contains(old_owner) {
+                    let api_civ = api_civ_id(*old_owner);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Bad,
+                        category: "military",
+                        title: "City lost".into(),
+                        desc: "We lost a city.".into(),
+                        target: Some(NotificationTarget { screen: "overview".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::PopulationGrew { city: _, new_population } => {
+                // Attribute to all civs that own the city — find from state.
+                for civ in &civ_ids {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Neutral,
+                        category: "city",
+                        title: "Population growth".into(),
+                        desc: format!("A city grew to {new_population}"),
+                        target: Some(NotificationTarget { screen: "overview".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::BuildingCompleted { city: _, building } => {
+                for civ in &civ_ids {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Good,
+                        category: "production",
+                        title: "Building complete".into(),
+                        desc: format!("{building} finished"),
+                        target: Some(NotificationTarget { screen: "city".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::WonderBuilt { civ, wonder, .. } => {
+                if civ_ids.contains(civ) {
+                    let api_civ = api_civ_id(*civ);
+                    room.notifications.push(api_civ, NotificationRecord {
+                        id: String::new(),
+                        turn,
+                        kind: NotificationKind::Accent,
+                        category: "wonder",
+                        title: "Wonder built".into(),
+                        desc: format!("{wonder} complete"),
+                        target: Some(NotificationTarget { screen: "city".into(), q: None, r: None }),
+                    });
+                }
+            }
+            StateDelta::DiplomacyChanged { civ_a, civ_b, new_status } => {
+                let mention = |me: &CivId, other: &CivId| {
+                    if civ_ids.contains(me) {
+                        let api_me = api_civ_id(*me);
+                        let api_other = api_civ_id(*other);
+                        let kind = match new_status {
+                            libciv::civ::diplomacy::DiplomaticStatus::War => NotificationKind::Bad,
+                            libciv::civ::diplomacy::DiplomaticStatus::Alliance => NotificationKind::Good,
+                            _ => NotificationKind::Warn,
+                        };
+                        Some((api_me, NotificationRecord {
+                            id: String::new(),
+                            turn,
+                            kind,
+                            category: "diplomacy",
+                            title: format!("Relations: {new_status:?}"),
+                            desc: format!("with civ {api_other}"),
+                            target: Some(NotificationTarget { screen: "dipl".into(), q: None, r: None }),
+                        }))
+                    } else { None }
+                };
+                if let Some((c, rec)) = mention(civ_a, civ_b) { room.notifications.push(c, rec); }
+                if let Some((c, rec)) = mention(civ_b, civ_a) { room.notifications.push(c, rec); }
+            }
+            // Bookkeeping deltas we deliberately don't surface as notifications
+            _ => {}
+        }
+    }
+}
+
+fn api_civ_id(c: CivId) -> crate::types::ids::CivId {
+    crate::types::ids::CivId::from_ulid(c.as_ulid())
+}
 
 impl GameRoom {
     /// Apply a player action, validating ownership.
@@ -202,7 +390,10 @@ impl GameRoom {
     /// Resolve the current turn: advance game state, run AI, reset movement.
     pub fn resolve_turn(&mut self) {
         let engine = TurnEngine::new();
-        engine.process_turn(&mut self.state, &self.rules);
+        let diff = engine.process_turn(&mut self.state, &self.rules);
+
+        // Convert StateDeltas into per-civ NotificationRecords.
+        emit_notifications_from_diff(self, &diff);
 
         // Reset movement for all units.
         for unit in &mut self.state.units {

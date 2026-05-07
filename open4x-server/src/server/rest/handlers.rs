@@ -149,6 +149,7 @@ pub async fn new_game(
             turn_limit: create_req.turn_limit,
         },
         tx,
+        notifications: Default::default(),
     };
 
     let initial_turn = room.state.turn;
@@ -802,7 +803,40 @@ pub async fn notifications(
 ) -> Result<impl IntoResponse, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
-    Ok(Json(web_projection::build_notifications(&view)))
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    Ok(Json(web_projection::build_notifications_from_room(
+        &view, &room, civ_id,
+    )))
+}
+
+pub async fn dismiss_notification(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let mut room = state
+        .games
+        .get_mut(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    room.notifications.dismiss(civ_id, &id);
+    Ok((StatusCode::NO_CONTENT, ""))
+}
+
+pub async fn dismiss_all_notifications(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let mut room = state
+        .games
+        .get_mut(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    room.notifications.dismiss_all(civ_id);
+    Ok((StatusCode::NO_CONTENT, ""))
 }
 
 pub async fn turn_queue(

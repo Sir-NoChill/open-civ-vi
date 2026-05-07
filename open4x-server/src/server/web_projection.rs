@@ -826,9 +826,38 @@ pub fn build_victory(view: &GameView) -> victory::Victory {
 // ── /notifications ───────────────────────────────────────────────────────────
 
 pub fn build_notifications(view: &GameView) -> notifications::Notifications {
+    // Default impl when no room context; handler with room access uses
+    // build_notifications_from_room below.
     notifications::Notifications {
         turn: view.turn,
         notifications: Vec::new(),
+    }
+}
+
+pub fn build_notifications_from_room(
+    view: &GameView,
+    room: &crate::server::state::GameRoom,
+    civ: crate::types::ids::CivId,
+) -> notifications::Notifications {
+    let recs = room.notifications.for_civ(civ);
+    let items = recs
+        .into_iter()
+        .map(|r| notifications::Notification {
+            id: r.id,
+            kind: r.kind.as_wire().to_string(),
+            category: r.category.to_string(),
+            title: r.title,
+            desc: r.desc,
+            target: r.target.map(|t| notifications::NotificationTarget {
+                screen: t.screen,
+                q: t.q,
+                r: t.r,
+            }),
+        })
+        .collect();
+    notifications::Notifications {
+        turn: view.turn,
+        notifications: items,
     }
 }
 

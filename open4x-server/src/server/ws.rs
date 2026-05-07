@@ -134,6 +134,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                         turn_limit: req.turn_limit,
                     },
                     tx,
+                    notifications: Default::default(),
                 };
 
                 state.games.insert(game_id, room);

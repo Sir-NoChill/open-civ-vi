@@ -43,7 +43,8 @@ pub fn v1_router() -> Router<Arc<AppState>> {
         .route("/empire/overview", get(handlers::empire_overview))
         .route("/victory", get(handlers::victory))
         .route("/registry", get(handlers::registry))
-        .route("/notifications", get(handlers::notifications))
+        .route("/notifications", get(handlers::notifications).delete(handlers::dismiss_all_notifications))
+        .route("/notifications/{id}", delete(handlers::dismiss_notification))
         .route("/turn-queue", get(handlers::turn_queue))
         // writes
         .route("/cities/{id}/production", post(handlers::queue_production))

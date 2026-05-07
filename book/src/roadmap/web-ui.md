@@ -600,8 +600,9 @@ government, slot policies, and confirm — all through REST.
    (current `build_turn_queue` and `build_victory` are pure projections;
    neither calls into libciv yet — the conditions array uses a static
    placeholder list of the 6 builtin victories with `player_pct = 0`.)
-3. [ ] `NotificationRecord` ring buffer in `GameRoom` populated from
-   `advance_turn` deltas. `/notifications` currently returns an empty list.
+3. [x] `NotificationRecord` ring buffer in `GameRoom` populated from
+   `advance_turn` deltas. ✅ `/notifications` returns per-civ records,
+   `DELETE /notifications` and `DELETE /notifications/{id}` clear them.
 4. [ ] New tabs: `tabs/diplomacy.rs`, `tabs/empire.rs`, `tabs/victory.rs`.
 5. [ ] Drawers: `components/hud/{notifications,turn_queue,overlays}_drawer.rs`.
 6. [x] Block End Turn when `turn-queue` has `required: true` items —
@@ -670,6 +671,38 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Post-plan — NotificationRecord ring buffer (2026-05-07)
+
+- **Commit `feat(open4x-server): NotificationRecord ring buffer + DELETE handlers (post-plan)`**:
+  - Added `NotificationBuffer` to `GameRoom` (server/state.rs): per-civ
+    `VecDeque<NotificationRecord>` capped at 64 entries, oldest evicted.
+    Keyed on the wire-side `crate::types::ids::CivId` (aliased
+    `NotifCivId`) so the projector can read with the auth_or_401 result
+    directly.
+  - `NotificationKind` enum (Accent/Good/Warn/Bad/Neutral) with a
+    `as_wire()` method that serialises to the strings the wireframe HUD
+    expects ("accent", "good", "warn", "bad", "").
+  - `GameRoom::resolve_turn` now captures the `GameStateDiff` returned
+    by `TurnEngine::process_turn` and walks it via
+    `emit_notifications_from_diff`. Per-delta mappings:
+    - `TechResearched` / `CivicCompleted` → Accent
+    - `EurekaTriggered` / `InspirationTriggered` → Good
+    - `CityFounded` / `BuildingCompleted` → Good
+    - `CityCaptured` → Good for new owner, Bad for old owner
+    - `WonderBuilt` → Accent
+    - `DiplomacyChanged` → Bad/Good/Warn keyed on new status
+    - `PopulationGrew` → Neutral
+    - other deltas (movement, gold, citizen assignment) deliberately
+      not surfaced to avoid spam.
+  - REST handlers: `GET /notifications` switches to
+    `build_notifications_from_room(view, room, civ)`;
+    `DELETE /notifications/{id}` and `DELETE /notifications` (no id)
+    return 204 No Content. Routes wired via `.delete()` chained on the
+    same `/notifications` route.
+  - Both `GameRoom` initializers (WS `CreateGame` and REST `new_game`)
+    take `notifications: Default::default()`.
+  - All 10 integration tests still pass; both ssr/csr clippy clean.
 
 ### Phase 5 — Archive wireframe (2026-05-07)
 
