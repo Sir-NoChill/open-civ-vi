@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use axum::Router;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
@@ -33,6 +33,9 @@ async fn main() {
         .route("/api/v1/units/{id}", get(server::rest::handlers::unit_detail))
         .route("/api/v1/armies", get(server::rest::handlers::armies))
         .route("/api/v1/combat/preview", get(server::rest::handlers::combat_preview))
+        .route("/api/v1/cities/{id}/production", post(server::rest::handlers::queue_production))
+        .route("/api/v1/cities/{id}/production/{pos}", delete(server::rest::handlers::cancel_production))
+        .route("/api/v1/units/{id}/action", post(server::rest::handlers::unit_action))
         .route("/api/v1/turn/end", post(server::rest::handlers::end_turn))
         // Legacy /api/game/* (deprecated, removed in Phase 5)
         .route("/api/game/view", get(server::api::game_view))

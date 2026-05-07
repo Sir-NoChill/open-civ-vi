@@ -376,6 +376,239 @@ pub async fn combat_preview(
     .ok_or_else(|| crate::server::rest::auth::not_found("attacker not found"))
 }
 
+// ── mutations: city production ───────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct QueueProductionBody {
+    pub item_id: String,
+    pub item_type: String, // "unit" | "building" | "wonder" | "district" | "project"
+}
+
+/// `POST /api/v1/cities/{id}/production` — append `{item_id, item_type}` to the
+/// city's production queue.
+pub async fn queue_production(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    Json(body): Json<QueueProductionBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let city_ulid: ulid::Ulid = id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
+    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+
+    let item_ulid: ulid::Ulid = body.item_id.parse().map_err(|_| {
+        crate::server::rest::auth::bad_request("invalid_id", "invalid item id")
+    })?;
+    let item = match body.item_type.as_str() {
+        "unit" => crate::types::enums::ProductionItemView::Unit(
+            crate::types::ids::UnitTypeId::from_ulid(item_ulid),
+        ),
+        "building" => crate::types::enums::ProductionItemView::Building(
+            crate::types::ids::BuildingId::from_ulid(item_ulid),
+        ),
+        "wonder" => crate::types::enums::ProductionItemView::Wonder(
+            crate::types::ids::WonderId::from_ulid(item_ulid),
+        ),
+        "project" => crate::types::enums::ProductionItemView::Project(
+            crate::types::ids::ProjectId::from_ulid(item_ulid),
+        ),
+        // District is a plain enum (not ULID); unsupported here.
+        other => {
+            return Err(crate::server::rest::auth::bad_request(
+                "invalid_item_type",
+                &format!("item_type {other:?} not supported via REST yet"),
+            ));
+        }
+    };
+
+    let action = crate::types::messages::GameAction::QueueProduction { city: city_id, item };
+
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+
+    let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view,
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
+/// `DELETE /api/v1/cities/{id}/production/{pos}` — remove queue entry at index.
+pub async fn cancel_production(
+    State(state): State<Arc<AppState>>,
+    Path((id, pos)): Path<(String, usize)>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let city_ulid: ulid::Ulid = id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
+    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+
+    let action = crate::types::messages::GameAction::CancelProduction { city: city_id, index: pos };
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+
+    let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view,
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
+// ── mutations: unit actions ──────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct UnitActionBody {
+    pub action_id: String,                 // "move" | "attack" | "fortify" | "sleep" | "found_city"
+    #[serde(default)]
+    pub target_q: Option<i32>,
+    #[serde(default)]
+    pub target_r: Option<i32>,
+    /// City name when `action_id == "found_city"`. Defaults to "New City".
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// `POST /api/v1/units/{id}/action` — dispatch a unit action through libciv.
+pub async fn unit_action(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    Json(body): Json<UnitActionBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let unit_ulid: ulid::Ulid = id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid unit id"))?;
+    let unit_id = crate::types::ids::UnitId::from_ulid(unit_ulid);
+
+    let target = match (body.target_q, body.target_r) {
+        (Some(q), Some(r)) => Some(crate::types::coord::HexCoord { q, r, s: -q - r }),
+        _ => None,
+    };
+
+    let action = match body.action_id.as_str() {
+        "move" => {
+            let to = target.ok_or_else(|| {
+                crate::server::rest::auth::bad_request("missing_target", "move requires target_q/target_r")
+            })?;
+            crate::types::messages::GameAction::MoveUnit { unit: unit_id, to }
+        }
+        "attack" => {
+            // Resolve defender by coord lookup against the player's view.
+            let to = target.ok_or_else(|| {
+                crate::server::rest::auth::bad_request("missing_target", "attack requires target_q/target_r")
+            })?;
+            let view = view_only(&state, game_id, civ_id)?;
+            let defender = view
+                .units
+                .iter()
+                .find(|u| u.coord == to && !u.is_own)
+                .ok_or_else(|| crate::server::rest::auth::not_found("no enemy unit at target"))?;
+            crate::types::messages::GameAction::Attack {
+                attacker: unit_id,
+                defender: defender.id,
+            }
+        }
+        "found_city" => crate::types::messages::GameAction::FoundCity {
+            settler: unit_id,
+            name: body.name.clone().unwrap_or_else(|| "New City".into()),
+        },
+        "fortify" | "sleep" => {
+            // No matching GameAction variant yet; treat as a UI no-op so the
+            // wireframe doesn't fail. Will plumb through libciv in Phase 4.
+            let new_turn = state.games.get(&game_id).map(|r| r.state.turn).unwrap_or(0);
+            return Ok((
+                StatusCode::ACCEPTED,
+                Json(MutationResponse {
+                    ok: true,
+                    view: serde_json::Value::Null,
+                    turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+                }),
+            ));
+        }
+        other => {
+            return Err(crate::server::rest::auth::bad_request(
+                "unknown_action",
+                &format!("unit action {other:?} not supported"),
+            ));
+        }
+    };
+
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+
+    let view = view_only(&state, game_id, civ_id)?;
+    let unit = web_projection::build_units(&view)
+        .units
+        .into_iter()
+        .find(|u| u.id == id);
+
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view: serde_json::to_value(unit).unwrap_or(serde_json::Value::Null),
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
+// ── mutation helpers ─────────────────────────────────────────────────────────
+
+fn mutate_room<F>(
+    state: &Arc<AppState>,
+    game_id: GameId,
+    f: F,
+) -> Result<u32, ApiError>
+where
+    F: FnOnce(&mut GameRoom) -> Result<(), String>,
+{
+    let mut room = state
+        .games
+        .get_mut(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    f(&mut room).map_err(|e| crate::server::rest::auth::bad_request("rule_violation", &e))?;
+    Ok(room.state.turn)
+}
+
+fn view_only(
+    state: &Arc<AppState>,
+    game_id: GameId,
+    civ_id: CivId,
+) -> Result<GameView, ApiError> {
+    let (view, _) = view_and_turn_limit(state, game_id, civ_id)?;
+    Ok(view)
+}
+
+fn view_after_mutation_city(
+    state: &Arc<AppState>,
+    game_id: GameId,
+    civ_id: CivId,
+    city_id: &str,
+) -> Result<crate::types::web::city_data::CityRow, ApiError> {
+    let view = view_only(state, game_id, civ_id)?;
+    web_projection::build_cities(&view)
+        .cities
+        .into_iter()
+        .find(|c| c.id == city_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("city not found"))
+}
+
 // ── /map/overlays (Phase 4 stub) ─────────────────────────────────────────────
 
 pub async fn map_overlays(

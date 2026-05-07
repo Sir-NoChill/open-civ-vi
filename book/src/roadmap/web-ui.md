@@ -1,6 +1,7 @@
 # Web UI Roadmap — Leptos port of the `open4x-webui/` wireframe
 
-> **Status**: Phase 0 + Phase 1 complete. Phase 2 next.
+> **Status**: Phase 0–2 server side complete (reads + production/unit-action
+> mutations). Phase 2 client tabs + libciv extensions in progress.
 > **Goal**: Replace the static `open4x-webui/` HTML wireframe with an interactive
 > Leptos/WASM frontend that lives in `open4x-server` and is driven by REST calls
 > against the same crate's `ssr` server. Single-player, declarative state on the
@@ -551,15 +552,19 @@ Verified via `curl` against a live `target/release/open4x-server`.
 
 ### Phase 2 — Cities + Units (the core gameplay loop)
 
-1. Projectors: `build_cities`, `build_city_tiles`, `build_units`.
-2. New `RulesEngine` methods: `available_unit_actions`, `preview_combat`.
-3. New `GameAction` variants: `AssignCityFocus`, `RenameCity`.
-4. REST routes for everything in `/api/v1/cities/*`, `/api/v1/units/*`, plus
-   `/api/v1/combat/preview`.
-5. Port `tabs/city.rs` into the new shape (production queue, citizens,
-   buildings, district list).
-6. Add `tabs/units.rs` with the wireframe's army/unit list + action buttons.
-7. Add `components/hud/sidebar.rs` (replaces `pages/game.rs::Sidebar`).
+1. [x] Projectors: `build_cities`, `build_city_tiles`, `build_units`.
+2. [ ] New `RulesEngine` methods: `available_unit_actions`, `preview_combat`
+   (current `build_combat_preview` is a heuristic stub flagged in its `note`
+   field — replace with libciv-driven version).
+3. [ ] New `GameAction` variants: `AssignCityFocus`, `RenameCity`.
+4. [x] REST reads for `/api/v1/cities/*`, `/api/v1/units/*`,
+   `/api/v1/combat/preview`. ✅
+5. [x] REST writes: `POST /cities/{id}/production`,
+   `DELETE /cities/{id}/production/{pos}`, `POST /units/{id}/action`
+   (move, attack, found_city; fortify/sleep stubbed). ✅ smoke-tested.
+6. [ ] Port `tabs/city.rs` into the new shape.
+7. [ ] Add `tabs/units.rs`.
+8. [ ] Add `components/hud/sidebar.rs`.
 
 **Done when**: a player can found cities, queue production, work tiles, move
 units, and engage combat purely through REST. WebSocket is unused for
@@ -651,6 +656,46 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 2 — Cities + Units (server side, 2026-05-07)
+
+- **Commit `feat(open4x-server): cities + units REST surface (Phase 2 reads)`**:
+  - Real projectors `build_cities`, `build_city_tiles`, `build_units`,
+    `build_armies` (stub), `build_combat_preview` (heuristic — `note` field
+    flags the libciv replacement).
+  - Wire-type expansions in `types/web.rs` (city queue, owner, worked-tile
+    count; unit hp/mp/strength/category/domain/actions; combat preview).
+  - REST handlers `cities`, `city_detail`, `city_tiles`, `units`,
+    `unit_detail`, `armies`, `combat_preview`.
+  - Client bindings in `components/api/{cities,units}.rs`.
+  - Two new projector tests bringing the total to 5.
+  - **ID-on-the-wire fix**: switched every emission to
+    `*.as_ulid().to_string()` (the newtype Display wraps as `Type(ULID)`
+    which broke `/cities/{id}` and `/units/{id}` path parsing). Bare ULID
+    strings everywhere now.
+- **Commit `feat(open4x-server): mutation routes for production + unit actions (Phase 2 writes)`**:
+  - `POST /api/v1/cities/{id}/production` — accepts `{item_id, item_type}`,
+    routes through existing `GameAction::QueueProduction`. Returns the
+    updated `CityRow` in the standard `MutationResponse` envelope.
+    Supports `item_type` ∈ {unit, building, wonder, project}; district is
+    plain-enum and gets a `400 invalid_item_type` for now.
+  - `DELETE /api/v1/cities/{id}/production/{pos}` — routes to
+    `GameAction::CancelProduction`.
+  - `POST /api/v1/units/{id}/action` — body `{action_id, target_q?,
+    target_r?, name?}`. Dispatches to `MoveUnit`, `Attack` (defender
+    resolved by coord lookup against the player's `GameView`), or
+    `FoundCity`. `fortify`/`sleep` are stubbed as 202-no-op until libciv
+    grows the matching `GameAction`s.
+  - `mutate_room` helper applies a closure under a `DashMap::get_mut`
+    lock and translates `Result<(), String>` errors into 400
+    `rule_violation` responses.
+  - Client bindings in `components/api/cities.rs::queue_production` /
+    `cancel_production` and `components/api/units.rs::dispatch`.
+  - Smoke-tested end-to-end against `target/release/open4x-server`:
+    move warrior (1,2) → (2,2) drained mp 2 → 0; queue Warrior in capital;
+    delete queue position 0 returned the city row with empty queue.
+  - No libciv changes in this commit (mutations all use existing
+    `GameAction` variants, already covered by the WS path and tests).
 
 ### Phase 1 — HUD MVP (2026-05-07)
 

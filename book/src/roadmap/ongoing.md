@@ -1,6 +1,6 @@
 # Ongoing Work
 
-> **Current task**: Web UI port — Phase 2 (Cities + Units)
+> **Current task**: Web UI port — Phase 2 (Cities + Units), client + libciv
 > **Plan**: [book/src/roadmap/web-ui.md](./web-ui.md)
 > **Status**: In progress
 
@@ -8,11 +8,12 @@
 
 - [x] Phase 0 — Scaffolding
 - [x] Phase 1 — HUD MVP (HexMap rebind deferred to Phase 2)
-- [ ] Phase 2 — Cities + Units
-  - [ ] `build_cities` / `build_city_tiles` / `build_units` projectors
+- [~] Phase 2 — Cities + Units (server-side reads + mutations done; client + libciv pending)
+  - [x] `build_cities` / `build_city_tiles` / `build_units` projectors
+  - [x] REST reads for cities, units, combat preview
+  - [x] REST writes: production queue, unit move/attack/found_city
   - [ ] New `RulesEngine::available_unit_actions` / `preview_combat`
   - [ ] New `GameAction::AssignCityFocus` / `RenameCity`
-  - [ ] REST routes for cities, units, combat preview
   - [ ] `tabs/city.rs` REST-driven port
   - [ ] `tabs/units.rs` (new)
   - [ ] HexMap refactor: take `WorldSnapshot` instead of `GameView`
