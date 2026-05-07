@@ -612,8 +612,8 @@ all render real data and accept user input.
 
 ### Phase 5 — Cleanup
 
-1. [ ] Delete `open4x-webui/` (or move to `docs/legacy-wireframe/` if we
-   want to keep it as a visual reference).
+1. [x] Delete `open4x-webui/` (moved to `docs/legacy-wireframe/` with a
+   README explaining its archived status). ✅
 2. [x] Remove the `/api/game/*` legacy routes from the router. ✅ Replaced
    by `GET /api/v1/registry` exposing `unit_types` and `buildings`.
    `server/{api,reports}.rs` modules retained as dead code for now (zero
@@ -670,6 +670,17 @@ endpoint and the wireframe directory is gone.
 ## 10. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 5 — Archive wireframe (2026-05-07)
+
+- **Commit `docs: archive open4x-webui wireframe under docs/legacy-wireframe/ (Phase 5 task 1)`**:
+  - Moved the entire `open4x-webui/` tree to `docs/legacy-wireframe/`.
+    Added a `README.md` there explaining the archival status and pointing
+    at the live client docs and the roadmap.
+  - References in `book/src/roadmap/web-ui.md` and
+    `book/src/multiplayer/web-client.md` still talk about the wireframe
+    by its original name when referring to the visual / data-shape source
+    of truth — those references all read as historical now.
 
 ### Phase 5 — Registry endpoint, drop legacy routes, docs (2026-05-07)
 

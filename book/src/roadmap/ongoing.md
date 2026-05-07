@@ -17,12 +17,42 @@
 - [~] Phase 4 — server reads done; libciv pending_actions / victory_progress
       + NotificationRecord ring buffer + tabs/{diplomacy,empire,victory}.rs
       + drawers + 400-on-required-turn-end pending
-- [~] Phase 5 — Cleanup
-  - [ ] Delete or move open4x-webui/
-  - [ ] Drop /api/game/* legacy routes + server/reports.rs
-        (gated on /api/v1/registry exposing unit_type_defs)
+- [x] Phase 5 — Cleanup
+  - [x] Move open4x-webui/ → docs/legacy-wireframe/
+  - [x] Drop /api/game/* legacy routes (server/{api,reports}.rs
+        modules retained as dead code; full deletion is a follow-up)
   - [x] Integration tests in open4x-server/tests/rest_api.rs (10 tests)
-  - [ ] Document API in book/src/multiplayer/web-client.md
+  - [x] Document API in book/src/multiplayer/web-client.md
+
+## Remaining (post-plan)
+
+These items were deferred from earlier phases and are still open:
+
+- libciv extensions
+  - `RulesEngine::available_unit_actions` (replaces hardcoded action set
+    in `web_projection::build_units`)
+  - `RulesEngine::preview_combat` (replaces the heuristic
+    `build_combat_preview`)
+  - `RulesEngine::pending_actions` (replaces `build_turn_queue`'s
+    hand-rolled "choose_research" check)
+  - `RulesEngine::victory_progress` (replaces the placeholder
+    `player_pct=0` in `build_victory`)
+  - `RulesEngine::policy_catalogue` (lets `build_government` populate
+    the catalogue array)
+  - `GameAction::AssignCityFocus`, `RenameCity`, `CancelResearch`,
+    `CancelCivic`, `ChangeGovernment` (and matching REST mutations)
+- `NotificationRecord` ring buffer on `GameRoom`, populated from
+  `advance_turn` deltas; `build_notifications` reads from it
+- HexMap refactor to consume `WorldSnapshot` directly
+- Per-tab Leptos ports
+  - `tabs/city.rs` (extend existing) → REST-driven
+  - `tabs/units.rs` (new)
+  - `tabs/government.rs` (new)
+  - `tabs/diplomacy.rs` (new)
+  - `tabs/empire.rs` (new)
+  - `tabs/victory.rs` (new)
+  - drawers: notifications / turn-queue / overlays
+- Full deletion of `server/{api,reports}.rs` and `types/reports.rs`
 - [ ] Phase 3 — Research & policy stacks
 - [ ] Phase 4 — Outer loop screens
 - [ ] Phase 5 — Cleanup
