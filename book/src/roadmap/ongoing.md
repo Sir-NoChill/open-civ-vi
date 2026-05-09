@@ -63,7 +63,11 @@ into the server projector.
 
 ### GameAction variants + REST mutations
 
-- [ ] `GameAction::AssignCityFocus` + `POST /cities/{id}/focus`
+- [x] `GameAction::AssignCityFocus` + `POST /cities/{id}/focus` —
+      `CityFocus` enum (Default/Food/Production/Gold/Science/Culture/
+      Faith) on `City`; engine stores the value (auto-assignment
+      heuristic not yet driven by it). Wire round-trip via
+      `city_data::CityRow.focus`. CLI: `action assign-city-focus`.
 - [ ] `GameAction::RenameCity` + `POST /cities/{id}/rename`
 - [ ] `GameAction::CancelResearch` + `DELETE /tech/research`
 - [ ] `GameAction::CancelCivic` + `DELETE /civics/research`
@@ -94,6 +98,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `pkmywxno` — feat(libciv,open4x-server): GameAction::AssignCityFocus
+  + POST /cities/{id}/focus.
 - `szyyxqnn` — feat(libciv): RulesEngine::policy_catalogue + populate
   /government catalogue.
 - `uvzvovyo` — feat(libciv): RulesEngine::preview_combat + wire
