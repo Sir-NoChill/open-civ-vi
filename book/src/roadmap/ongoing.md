@@ -50,8 +50,11 @@ into the server projector.
       SpreadReligion); new `build_units_from_room` calls into the
       engine per own unit and maps to wire shape. Exposed via CLI
       `status unit-actions --id <ulid>`.
-- [ ] `preview_combat(gs, attacker, defender_coord) -> CombatPreview` —
-      replaces the heuristic in `build_combat_preview`.
+- [x] `preview_combat(gs, attacker, defender_coord) -> CombatPreview` —
+      mirrors `attack()`'s effective-CS pipeline (promotions,
+      government, policies, GP auras, religion, terrain/walls/siege)
+      at rng=1.0; new `build_combat_preview_from_room` calls the
+      engine. Exposed via CLI `status combat-preview`.
 - [ ] `policy_catalogue(gs, civ) -> Vec<PolicyCardEntry>` — lets
       `build_government` populate the catalogue.
 
@@ -88,6 +91,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `uvzvovyo` — feat(libciv): RulesEngine::preview_combat + wire
+  through web combat-preview.
 - `tsmktrmt` — feat(libciv): RulesEngine::available_unit_actions +
   wire through web units.
 - `lmuswpsy` — feat(libciv): RulesEngine::victory_progress + register
