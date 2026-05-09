@@ -41,8 +41,10 @@ into the server projector.
       `build_turn_queue_from_room` calls into the engine and surfaces
       `choose_research` / `choose_civic` (required) plus per-unit and
       per-city advisory items. Exposed via CLI `status pending`.
-- [ ] `victory_progress(gs) -> Vec<VictoryProgress>` — replaces the
-      `player_pct=0` placeholder in `build_victory`.
+- [x] `victory_progress(gs) -> Vec<VictoryProgress>` — server session
+      now registers all 6 standard conditions; new
+      `build_victory_from_room` overlays engine percentages onto the
+      stable wire shape. Exposed via CLI `status victory`.
 - [ ] `available_unit_actions(gs, unit) -> Vec<UnitAction>` — replaces
       the hardcoded action set in `web_projection::build_units`.
 - [ ] `preview_combat(gs, attacker, defender_coord) -> CombatPreview` —
@@ -83,6 +85,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `lmuswpsy` — feat(libciv): RulesEngine::victory_progress + register
+  6 conditions in server session.
 - `lrrxwtmv` — feat(libciv): RulesEngine::pending_actions + wire
   through web turn-queue + CLI `status pending`.
 - `qrykmkqp` — feat(open4x-server): NotificationRecord ring buffer +
