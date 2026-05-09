@@ -45,8 +45,11 @@ into the server projector.
       now registers all 6 standard conditions; new
       `build_victory_from_room` overlays engine percentages onto the
       stable wire shape. Exposed via CLI `status victory`.
-- [ ] `available_unit_actions(gs, unit) -> Vec<UnitAction>` — replaces
-      the hardcoded action set in `web_projection::build_units`.
+- [x] `available_unit_actions(gs, unit) -> Vec<UnitAction>` — 8-kind
+      enum (Move/Attack/Fortify/Sleep/FoundCity/Build/TradeRoute/
+      SpreadReligion); new `build_units_from_room` calls into the
+      engine per own unit and maps to wire shape. Exposed via CLI
+      `status unit-actions --id <ulid>`.
 - [ ] `preview_combat(gs, attacker, defender_coord) -> CombatPreview` —
       replaces the heuristic in `build_combat_preview`.
 - [ ] `policy_catalogue(gs, civ) -> Vec<PolicyCardEntry>` — lets
@@ -85,6 +88,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `tsmktrmt` — feat(libciv): RulesEngine::available_unit_actions +
+  wire through web units.
 - `lmuswpsy` — feat(libciv): RulesEngine::victory_progress + register
   6 conditions in server session.
 - `lrrxwtmv` — feat(libciv): RulesEngine::pending_actions + wire
