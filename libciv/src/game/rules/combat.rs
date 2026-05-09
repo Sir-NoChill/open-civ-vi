@@ -39,8 +39,10 @@ fn era_index(era: Option<AgeType>) -> i32 {
 }
 
 /// Collect modifiers from all combat-relevant sources for a unit and return
-/// (flat_bonus, percent_bonus).
-fn resolve_combat_modifiers(state: &GameState, unit_id: UnitId) -> (i32, i32) {
+/// (flat_bonus, percent_bonus). Visible to sibling rules modules so e.g.
+/// the combat-preview module can compute the same effective combat strength
+/// without going through `attack()`.
+pub(super) fn resolve_combat_modifiers(state: &GameState, unit_id: UnitId) -> (i32, i32) {
     let unit = match state.unit(unit_id) {
         Some(u) => u,
         None => return (0, 0),

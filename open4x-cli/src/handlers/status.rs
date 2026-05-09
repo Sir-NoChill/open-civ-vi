@@ -215,6 +215,23 @@ pub fn handle_status(
                 "in_progress": in_progress,
             })
         }
+        StatusKind::CombatPreview { attacker, q, r } => {
+            let attacker_id = parse_ulid(attacker).map(libciv::UnitId::from_ulid)?;
+            let coord = HexCoord::from_qr(*q, *r);
+            let rules = DefaultRulesEngine;
+            match rules.preview_combat(&state, attacker_id, coord) {
+                Some(p) => json!({
+                    "attacker":                  p.attacker.as_ulid().to_string(),
+                    "defender":                  p.defender.as_ulid().to_string(),
+                    "attack_type":               format!("{:?}", p.attack_type),
+                    "attacker_effective_cs":     p.attacker_effective_cs,
+                    "defender_effective_cs":     p.defender_effective_cs,
+                    "predicted_attacker_damage": p.predicted_attacker_damage,
+                    "predicted_defender_damage": p.predicted_defender_damage,
+                }),
+                None => json!(null),
+            }
+        }
         StatusKind::UnitActions { id } => {
             let unit_id = parse_ulid(id).map(libciv::UnitId::from_ulid)?;
             let rules = DefaultRulesEngine;

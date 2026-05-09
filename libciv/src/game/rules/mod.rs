@@ -10,6 +10,7 @@ use super::state::GameState;
 pub(crate) mod barbarians;
 pub(crate) mod city;
 pub(crate) mod combat;
+pub(crate) mod combat_preview;
 pub(crate) mod diplomacy;
 pub(crate) mod effects;
 pub(crate) mod governors;
@@ -22,6 +23,7 @@ pub(crate) mod turn_pending;
 pub(crate) mod turn_phase;
 pub(crate) mod unit_actions;
 
+pub use combat_preview::CombatPreview;
 pub use turn_pending::{PendingAction, PendingActionKind};
 pub use unit_actions::{UnitAction, UnitActionKind};
 
@@ -122,6 +124,21 @@ pub trait RulesEngine: std::fmt::Debug {
     /// rules-specific items (e.g. mandatory great-person promotions).
     fn pending_actions(&self, state: &GameState, civ: CivId) -> Vec<PendingAction> {
         turn_pending::pending_actions(state, civ)
+    }
+
+    /// Compute a deterministic combat preview for `attacker` engaging
+    /// the unit at `defender_coord`. Returns `None` when there is no
+    /// defender on the tile, the attacker has no combat strength, or
+    /// the defender is out of range. Default impl uses the same effective
+    /// CS pipeline as [`Self::attack`] with `rng = 1.0`; see
+    /// [`combat_preview::preview_combat`] for limitations.
+    fn preview_combat(
+        &self,
+        state:          &GameState,
+        attacker:       UnitId,
+        defender_coord: HexCoord,
+    ) -> Option<CombatPreview> {
+        combat_preview::preview_combat(state, attacker, defender_coord)
     }
 
     /// Enumerate the actions available to a single unit right now.

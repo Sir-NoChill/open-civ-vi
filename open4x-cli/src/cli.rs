@@ -501,6 +501,16 @@ pub enum StatusKind {
         #[arg(long)]
         id: String,
     },
+    /// Show a deterministic combat preview for an attacker engaging the
+    /// unit at (q, r)
+    CombatPreview {
+        #[arg(long)]
+        attacker: String,
+        #[arg(long)]
+        q: i32,
+        #[arg(long)]
+        r: i32,
+    },
 }
 
 // ── List subcommands ─────────────────────────────────────────────────────────

@@ -399,8 +399,13 @@ pub async fn combat_preview(
 ) -> Result<impl IntoResponse, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
-    web_projection::build_combat_preview(
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    web_projection::build_combat_preview_from_room(
         &view,
+        &room,
         &params.attacker_id,
         params.defender_q,
         params.defender_r,

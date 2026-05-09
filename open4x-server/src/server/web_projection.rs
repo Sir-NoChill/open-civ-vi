@@ -536,6 +536,66 @@ pub fn build_armies(view: &GameView) -> army_data::ArmyData {
 /// This does not call into `RulesEngine` yet — the proper implementation is
 /// a Phase 2 libciv extension (`RulesEngine::preview_combat`). For now the
 /// projector is good enough to drive the wireframe's combat-odds bar.
+/// Authoritative `/combat/preview` builder — calls into
+/// [`libciv::RulesEngine::preview_combat`] against the room's `GameState`.
+/// Returns `None` when the attacker can't be found or when the engine
+/// returns `None` (no defender / out of range / non-combat attacker).
+///
+/// `defender_kind` for the wire shape comes from the room's `unit_type_defs`
+/// since the engine returns the bare `UnitId`.
+pub fn build_combat_preview_from_room(
+    view: &GameView,
+    room: &crate::server::state::GameRoom,
+    attacker_id: &str,
+    defender_q:  i32,
+    defender_r:  i32,
+) -> Option<combat_preview::CombatPreview> {
+    use libciv::RulesEngine;
+
+    let attacker_ulid: ulid::Ulid = attacker_id.parse().ok()?;
+    let libciv_attacker = libciv::UnitId::from_ulid(attacker_ulid);
+    let coord = libhexgrid::coord::HexCoord::from_qr(defender_q, defender_r);
+
+    let preview = room
+        .rules
+        .preview_combat(&room.state, libciv_attacker, coord)?;
+
+    // Look up the defender's unit-type name from the engine's units.
+    let defender_unit = room.state.units.iter().find(|u| u.id == preview.defender);
+    let defender_kind = defender_unit
+        .and_then(|u| {
+            room.state
+                .unit_type_defs
+                .iter()
+                .find(|d| d.id == u.unit_type)
+        })
+        .map(|d| capitalize(d.name))
+        .unwrap_or_else(|| "Enemy".into());
+
+    let defender_info = combat_preview::DefenderInfo {
+        id:   preview.defender.as_ulid().to_string(),
+        kind: defender_kind,
+        q:    defender_q,
+        r:    defender_r,
+    };
+
+    // The wire shape's `_strength` fields are i32; cast through.
+    let _ = view;
+    Some(combat_preview::CombatPreview {
+        attacker_id:               preview.attacker.as_ulid().to_string(),
+        defender:                  Some(defender_info),
+        attacker_strength:         preview.attacker_effective_cs as i32,
+        defender_strength:         preview.defender_effective_cs as i32,
+        predicted_attacker_damage: preview.predicted_attacker_damage as i32,
+        predicted_defender_damage: preview.predicted_defender_damage as i32,
+        note:                      format!("{:?} preview at rng=1.0", preview.attack_type),
+    })
+}
+
+/// Legacy `GameView`-only fallback. Returns the same wire shape but uses
+/// a simple CS-difference heuristic since the GameView doesn't carry the
+/// modifier pipeline. Use [`build_combat_preview_from_room`] from REST
+/// handlers.
 pub fn build_combat_preview(
     view: &GameView,
     attacker_id: &str,
@@ -587,7 +647,7 @@ pub fn build_combat_preview(
         defender_strength: defender_str,
         predicted_attacker_damage: predicted_atk,
         predicted_defender_damage: predicted_def,
-        note: "heuristic preview; replaced by RulesEngine::preview_combat in a later commit".into(),
+        note: "heuristic preview (GameView-only fallback)".into(),
     })
 }
 

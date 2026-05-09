@@ -173,7 +173,7 @@ pub use yields::*;
 // Top-level re-exports for the most commonly used game-loop types.
 pub use game::{
     all_scores, compute_score,
-    BuiltinVictoryCondition, DefaultRulesEngine, GameOver,
+    BuiltinVictoryCondition, CombatPreview, DefaultRulesEngine, GameOver,
     GameState, GameStateDiff, PendingAction, PendingActionKind, RulesEngine,
     SCIENCE_MILESTONES, TurnEngine, UnitAction, UnitActionKind, VictoryKind,
 };
