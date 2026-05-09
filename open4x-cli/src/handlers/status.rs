@@ -215,6 +215,24 @@ pub fn handle_status(
                 "in_progress": in_progress,
             })
         }
+        StatusKind::Victory => {
+            let rules = DefaultRulesEngine;
+            let progress = rules.victory_progress(&state, civ_id);
+            let entries: Vec<_> = progress
+                .iter()
+                .zip(state.victory_conditions.iter())
+                .map(|(p, cond)| {
+                    json!({
+                        "condition": cond.name(),
+                        "current":   p.current,
+                        "target":    p.target,
+                        "pct":       p.percentage(),
+                        "won":       p.is_won(),
+                    })
+                })
+                .collect();
+            json!(entries)
+        }
         StatusKind::Pending => {
             let rules = DefaultRulesEngine;
             let pending = rules.pending_actions(&state, civ_id);

@@ -122,6 +122,22 @@ pub trait RulesEngine: std::fmt::Debug {
         turn_pending::pending_actions(state, civ)
     }
 
+    /// Compute progress on every registered victory condition for `civ`.
+    /// Returns a `VictoryProgress` per entry in `state.victory_conditions`,
+    /// in the order they were registered. Empty when no conditions are
+    /// registered (i.e. the game has no win conditions wired up).
+    fn victory_progress(
+        &self,
+        state: &GameState,
+        civ: CivId,
+    ) -> Vec<crate::rules::VictoryProgress> {
+        state
+            .victory_conditions
+            .iter()
+            .map(|c| c.check_progress(civ, state))
+            .collect()
+    }
+
     /// Assign a citizen to work `tile` in `city`. When `lock` is true the tile
     /// is added to `city.locked_tiles` so auto-reassignment on future growth
     /// will not displace it.

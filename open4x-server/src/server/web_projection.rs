@@ -748,7 +748,42 @@ pub fn build_empire_overview(view: &GameView) -> empire_overview::EmpireOverview
 
 // ── /victory ─────────────────────────────────────────────────────────────────
 
-pub fn build_victory(view: &GameView) -> victory::Victory {
+/// Map a libciv `BuiltinVictoryCondition` to its wire-id string. The
+/// wire shape uses stable lowercase ids so the UI doesn't have to care
+/// about the random per-game `VictoryId` ULIDs.
+fn victory_condition_wire_id(c: &libciv::game::victory::BuiltinVictoryCondition) -> &'static str {
+    use libciv::game::victory::BuiltinVictoryCondition as V;
+    match c {
+        V::Score { .. }      => "score",
+        V::Culture { .. }    => "culture",
+        V::Domination { .. } => "domination",
+        V::Science { .. }    => "science",
+        V::Diplomatic { .. } => "diplomatic",
+        V::Religious { .. }  => "religious",
+    }
+}
+
+const VICTORY_CONDITION_WIRE: [(&str, &str); 6] = [
+    ("score",      "Score"),
+    ("culture",    "Culture"),
+    ("domination", "Domination"),
+    ("science",    "Science"),
+    ("religious",  "Religious"),
+    ("diplomatic", "Diplomatic"),
+];
+
+/// Authoritative builder that calls into `RulesEngine::victory_progress`
+/// against the room's `GameState`. Use this from REST handlers; the
+/// [`build_victory`] helper is kept as a `GameView`-only fallback (returns
+/// the stable 6-condition shape with `player_pct=0`).
+pub fn build_victory_from_room(
+    view: &GameView,
+    room: &crate::server::state::GameRoom,
+    civ:  crate::types::ids::CivId,
+    turn_limit: Option<u32>,
+) -> victory::Victory {
+    use libciv::RulesEngine;
+
     let my_civ_id = view.my_civ_id;
     let my_score = view
         .scores
@@ -757,7 +792,7 @@ pub fn build_victory(view: &GameView) -> victory::Victory {
         .map(|(_, s)| *s as i32)
         .unwrap_or(0);
 
-    // Build leaderboard from scores Vec.
+    // Leaderboard from scores Vec.
     let mut leaderboard: Vec<_> = view
         .scores
         .iter()
@@ -792,23 +827,101 @@ pub fn build_victory(view: &GameView) -> victory::Victory {
         .map(|i| (i + 1) as u32)
         .unwrap_or(1);
 
-    // Six standard victory conditions; placeholder progress until libciv
-    // exposes RulesEngine::victory_progress.
-    let conditions = vec![
-        ("score", "Score"),
-        ("culture", "Culture"),
-        ("domination", "Domination"),
-        ("science", "Science"),
-        ("religious", "Religious"),
-        ("diplomatic", "Diplomatic"),
-    ]
-    .into_iter()
-    .map(|(id, name)| victory::Condition {
-        id: id.into(),
-        name: name.into(),
-        player_pct: 0,
-    })
-    .collect();
+    // Compute engine-side progress for the player's civ, indexed by wire-id.
+    let libciv_civ = libciv::CivId::from_ulid(civ.as_ulid());
+    let progresses = room.rules.victory_progress(&room.state, libciv_civ);
+    let pct_by_wire_id: std::collections::HashMap<&'static str, u32> = progresses
+        .iter()
+        .zip(room.state.victory_conditions.iter())
+        .map(|(p, c)| {
+            let pct = p.percentage().clamp(0.0, 100.0).round() as u32;
+            (victory_condition_wire_id(c), pct)
+        })
+        .collect();
+
+    // Stable 6-element wire shape; overlay engine percentages where present.
+    let conditions: Vec<_> = VICTORY_CONDITION_WIRE
+        .iter()
+        .map(|(id, name)| victory::Condition {
+            id:         (*id).into(),
+            name:       (*name).into(),
+            player_pct: pct_by_wire_id.get(*id).copied().unwrap_or(0),
+        })
+        .collect();
+
+    let (leading_condition, leading_pct) = conditions
+        .iter()
+        .max_by_key(|c| c.player_pct)
+        .map(|c| (c.id.clone(), c.player_pct))
+        .unwrap_or_else(|| ("score".into(), 0));
+
+    victory::Victory {
+        turn:     view.turn,
+        turn_max: turn_limit.unwrap_or(500),
+        leading_condition,
+        leading_pct,
+        score:    my_score,
+        rank,
+        rank_of:  leaderboard.len() as u32,
+        conditions,
+        leaderboard,
+    }
+}
+
+/// Legacy `GameView`-only builder. Returns the stable 6-condition wire
+/// shape with `player_pct=0`. Use [`build_victory_from_room`] from REST
+/// handlers.
+pub fn build_victory(view: &GameView) -> victory::Victory {
+    let my_civ_id = view.my_civ_id;
+    let my_score = view
+        .scores
+        .iter()
+        .find(|(id, _)| *id == my_civ_id)
+        .map(|(_, s)| *s as i32)
+        .unwrap_or(0);
+
+    let mut leaderboard: Vec<_> = view
+        .scores
+        .iter()
+        .map(|(id, score)| (*id, *score as i32))
+        .collect();
+    leaderboard.sort_by(|a, b| b.1.cmp(&a.1));
+    let leaderboard = leaderboard
+        .into_iter()
+        .enumerate()
+        .map(|(i, (id, score))| {
+            let name = if id == view.my_civ_id {
+                view.my_civ.name.clone()
+            } else {
+                view.other_civs
+                    .iter()
+                    .find(|c| c.id == id)
+                    .map(|c| c.name.clone())
+                    .unwrap_or_else(|| "Unknown".into())
+            };
+            victory::LeaderRow {
+                rank: (i + 1) as u32,
+                name,
+                is_player: id == view.my_civ_id,
+                score,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let rank = leaderboard
+        .iter()
+        .position(|r| r.is_player)
+        .map(|i| (i + 1) as u32)
+        .unwrap_or(1);
+
+    let conditions = VICTORY_CONDITION_WIRE
+        .iter()
+        .map(|(id, name)| victory::Condition {
+            id: (*id).into(),
+            name: (*name).into(),
+            player_pct: 0,
+        })
+        .collect();
 
     victory::Victory {
         turn: view.turn,

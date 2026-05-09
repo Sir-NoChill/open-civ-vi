@@ -494,6 +494,8 @@ pub enum StatusKind {
     /// Show pending turn actions (research/civic to choose, units with
     /// movement, cities with empty production queues)
     Pending,
+    /// Show victory progress for each registered condition
+    Victory,
 }
 
 // ── List subcommands ─────────────────────────────────────────────────────────

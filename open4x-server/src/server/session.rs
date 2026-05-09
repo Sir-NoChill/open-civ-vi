@@ -9,8 +9,9 @@ use libciv::ai::HeuristicAgent;
 use libciv::civ::{BasicUnit, BuiltinAgenda, City, Civilization, Leader};
 use libciv::game::recalculate_visibility;
 use libciv::game::state::{GameState, UnitTypeDef};
+use libciv::game::victory::BuiltinVictoryCondition;
 use libciv::world::mapgen::{MapGenConfig, generate as mapgen_generate};
-use libciv::{CivId, UnitCategory, UnitDomain, UnitTypeId};
+use libciv::{CivId, UnitCategory, UnitDomain, UnitTypeId, VictoryId};
 use libhexgrid::board::HexBoard;
 use libhexgrid::coord::HexCoord;
 
@@ -37,6 +38,21 @@ pub fn build_server_session(
     let h = req.height;
     let seed = req.seed;
     let mut state = GameState::new(seed, w, h);
+
+    // ── Standard victory-condition registry ──────────────────────────────
+    // Register the six wireframe-visible conditions so RulesEngine::victory_progress
+    // produces real percentages on /api/v1/victory. The Score condition uses
+    // the per-game turn_limit when one was supplied; otherwise defaults to 500
+    // to match the wire shape's `turn_max`.
+    let score_turn_limit = req.turn_limit.unwrap_or(500);
+    state.victory_conditions.extend([
+        BuiltinVictoryCondition::Score      { id: VictoryId::from_ulid(state.id_gen.next_ulid()), turn_limit: score_turn_limit },
+        BuiltinVictoryCondition::Culture    { id: VictoryId::from_ulid(state.id_gen.next_ulid()) },
+        BuiltinVictoryCondition::Domination { id: VictoryId::from_ulid(state.id_gen.next_ulid()) },
+        BuiltinVictoryCondition::Science    { id: VictoryId::from_ulid(state.id_gen.next_ulid()) },
+        BuiltinVictoryCondition::Diplomatic { id: VictoryId::from_ulid(state.id_gen.next_ulid()), threshold: 20 },
+        BuiltinVictoryCondition::Religious  { id: VictoryId::from_ulid(state.id_gen.next_ulid()) },
+    ]);
 
     // ── Map generation ───────────────────────────────────────────────────
     let num_starts = 1 + req.num_ai;

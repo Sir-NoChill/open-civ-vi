@@ -360,3 +360,27 @@ async fn victory_includes_six_conditions_and_ranks_player() {
     let leaderboard = v["leaderboard"].as_array().unwrap();
     assert!(leaderboard.iter().any(|r| r["is_player"] == true));
 }
+
+#[tokio::test]
+async fn victory_score_pct_is_engine_derived_not_zero() {
+    // Session builder registers Score with turn_limit=500. compute_score is
+    // > 0 on a fresh civ (founder bonus + capital), so player_pct on the
+    // score row must be > 0 — proves we're going through
+    // RulesEngine::victory_progress, not the legacy placeholder.
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    let (status, v) = get_with(&app, "/api/v1/victory", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    let score_row = v["conditions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["id"] == "score")
+        .expect("score row");
+    assert!(
+        score_row["player_pct"].as_u64().unwrap() > 0,
+        "expected score pct > 0, got {}",
+        score_row["player_pct"]
+    );
+}

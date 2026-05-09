@@ -127,4 +127,26 @@ mod tests {
         let bogus = CivId::from_ulid(ulid::Ulid::new());
         assert!(DefaultRulesEngine.pending_actions(&state, bogus).is_empty());
     }
+
+    #[test]
+    fn victory_progress_returns_one_entry_per_registered_condition() {
+        use crate::VictoryId;
+        use crate::game::victory::BuiltinVictoryCondition;
+
+        let (mut state, civ) = fresh_state();
+        // No conditions registered → empty.
+        assert!(DefaultRulesEngine.victory_progress(&state, civ).is_empty());
+
+        // Register a Score condition (turn_limit:500) and a Domination one;
+        // expect one VictoryProgress per condition.
+        state.victory_conditions.push(BuiltinVictoryCondition::Score {
+            id:         VictoryId::from_ulid(ulid::Ulid::new()),
+            turn_limit: 500,
+        });
+        state.victory_conditions.push(BuiltinVictoryCondition::Domination {
+            id: VictoryId::from_ulid(ulid::Ulid::new()),
+        });
+        let progress = DefaultRulesEngine.victory_progress(&state, civ);
+        assert_eq!(progress.len(), 2);
+    }
 }
