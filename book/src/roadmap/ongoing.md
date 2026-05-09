@@ -1,69 +1,83 @@
 # Ongoing Work
 
-> **Current task**: Web UI port — client tabs + libciv extensions
+> **Current task**: Web UI port — post-plan extensions
 > **Plan**: [book/src/roadmap/web-ui.md](./web-ui.md)
-> **Status**: In progress (server-side reads/writes for all 5 phases done)
+> **Status**: All 5 phases of §7 complete. Working through the post-plan
+> backlog below. This file is a running log — each cron tick should pick the
+> next unchecked item, land a single conventional commit, then update this
+> file.
 
 ## Web UI port (Leptos + REST)
 
 - [x] Phase 0 — Scaffolding
 - [x] Phase 1 — HUD MVP (HexMap rebind deferred)
-- [~] Phase 2 — server done; libciv extensions (preview_combat,
-      available_unit_actions, AssignCityFocus, RenameCity) + tabs/city.rs +
-      tabs/units.rs + HexMap refactor pending
-- [~] Phase 3 — server done; CancelResearch/CancelCivic/ChangeGovernment +
-      tabs/science.rs + tabs/culture.rs + tabs/government.rs + libciv
-      policy_catalogue pending
-- [~] Phase 4 — server reads done; libciv pending_actions / victory_progress
-      + NotificationRecord ring buffer + tabs/{diplomacy,empire,victory}.rs
-      + drawers + 400-on-required-turn-end pending
+- [x] Phase 2 — server reads + writes (libciv extensions deferred)
+- [x] Phase 3 — server tech/civics surface (libciv extensions + tabs deferred)
+- [x] Phase 4 — server outer-loop reads + NotificationRecord ring buffer
+      (libciv pending_actions / victory_progress + tabs/drawers deferred)
 - [x] Phase 5 — Cleanup
   - [x] Move open4x-webui/ → docs/legacy-wireframe/
   - [x] Drop /api/game/* legacy routes (server/{api,reports}.rs
-        modules retained as dead code; full deletion is a follow-up)
+        modules retained as dead code; full deletion below)
   - [x] Integration tests in open4x-server/tests/rest_api.rs (10 tests)
   - [x] Document API in book/src/multiplayer/web-client.md
 
 ## Remaining (post-plan)
 
-These items were deferred from earlier phases and are still open:
+These items were deferred from earlier phases. Pick the top unchecked
+item next.
 
-- libciv extensions
-  - `RulesEngine::available_unit_actions` (replaces hardcoded action set
-    in `web_projection::build_units`)
-  - `RulesEngine::preview_combat` (replaces the heuristic
-    `build_combat_preview`)
-  - `RulesEngine::pending_actions` (replaces `build_turn_queue`'s
-    hand-rolled "choose_research" check)
-  - `RulesEngine::victory_progress` (replaces the placeholder
-    `player_pct=0` in `build_victory`)
-  - `RulesEngine::policy_catalogue` (lets `build_government` populate
-    the catalogue array)
-  - `GameAction::AssignCityFocus`, `RenameCity`, `CancelResearch`,
-    `CancelCivic`, `ChangeGovernment` (and matching REST mutations)
-- `NotificationRecord` ring buffer on `GameRoom`, populated from
-  `advance_turn` deltas; `build_notifications` reads from it
-- HexMap refactor to consume `WorldSnapshot` directly
-- Per-tab Leptos ports
-  - `tabs/city.rs` (extend existing) → REST-driven
-  - `tabs/units.rs` (new)
-  - `tabs/government.rs` (new)
-  - `tabs/diplomacy.rs` (new)
-  - `tabs/empire.rs` (new)
-  - `tabs/victory.rs` (new)
-  - drawers: notifications / turn-queue / overlays
-- Full deletion of `server/{api,reports}.rs` and `types/reports.rs`
-- [ ] Phase 3 — Research & policy stacks
-- [ ] Phase 4 — Outer loop screens
-- [ ] Phase 5 — Cleanup
+### libciv RulesEngine extensions
+
+Strategy: where it fits, expose the new method through `open4x-cli`'s
+`status` / `list` subcommand first (cheap testing arena), then plumb
+into the server projector.
+
+- [ ] `pending_actions(gs, civ) -> Vec<TurnQueueItem>` — replaces the
+      hand-rolled "choose_research" check in
+      `web_projection::build_turn_queue`.
+- [ ] `victory_progress(gs) -> Vec<VictoryProgress>` — replaces the
+      `player_pct=0` placeholder in `build_victory`.
+- [ ] `available_unit_actions(gs, unit) -> Vec<UnitAction>` — replaces
+      the hardcoded action set in `web_projection::build_units`.
+- [ ] `preview_combat(gs, attacker, defender_coord) -> CombatPreview` —
+      replaces the heuristic in `build_combat_preview`.
+- [ ] `policy_catalogue(gs, civ) -> Vec<PolicyCardEntry>` — lets
+      `build_government` populate the catalogue.
+
+### GameAction variants + REST mutations
+
+- [ ] `GameAction::AssignCityFocus` + `POST /cities/{id}/focus`
+- [ ] `GameAction::RenameCity` + `POST /cities/{id}/rename`
+- [ ] `GameAction::CancelResearch` + `DELETE /tech/research`
+- [ ] `GameAction::CancelCivic` + `DELETE /civics/research`
+- [ ] `GameAction::ChangeGovernment` + `POST /government/change`
+
+### Client (Leptos)
+
+- [ ] HexMap refactor to consume `WorldSnapshot` directly (currently
+      RestGamePage shows a placeholder "World w × h · N tiles" line)
+- [ ] `tabs/city.rs` — extend existing, REST-driven
+- [ ] `tabs/units.rs` — new
+- [ ] `tabs/government.rs` — new
+- [ ] `tabs/diplomacy.rs` — new
+- [ ] `tabs/empire.rs` — new
+- [ ] `tabs/victory.rs` — new
+- [ ] drawers: notifications / turn-queue / overlays
+
+### Cleanup
+
+- [ ] Full deletion of `server/{api,reports}.rs` and `types/reports.rs`
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
-- [x] Phase 0: libciv foundation (serde on StateDelta, turn_done/player_config, save_load fix)
-- [x] Phase 1: Infrastructure (state_io, output, player_view)
-- [x] Phase 2: CLI definition (42 actions, 9 status, 8 list types)
-- [x] Phase 3: Handlers (new_game, action, end_turn, view, status, list)
-- [x] Phase 4: Integration (main.rs dispatch, legacy modes preserved)
-- [x] Phase 5: Tests (6 CLI integration tests)
+- [x] Phase 0–5 (see git log).
+- 554 tests, 0 failures.
 
-554 tests, 0 failures.
+## Changelog (post-plan)
+
+Most recent first. Each entry: `<jj change short> — <subject>`.
+
+- _(pending)_ — pending_actions extension on RulesEngine.
+- `qrykmkqp` — feat(open4x-server): NotificationRecord ring buffer +
+  DELETE handlers (post-plan).

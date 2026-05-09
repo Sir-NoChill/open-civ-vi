@@ -217,6 +217,7 @@ async fn end_turn_advances_after_research_chosen() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;
 
+    // Pick a research target so 'choose_research' clears.
     let (status, tt) = get_with(&app, "/api/v1/tech", &token).await;
     assert_eq!(status, StatusCode::OK);
     let tech_id = tt["techs"]
@@ -233,6 +234,28 @@ async fn end_turn_advances_after_research_chosen() {
         "/api/v1/tech/research",
         Some(&token),
         serde_json::json!({"tech_id": tech_id}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Pick a civic target so 'choose_civic' clears (RulesEngine::pending_actions
+    // surfaces both as required on a fresh game).
+    let (status, ct) = get_with(&app, "/api/v1/civics", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    let civic_id = ct["civics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["status"] == "available")
+        .and_then(|c| c["id"].as_str())
+        .expect("at least one available civic")
+        .to_string();
+
+    let (status, _) = post_with(
+        &app,
+        "/api/v1/civics/research",
+        Some(&token),
+        serde_json::json!({"civic_id": civic_id}),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -293,6 +316,29 @@ async fn turn_queue_lists_required_choose_research_on_fresh_game() {
     assert!(items
         .iter()
         .any(|it| it["id"] == "choose_research" && it["required"] == true));
+}
+
+#[tokio::test]
+async fn turn_queue_includes_civic_and_city_items_via_pending_actions() {
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    let (status, q) = get_with(&app, "/api/v1/turn-queue", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    let items = q["items"].as_array().unwrap();
+
+    // pending_actions surfaces choose_civic as required on a fresh game.
+    assert!(
+        items
+            .iter()
+            .any(|it| it["id"] == "choose_civic" && it["required"] == true),
+        "expected choose_civic in {items:?}"
+    );
+    // …and at least one city-needs-production item (kind = "city").
+    assert!(
+        items.iter().any(|it| it["kind"] == "city"),
+        "expected at least one kind=city item in {items:?}"
+    );
 }
 
 #[tokio::test]

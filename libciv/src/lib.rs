@@ -174,7 +174,7 @@ pub use yields::*;
 pub use game::{
     all_scores, compute_score,
     BuiltinVictoryCondition, DefaultRulesEngine, GameOver,
-    GameState, GameStateDiff, RulesEngine,
+    GameState, GameStateDiff, PendingAction, PendingActionKind, RulesEngine,
     SCIENCE_MILESTONES, TurnEngine, VictoryKind,
 };
 pub use civ::era::EraAge;

@@ -491,6 +491,9 @@ pub enum StatusKind {
     Techs,
     /// Show researched and available civics
     Civics,
+    /// Show pending turn actions (research/civic to choose, units with
+    /// movement, cities with empty production queues)
+    Pending,
 }
 
 // ── List subcommands ─────────────────────────────────────────────────────────

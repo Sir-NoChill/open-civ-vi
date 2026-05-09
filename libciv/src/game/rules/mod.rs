@@ -18,7 +18,10 @@ pub(crate) mod movement;
 pub(crate) mod production;
 pub(crate) mod religion;
 pub(crate) mod trade;
+pub(crate) mod turn_pending;
 pub(crate) mod turn_phase;
+
+pub use turn_pending::{PendingAction, PendingActionKind};
 
 /// Look up a civ's ability bundle by identity. Returns None for custom civs.
 pub(crate) fn lookup_bundle(civ_identity: Option<BuiltinCiv>) -> Option<CivAbilityBundle> {
@@ -108,6 +111,16 @@ pub trait RulesEngine: std::fmt::Debug {
 
     /// Advance the game state by one turn. Returns diff.
     fn advance_turn(&self, state: &mut GameState) -> GameStateDiff;
+
+    /// Enumerate the pending actions a civ owes the turn engine. Required
+    /// items (e.g. picking a research target) come first, then advisory
+    /// items (units with movement remaining, cities with empty production
+    /// queues). Defaults to the standard implementation in
+    /// [`turn_pending::pending_actions`]; engines can override to add
+    /// rules-specific items (e.g. mandatory great-person promotions).
+    fn pending_actions(&self, state: &GameState, civ: CivId) -> Vec<PendingAction> {
+        turn_pending::pending_actions(state, civ)
+    }
 
     /// Assign a citizen to work `tile` in `city`. When `lock` is true the tile
     /// is added to `city.locked_tiles` so auto-reassignment on future growth

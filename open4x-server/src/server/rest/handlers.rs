@@ -247,7 +247,13 @@ pub async fn end_turn(
     // Block end-turn if any turn-queue item is required (per plan §4.3).
     // Returns 400 with the structured body { error, items } per the spec.
     let view = view_only(&state, game_id, civ_id)?;
-    let queue = web_projection::build_turn_queue(&view);
+    let queue = {
+        let room = state
+            .games
+            .get(&game_id)
+            .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+        web_projection::build_turn_queue_from_room(&view, &room, civ_id)
+    };
     let required: Vec<_> = queue
         .items
         .into_iter()
@@ -845,5 +851,11 @@ pub async fn turn_queue(
 ) -> Result<impl IntoResponse, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
-    Ok(Json(web_projection::build_turn_queue(&view)))
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    Ok(Json(web_projection::build_turn_queue_from_room(
+        &view, &room, civ_id,
+    )))
 }

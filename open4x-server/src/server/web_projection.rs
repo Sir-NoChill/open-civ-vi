@@ -863,10 +863,115 @@ pub fn build_notifications_from_room(
 
 // ── /turn-queue ──────────────────────────────────────────────────────────────
 
+/// Authoritative turn-queue builder — calls
+/// `RulesEngine::pending_actions` against the room's `GameState` and maps
+/// each [`libciv::PendingAction`] into a wire-shape
+/// [`turn_queue::TurnQueueItem`]. Use this from REST handlers; the
+/// [`build_turn_queue`] helper below is kept as a `GameView`-only fallback
+/// for tests / contexts without room access.
+pub fn build_turn_queue_from_room(
+    view: &GameView,
+    room: &crate::server::state::GameRoom,
+    civ:  crate::types::ids::CivId,
+) -> turn_queue::TurnQueue {
+    use libciv::{PendingActionKind, RulesEngine};
+
+    let libciv_civ = libciv::CivId::from_ulid(civ.as_ulid());
+    let pending = room.rules.pending_actions(&room.state, libciv_civ);
+
+    let items = pending
+        .into_iter()
+        .map(|a| match a.kind {
+            PendingActionKind::ChooseResearch => turn_queue::TurnQueueItem {
+                id: "choose_research".into(),
+                kind: "research".into(),
+                required: a.required,
+                title: "Choose next research".into(),
+                desc: "No tech is queued — pick one to start researching.".into(),
+                skip_label: None,
+                target: Some(notifications::NotificationTarget {
+                    screen: "tech".into(),
+                    q: None,
+                    r: None,
+                }),
+            },
+            PendingActionKind::ChooseCivic => turn_queue::TurnQueueItem {
+                id: "choose_civic".into(),
+                kind: "civic".into(),
+                required: a.required,
+                title: "Choose next civic".into(),
+                desc: "No civic is in progress — pick one to start studying.".into(),
+                skip_label: None,
+                target: Some(notifications::NotificationTarget {
+                    screen: "culture".into(),
+                    q: None,
+                    r: None,
+                }),
+            },
+            PendingActionKind::UnitNeedsOrders { unit_id, coord } => {
+                // Look up the unit on the GameView so the desc can include
+                // movement info; fall back to bare title if the unit isn't
+                // visible to the player (shouldn't happen — they own it).
+                let view_unit = view.units.iter().find(|u| u.id.as_ulid() == unit_id.as_ulid());
+                let desc = view_unit
+                    .map(|u| {
+                        format!("{}/{} MP available", u.movement_left / 100, u.max_movement / 100)
+                    })
+                    .unwrap_or_else(|| "Has movement available".into());
+                turn_queue::TurnQueueItem {
+                    id: format!("unit_{}", unit_id.as_ulid()),
+                    kind: "unit".into(),
+                    required: a.required,
+                    title: format!("Unit at ({}, {})", coord.q, coord.r),
+                    desc,
+                    skip_label: Some("Sleep".into()),
+                    target: Some(notifications::NotificationTarget {
+                        screen: "hud".into(),
+                        q: Some(coord.q),
+                        r: Some(coord.r),
+                    }),
+                }
+            }
+            PendingActionKind::CityNeedsProduction { city_id } => {
+                // Use the city's name + coord from GameState (authoritative).
+                let city = room.state.cities.iter().find(|c| c.id.as_ulid() == city_id.as_ulid());
+                let (title, q, r) = match city {
+                    Some(c) => (
+                        format!("{} has nothing in production", c.name),
+                        Some(c.coord.q),
+                        Some(c.coord.r),
+                    ),
+                    None => ("City has nothing in production".into(), None, None),
+                };
+                turn_queue::TurnQueueItem {
+                    id: format!("city_{}", city_id.as_ulid()),
+                    kind: "city".into(),
+                    required: a.required,
+                    title,
+                    desc: "Pick a unit, building, or district to start producing.".into(),
+                    skip_label: None,
+                    target: Some(notifications::NotificationTarget {
+                        screen: "city".into(),
+                        q,
+                        r,
+                    }),
+                }
+            }
+        })
+        .collect();
+
+    turn_queue::TurnQueue {
+        turn: view.turn,
+        items,
+    }
+}
+
+/// Legacy `GameView`-only builder. Kept for tests and any caller without
+/// room access; mirrors only the two cases that can be derived from the
+/// view (research choice + units with movement).
 pub fn build_turn_queue(view: &GameView) -> turn_queue::TurnQueue {
     let mut items = Vec::new();
 
-    // Required: pick a research target if none queued.
     if view.my_civ.research_queue.is_empty() && !view.tech_tree.nodes.is_empty() {
         items.push(turn_queue::TurnQueueItem {
             id: "choose_research".into(),
@@ -883,7 +988,6 @@ pub fn build_turn_queue(view: &GameView) -> turn_queue::TurnQueue {
         });
     }
 
-    // Optional: own units with movement remaining and no orders.
     for u in view.units.iter().filter(|u| u.is_own && u.movement_left > 0) {
         items.push(turn_queue::TurnQueueItem {
             id: format!("unit_{}", u.id.as_ulid()),

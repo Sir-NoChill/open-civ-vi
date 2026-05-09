@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use libciv::{all_scores, CityId, DefaultRulesEngine, RulesEngine};
+use libciv::{all_scores, CityId, DefaultRulesEngine, PendingActionKind, RulesEngine};
 use libhexgrid::board::HexBoard;
 use libhexgrid::coord::HexCoord;
 use serde_json::json;
@@ -214,6 +214,36 @@ pub fn handle_status(
                 "researched": researched,
                 "in_progress": in_progress,
             })
+        }
+        StatusKind::Pending => {
+            let rules = DefaultRulesEngine;
+            let pending = rules.pending_actions(&state, civ_id);
+            let entries: Vec<_> = pending
+                .into_iter()
+                .map(|a| {
+                    let (kind, detail) = match a.kind {
+                        PendingActionKind::ChooseResearch => ("choose_research", json!(null)),
+                        PendingActionKind::ChooseCivic    => ("choose_civic", json!(null)),
+                        PendingActionKind::UnitNeedsOrders { unit_id, coord } => (
+                            "unit_needs_orders",
+                            json!({
+                                "unit_id": unit_id.as_ulid().to_string(),
+                                "coord":   format!("({}, {})", coord.q, coord.r),
+                            }),
+                        ),
+                        PendingActionKind::CityNeedsProduction { city_id } => (
+                            "city_needs_production",
+                            json!({ "city_id": city_id.as_ulid().to_string() }),
+                        ),
+                    };
+                    json!({
+                        "kind":     kind,
+                        "required": a.required,
+                        "detail":   detail,
+                    })
+                })
+                .collect();
+            json!(entries)
         }
         StatusKind::Civics => {
             let civ = state
