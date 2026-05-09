@@ -6,6 +6,9 @@
 > backlog below. This file is a running log — each cron tick should pick the
 > next unchecked item, land a single conventional commit, then update this
 > file.
+> **Cron**: `04ad50ff` — fires hourly at :13 (session-only, expires
+> after 7 days). Cancel with `CronDelete 04ad50ff` when the backlog is
+> empty or no longer wanted.
 
 ## Web UI port (Leptos + REST)
 
@@ -33,9 +36,11 @@ Strategy: where it fits, expose the new method through `open4x-cli`'s
 `status` / `list` subcommand first (cheap testing arena), then plumb
 into the server projector.
 
-- [ ] `pending_actions(gs, civ) -> Vec<TurnQueueItem>` — replaces the
-      hand-rolled "choose_research" check in
-      `web_projection::build_turn_queue`.
+- [x] `pending_actions(gs, civ) -> Vec<PendingAction>` — replaced the
+      hand-rolled "choose_research" check; new
+      `build_turn_queue_from_room` calls into the engine and surfaces
+      `choose_research` / `choose_civic` (required) plus per-unit and
+      per-city advisory items. Exposed via CLI `status pending`.
 - [ ] `victory_progress(gs) -> Vec<VictoryProgress>` — replaces the
       `player_pct=0` placeholder in `build_victory`.
 - [ ] `available_unit_actions(gs, unit) -> Vec<UnitAction>` — replaces
@@ -78,6 +83,7 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
-- _(pending)_ — pending_actions extension on RulesEngine.
+- `lrrxwtmv` — feat(libciv): RulesEngine::pending_actions + wire
+  through web turn-queue + CLI `status pending`.
 - `qrykmkqp` — feat(open4x-server): NotificationRecord ring buffer +
   DELETE handlers (post-plan).
