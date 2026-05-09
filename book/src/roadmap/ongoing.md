@@ -55,8 +55,11 @@ into the server projector.
       government, policies, GP auras, religion, terrain/walls/siege)
       at rng=1.0; new `build_combat_preview_from_room` calls the
       engine. Exposed via CLI `status combat-preview`.
-- [ ] `policy_catalogue(gs, civ) -> Vec<PolicyCardEntry>` — lets
-      `build_government` populate the catalogue.
+- [x] `policy_catalogue(gs, civ) -> Vec<PolicyCardEntry>` — walks
+      `state.policies` (127 entries) and labels each Active /
+      Available / Locked from the civ's `active_policies` /
+      `unlocked_policies`. New `build_government_from_room` populates
+      the catalogue. Exposed via CLI `status policies`.
 
 ### GameAction variants + REST mutations
 
@@ -91,6 +94,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `szyyxqnn` — feat(libciv): RulesEngine::policy_catalogue + populate
+  /government catalogue.
 - `uvzvovyo` — feat(libciv): RulesEngine::preview_combat + wire
   through web combat-preview.
 - `tsmktrmt` — feat(libciv): RulesEngine::available_unit_actions +
