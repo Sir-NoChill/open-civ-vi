@@ -57,6 +57,14 @@ pub enum GameAction {
         tile: HexCoord,
         lock: bool,
     },
+    /// Set the player-selected production focus for a city. Stored on
+    /// `City.focus` and surfaced through `/api/v1/cities/*` so the wire
+    /// shape can show the selection. Citizen auto-assignment driven by
+    /// focus is not yet implemented.
+    AssignCityFocus {
+        city: CityId,
+        focus: CityFocus,
+    },
     UnassignCitizen {
         city: CityId,
         tile: HexCoord,

@@ -408,6 +408,7 @@ pub fn project_game_view(state: &GameState, viewer: CivId) -> GameView {
                     .collect(),
                 majority_religion: c.majority_religion().map(conv_religion_id),
                 is_own,
+                focus: crate::server::game_room::from_libciv_city_focus(c.focus),
             }
         })
         .collect();

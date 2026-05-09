@@ -295,6 +295,7 @@ pub fn build_cities(view: &GameView) -> city_data::CityData {
                 production_queue,
                 worked_tile_count: c.worked_tiles.len() as u32,
                 territory_count: c.territory.len() as u32,
+                focus: format!("{:?}", c.focus).to_lowercase(),
             }
         })
         .collect();

@@ -339,6 +339,48 @@ async fn units_actions_are_engine_derived_and_role_specific() {
 }
 
 #[tokio::test]
+async fn city_focus_round_trip_persists_via_post_focus() {
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    let (_, cities) = get_with(&app, "/api/v1/cities", &token).await;
+    let city_id = cities["cities"][0]["id"].as_str().unwrap().to_string();
+    // Fresh game: focus defaults to "default".
+    assert_eq!(cities["cities"][0]["focus"], "default");
+
+    let (status, body) = post_with(
+        &app,
+        &format!("/api/v1/cities/{city_id}/focus"),
+        Some(&token),
+        serde_json::json!({"focus": "production"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "set focus body: {body:?}");
+    assert_eq!(body["ok"], true);
+    assert_eq!(body["view"]["focus"], "production");
+
+    // Re-read /cities to confirm persistence.
+    let (_, cities) = get_with(&app, "/api/v1/cities", &token).await;
+    let row = cities["cities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["id"] == city_id.as_str())
+        .unwrap();
+    assert_eq!(row["focus"], "production");
+
+    // Bad-focus rejection.
+    let (status, _) = post_with(
+        &app,
+        &format!("/api/v1/cities/{city_id}/focus"),
+        Some(&token),
+        serde_json::json!({"focus": "wishful_thinking"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
 async fn government_catalogue_lists_engine_registered_policies_as_locked() {
     // GameState::new registers all 127 builtin policies. A fresh civ
     // has unlocked_policies == [] and active_policies == [], so the

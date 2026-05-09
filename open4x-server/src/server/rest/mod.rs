@@ -49,6 +49,7 @@ pub fn v1_router() -> Router<Arc<AppState>> {
         // writes
         .route("/cities/{id}/production", post(handlers::queue_production))
         .route("/cities/{id}/production/{pos}", delete(handlers::cancel_production))
+        .route("/cities/{id}/focus", post(handlers::assign_city_focus))
         .route("/units/{id}/action", post(handlers::unit_action))
         .route("/tech/research", post(handlers::tech_research))
         .route("/civics/research", post(handlers::civic_research))

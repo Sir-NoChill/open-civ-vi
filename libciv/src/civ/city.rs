@@ -42,6 +42,27 @@ pub enum WallLevel {
     Renaissance,
 }
 
+/// City production / citizen-assignment focus. `Default` means the engine's
+/// standard auto-assignment heuristic (max total yield) drives citizen
+/// placement; the others bias citizen selection toward the named yield.
+///
+/// Behavior note: the focus value is currently surfaced through the wire
+/// API and stored on the city, but the engine's auto-assignment heuristic
+/// does not yet consult it (a follow-up will switch
+/// `auto_assign_citizen` to score by focus when set).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum CityFocus {
+    #[default]
+    Default,
+    Food,
+    Production,
+    Gold,
+    Science,
+    Culture,
+    Faith,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProductionItem {
@@ -110,6 +131,10 @@ pub struct City {
     /// Sum of `power_generated` from all power-plant buildings in this city. Recomputed each turn.
     #[cfg_attr(feature = "serde", serde(default))]
     pub power_generated: u32,
+    /// Player-selected city focus. See [`CityFocus`]. `Default` lets the
+    /// engine's standard auto-assignment heuristic pick worked tiles.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub focus: CityFocus,
 }
 
 impl City {
@@ -142,6 +167,7 @@ impl City {
             religious_followers: HashMap::new(),
             power_consumed: 0,
             power_generated: 0,
+            focus: CityFocus::default(),
         }
     }
 

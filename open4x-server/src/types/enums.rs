@@ -295,3 +295,20 @@ pub enum BoardTopology {
     CylindricalEW,
     Toroidal,
 }
+
+// ── City focus ───────────────────────────────────────────────────────────────
+
+/// Wire-side mirror of `libciv::CityFocus`. Players pick this to bias
+/// citizen auto-assignment toward a particular yield. `Default` means the
+/// engine's standard heuristic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+pub enum CityFocus {
+    #[default]
+    Default,
+    Food,
+    Production,
+    Gold,
+    Science,
+    Culture,
+    Faith,
+}

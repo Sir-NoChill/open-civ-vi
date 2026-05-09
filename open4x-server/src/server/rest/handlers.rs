@@ -506,6 +506,62 @@ pub async fn cancel_production(
     ))
 }
 
+// ── mutations: city focus ────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct AssignCityFocusBody {
+    /// Lowercase variant name: "default" | "food" | "production" | "gold"
+    /// | "science" | "culture" | "faith".
+    pub focus: String,
+}
+
+/// `POST /api/v1/cities/{id}/focus` — set the city's player-selected
+/// production focus (mirrors the wireframe's per-city focus dropdown).
+/// Returns the updated city wire row.
+pub async fn assign_city_focus(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    Json(body): Json<AssignCityFocusBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let city_ulid: ulid::Ulid = id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
+    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+
+    let focus = match body.focus.to_lowercase().as_str() {
+        "default"    => crate::types::enums::CityFocus::Default,
+        "food"       => crate::types::enums::CityFocus::Food,
+        "production" => crate::types::enums::CityFocus::Production,
+        "gold"       => crate::types::enums::CityFocus::Gold,
+        "science"    => crate::types::enums::CityFocus::Science,
+        "culture"    => crate::types::enums::CityFocus::Culture,
+        "faith"      => crate::types::enums::CityFocus::Faith,
+        other => {
+            return Err(crate::server::rest::auth::bad_request(
+                "invalid_focus",
+                &format!("unknown focus: {other:?}"),
+            ));
+        }
+    };
+
+    let action = crate::types::messages::GameAction::AssignCityFocus { city: city_id, focus };
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+
+    let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view,
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
 // ── mutations: unit actions ──────────────────────────────────────────────────
 
 #[derive(Deserialize)]

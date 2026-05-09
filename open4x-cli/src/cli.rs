@@ -227,6 +227,14 @@ pub enum ActionKind {
         #[arg(long)]
         lock: bool,
     },
+    /// Set the player-selected production focus for a city
+    AssignCityFocus {
+        #[arg(long)]
+        city: String,
+        /// One of: default, food, production, gold, science, culture, faith
+        #[arg(long)]
+        focus: String,
+    },
     /// Unassign a citizen from a tile in a city
     UnassignCitizen {
         #[arg(long)]

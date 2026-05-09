@@ -401,6 +401,9 @@ pub mod city_data {
         pub production_queue: Vec<String>,
         pub worked_tile_count: u32,
         pub territory_count: u32,
+        /// Player-selected city focus, lowercase.
+        #[serde(default)]
+        pub focus: String,
     }
 }
 

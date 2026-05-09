@@ -370,6 +370,15 @@ impl GameRoom {
                     .map(|_| ())
                     .map_err(|e| format!("{e:?}"))
             }
+            GameAction::AssignCityFocus { city, focus } => {
+                let city_id = to_libciv_city_id(*city);
+                let city = self.state.cities.iter_mut()
+                    .find(|c| c.id == city_id)
+                    .ok_or("city not found")?;
+                if city.owner != civ_id { return Err("not your city".into()); }
+                city.focus = to_libciv_city_focus(*focus);
+                Ok(())
+            }
             GameAction::PurchaseWithFaith { city, item } => {
                 let cid = to_libciv_city_id(*city);
                 // Parse item string as faith purchase.
@@ -456,6 +465,34 @@ fn to_libciv_belief_id(id: crate::types::ids::BeliefId) -> libciv::BeliefId {
 
 fn to_libciv_policy_id(id: crate::types::ids::PolicyId) -> libciv::PolicyId {
     libciv::PolicyId::from_ulid(id.as_ulid())
+}
+
+fn to_libciv_city_focus(f: crate::types::enums::CityFocus) -> libciv::civ::CityFocus {
+    use crate::types::enums::CityFocus as A;
+    use libciv::civ::CityFocus as L;
+    match f {
+        A::Default    => L::Default,
+        A::Food       => L::Food,
+        A::Production => L::Production,
+        A::Gold       => L::Gold,
+        A::Science    => L::Science,
+        A::Culture    => L::Culture,
+        A::Faith      => L::Faith,
+    }
+}
+
+pub(crate) fn from_libciv_city_focus(f: libciv::civ::CityFocus) -> crate::types::enums::CityFocus {
+    use crate::types::enums::CityFocus as A;
+    use libciv::civ::CityFocus as L;
+    match f {
+        L::Default    => A::Default,
+        L::Food       => A::Food,
+        L::Production => A::Production,
+        L::Gold       => A::Gold,
+        L::Science    => A::Science,
+        L::Culture    => A::Culture,
+        L::Faith      => A::Faith,
+    }
 }
 
 fn to_libciv_improvement(i: crate::types::enums::BuiltinImprovement) -> libciv::world::improvement::BuiltinImprovement {

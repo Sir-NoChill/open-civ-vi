@@ -116,6 +116,9 @@ pub struct CityView {
     pub majority_religion: Option<ReligionId>,
     /// True if this is the player's own city (full detail); false = foreign.
     pub is_own: bool,
+    /// Player-selected production focus.
+    #[serde(default)]
+    pub focus: super::enums::CityFocus,
 }
 
 // ── Units ────────────────────────────────────────────────────────────────────

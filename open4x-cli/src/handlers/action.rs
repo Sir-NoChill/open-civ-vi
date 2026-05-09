@@ -270,6 +270,26 @@ pub(crate) fn dispatch_action(
                 .assign_citizen(state, cid, tile, *lock)
                 .map_err(|e| format!("{e:?}"))
         }
+        ActionKind::AssignCityFocus { city, focus } => {
+            let cid = parse_city_id(city)?;
+            let f = match focus.to_lowercase().as_str() {
+                "default"    => libciv::civ::CityFocus::Default,
+                "food"       => libciv::civ::CityFocus::Food,
+                "production" => libciv::civ::CityFocus::Production,
+                "gold"       => libciv::civ::CityFocus::Gold,
+                "science"    => libciv::civ::CityFocus::Science,
+                "culture"    => libciv::civ::CityFocus::Culture,
+                "faith"      => libciv::civ::CityFocus::Faith,
+                other        => return Err(format!("unknown focus: {other:?}")),
+            };
+            let city_obj = state
+                .cities
+                .iter_mut()
+                .find(|c| c.id == cid)
+                .ok_or("city not found")?;
+            city_obj.focus = f;
+            Ok(GameStateDiff { deltas: Vec::new() })
+        }
         ActionKind::UnassignCitizen { city, q, r } => {
             let cid = parse_city_id(city)?;
             let tile = HexCoord::from_qr(*q, *r);

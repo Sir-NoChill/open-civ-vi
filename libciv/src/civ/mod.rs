@@ -22,7 +22,7 @@ pub mod tourism;
 pub mod trade;
 pub mod unit;
 
-pub use city::{City, CityKind, CityOwnership, ProductionItem, WallLevel};
+pub use city::{City, CityFocus, CityKind, CityOwnership, ProductionItem, WallLevel};
 pub use city_state::{CityStateBonus, CityStateData, CityStateType};
 pub use city_state_defs::{CityStateDef, builtin_city_state_defs};
 pub use civilization::{Agenda, BuiltinAgenda, Civilization, CivicProgress, Leader, LeaderAbility, StartBias, TechProgress};
