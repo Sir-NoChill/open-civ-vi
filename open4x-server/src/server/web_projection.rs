@@ -769,6 +769,83 @@ fn era_for_tech_cost(cost: u32) -> String {
     }
 }
 
+/// Authoritative `/government` builder: populates the catalogue from
+/// [`libciv::RulesEngine::policy_catalogue`]. Use from REST handlers;
+/// [`build_government`] below remains as the GameView-only fallback
+/// (returns an empty catalogue).
+pub fn build_government_from_room(
+    view: &GameView,
+    room: &crate::server::state::GameRoom,
+    civ:  crate::types::ids::CivId,
+) -> government::GovernmentPolicies {
+    use libciv::{PolicyCardStatus, RulesEngine};
+
+    let active_policies: Vec<government::ActivePolicy> = view
+        .my_civ
+        .active_policies
+        .iter()
+        .enumerate()
+        .map(|(i, pid)| government::ActivePolicy {
+            slot:   format!("slot_{i}"),
+            id:     pid.as_ulid().to_string(),
+            name:   format!("Policy {}", i + 1),
+            effect: String::new(),
+        })
+        .collect();
+
+    let government = government::Government {
+        id: view
+            .my_civ
+            .current_government
+            .clone()
+            .map(|s| s.to_lowercase().replace(' ', "_"))
+            .unwrap_or_else(|| "chiefdom".into()),
+        name: view
+            .my_civ
+            .current_government
+            .clone()
+            .unwrap_or_else(|| "Chiefdom".into()),
+        era:   format!("{:?}", view.my_civ.current_era),
+        slots: government::Slots {
+            military:   2,
+            economic:   2,
+            diplomatic: 1,
+            wildcard:   0,
+        },
+        legacy_bonus: String::new(),
+    };
+
+    let libciv_civ = libciv::CivId::from_ulid(civ.as_ulid());
+    let catalogue: Vec<government::PolicyCard> = room
+        .rules
+        .policy_catalogue(&room.state, libciv_civ)
+        .into_iter()
+        .map(|e| {
+            let status = match e.status {
+                PolicyCardStatus::Active    => "active",
+                PolicyCardStatus::Available => "available",
+                PolicyCardStatus::Locked    => "locked",
+            };
+            government::PolicyCard {
+                id:            e.policy_id.as_ulid().to_string(),
+                name:          e.name.into(),
+                kind:          format!("{:?}", e.policy_type).to_lowercase(),
+                era:           String::new(),
+                dark_age:      false,
+                status:        status.into(),
+                unlock_civic:  Some(e.prereq_civic.into()),
+                effect:        String::new(),
+            }
+        })
+        .collect();
+
+    government::GovernmentPolicies {
+        government,
+        active_policies,
+        catalogue,
+    }
+}
+
 pub fn build_government(view: &GameView) -> government::GovernmentPolicies {
     let government::GovernmentPolicies { catalogue, .. } = government::GovernmentPolicies::default();
     let active_policies: Vec<government::ActivePolicy> = view

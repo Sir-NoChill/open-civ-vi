@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use libciv::{all_scores, CityId, DefaultRulesEngine, PendingActionKind, RulesEngine, UnitActionKind};
+use libciv::{all_scores, CityId, DefaultRulesEngine, PendingActionKind, PolicyCardStatus, RulesEngine, UnitActionKind};
 use libhexgrid::board::HexBoard;
 use libhexgrid::coord::HexCoord;
 use serde_json::json;
@@ -214,6 +214,28 @@ pub fn handle_status(
                 "researched": researched,
                 "in_progress": in_progress,
             })
+        }
+        StatusKind::Policies => {
+            let rules = DefaultRulesEngine;
+            let cat = rules.policy_catalogue(&state, civ_id);
+            let entries: Vec<_> = cat
+                .into_iter()
+                .map(|e| {
+                    let status = match e.status {
+                        PolicyCardStatus::Active    => "active",
+                        PolicyCardStatus::Available => "available",
+                        PolicyCardStatus::Locked    => "locked",
+                    };
+                    json!({
+                        "id":           e.policy_id.as_ulid().to_string(),
+                        "name":         e.name,
+                        "type":         format!("{:?}", e.policy_type).to_lowercase(),
+                        "prereq_civic": e.prereq_civic,
+                        "status":       status,
+                    })
+                })
+                .collect();
+            json!(entries)
         }
         StatusKind::CombatPreview { attacker, q, r } => {
             let attacker_id = parse_ulid(attacker).map(libciv::UnitId::from_ulid)?;

@@ -16,6 +16,7 @@ pub(crate) mod effects;
 pub(crate) mod governors;
 pub(crate) mod great_people;
 pub(crate) mod movement;
+pub(crate) mod policy_catalogue;
 pub(crate) mod production;
 pub(crate) mod religion;
 pub(crate) mod trade;
@@ -24,6 +25,7 @@ pub(crate) mod turn_phase;
 pub(crate) mod unit_actions;
 
 pub use combat_preview::CombatPreview;
+pub use policy_catalogue::{PolicyCardEntry, PolicyCardStatus};
 pub use turn_pending::{PendingAction, PendingActionKind};
 pub use unit_actions::{UnitAction, UnitActionKind};
 
@@ -124,6 +126,15 @@ pub trait RulesEngine: std::fmt::Debug {
     /// rules-specific items (e.g. mandatory great-person promotions).
     fn pending_actions(&self, state: &GameState, civ: CivId) -> Vec<PendingAction> {
         turn_pending::pending_actions(state, civ)
+    }
+
+    /// List every registered policy alongside its current status for
+    /// `civ`: Active when slotted, Available when the prereq civic has
+    /// been completed, Locked otherwise. Default impl walks
+    /// `state.policies` and labels each entry from the civ's
+    /// `active_policies` and `unlocked_policies`.
+    fn policy_catalogue(&self, state: &GameState, civ: CivId) -> Vec<PolicyCardEntry> {
+        policy_catalogue::policy_catalogue(state, civ)
     }
 
     /// Compute a deterministic combat preview for `attacker` engaging

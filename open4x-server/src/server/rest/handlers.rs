@@ -745,7 +745,11 @@ pub async fn government(
 ) -> Result<impl IntoResponse, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
-    Ok(Json(web_projection::build_government(&view)))
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    Ok(Json(web_projection::build_government_from_room(&view, &room, civ_id)))
 }
 
 // ── /map/overlays ────────────────────────────────────────────────────────────

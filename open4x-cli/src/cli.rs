@@ -511,6 +511,9 @@ pub enum StatusKind {
         #[arg(long)]
         r: i32,
     },
+    /// Show the policy-card catalogue for the player (active /
+    /// available / locked)
+    Policies,
 }
 
 // ── List subcommands ─────────────────────────────────────────────────────────

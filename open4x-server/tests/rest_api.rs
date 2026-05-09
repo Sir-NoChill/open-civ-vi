@@ -339,6 +339,31 @@ async fn units_actions_are_engine_derived_and_role_specific() {
 }
 
 #[tokio::test]
+async fn government_catalogue_lists_engine_registered_policies_as_locked() {
+    // GameState::new registers all 127 builtin policies. A fresh civ
+    // has unlocked_policies == [] and active_policies == [], so the
+    // catalogue should be all-locked.
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    let (status, g) = get_with(&app, "/api/v1/government", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    let cat = g["catalogue"].as_array().expect("catalogue array");
+    assert_eq!(cat.len(), 127, "expected 127 policies, got {}", cat.len());
+    assert!(
+        cat.iter().all(|p| p["status"] == "locked"),
+        "expected every policy to be locked on a fresh game"
+    );
+    // Spot-check one well-known policy is present with the right type.
+    let discipline = cat
+        .iter()
+        .find(|p| p["name"] == "Discipline")
+        .expect("Discipline must be in the catalogue");
+    assert_eq!(discipline["type"], "military");
+    assert_eq!(discipline["unlock_civic"], "Code of Laws");
+}
+
+#[tokio::test]
 async fn turn_queue_lists_required_choose_research_on_fresh_game() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;
