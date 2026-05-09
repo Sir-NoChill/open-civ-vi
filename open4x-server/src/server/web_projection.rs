@@ -334,6 +334,102 @@ pub fn build_city_tiles(view: &GameView, city_id: &str) -> Option<city_tiles::Ci
 
 // ── /units ───────────────────────────────────────────────────────────────────
 
+/// Map a libciv [`libciv::UnitActionKind`] to the wire `(id, label, hotkey)`
+/// triple the wireframe expects. Cosmetic strings live here, not in the
+/// engine.
+fn unit_action_wire(kind: libciv::UnitActionKind) -> (&'static str, &'static str, Option<&'static str>) {
+    use libciv::UnitActionKind as K;
+    match kind {
+        K::Move           => ("move",            "Move",            Some("M")),
+        K::Attack         => ("attack",          "Attack",          Some("A")),
+        K::Fortify        => ("fortify",         "Fortify",         Some("F")),
+        K::Sleep          => ("sleep",           "Sleep",           Some("Z")),
+        K::FoundCity      => ("found_city",      "Found City",      Some("B")),
+        K::Build          => ("build",           "Build",           Some("E")),
+        K::TradeRoute     => ("trade_route",     "Trade Route",     Some("T")),
+        K::SpreadReligion => ("spread_religion", "Spread Religion", Some("R")),
+    }
+}
+
+/// Authoritative builder: looks up each visible unit's available actions
+/// via [`libciv::RulesEngine::available_unit_actions`] against the room's
+/// `GameState`. Use this from REST handlers; [`build_units`] below is the
+/// `GameView`-only fallback for tests / contexts without room access.
+pub fn build_units_from_room(
+    view: &GameView,
+    room: &crate::server::state::GameRoom,
+) -> unit_data::UnitData {
+    use libciv::RulesEngine;
+
+    let unit_type_by_id: std::collections::HashMap<_, _> = view
+        .unit_type_defs
+        .iter()
+        .map(|d| (d.id, d))
+        .collect();
+    let my_civ_id = view.my_civ_id;
+
+    let units = view
+        .units
+        .iter()
+        .map(|u| {
+            let def = unit_type_by_id.get(&u.unit_type);
+            let kind = def.map(|d| capitalize(&d.name)).unwrap_or_else(|| "Unit".into());
+            let owner = if u.owner == my_civ_id {
+                view.my_civ.name.clone()
+            } else {
+                view.other_civs
+                    .iter()
+                    .find(|p| p.id == u.owner)
+                    .map(|p| p.name.clone())
+                    .unwrap_or_else(|| u.owner.to_string())
+            };
+
+            // Engine-derived action set. Foreign units get an empty set
+            // (the player can't act on units they don't own).
+            let actions: Vec<_> = if u.is_own {
+                let libciv_unit_id = libciv::UnitId::from_ulid(u.id.as_ulid());
+                room.rules
+                    .available_unit_actions(&room.state, libciv_unit_id)
+                    .into_iter()
+                    .map(|a| {
+                        let (id, label, hotkey) = unit_action_wire(a.kind);
+                        unit_data::UnitAction {
+                            id:      id.into(),
+                            label:   label.into(),
+                            hotkey:  hotkey.map(|s| s.into()),
+                            enabled: a.enabled,
+                        }
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            unit_data::Unit {
+                id:              u.id.as_ulid().to_string(),
+                name:            kind.clone(),
+                kind,
+                owner,
+                is_own:          u.is_own,
+                hp:              u.health,
+                hp_max:          100,
+                mp:              u.movement_left / 100,
+                mp_max:          u.max_movement / 100,
+                position:        world::TileCoord { q: u.coord.q, r: u.coord.r },
+                status:          "idle".into(),
+                combat_strength: u.combat_strength,
+                range:           u.range,
+                vision_range:    u.vision_range,
+                category:        format!("{:?}", u.category),
+                domain:          format!("{:?}", u.domain),
+                actions,
+            }
+        })
+        .collect();
+
+    unit_data::UnitData { units }
+}
+
 pub fn build_units(view: &GameView) -> unit_data::UnitData {
     let unit_type_by_id: std::collections::HashMap<_, _> = view
         .unit_type_defs

@@ -345,7 +345,11 @@ pub async fn units(
 ) -> Result<impl IntoResponse, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
-    Ok(Json(web_projection::build_units(&view)))
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    Ok(Json(web_projection::build_units_from_room(&view, &room)))
 }
 
 pub async fn unit_detail(
@@ -355,7 +359,11 @@ pub async fn unit_detail(
 ) -> Result<impl IntoResponse, ApiError> {
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
-    let units = web_projection::build_units(&view);
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    let units = web_projection::build_units_from_room(&view, &room);
     units
         .units
         .into_iter()
@@ -578,7 +586,11 @@ pub async fn unit_action(
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
 
     let view = view_only(&state, game_id, civ_id)?;
-    let unit = web_projection::build_units(&view)
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    let unit = web_projection::build_units_from_room(&view, &room)
         .units
         .into_iter()
         .find(|u| u.id == id);

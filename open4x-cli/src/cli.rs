@@ -496,6 +496,11 @@ pub enum StatusKind {
     Pending,
     /// Show victory progress for each registered condition
     Victory,
+    /// Show available actions for a specific unit
+    UnitActions {
+        #[arg(long)]
+        id: String,
+    },
 }
 
 // ── List subcommands ─────────────────────────────────────────────────────────

@@ -306,6 +306,39 @@ async fn production_queue_and_cancel_round_trip() {
 }
 
 #[tokio::test]
+async fn units_actions_are_engine_derived_and_role_specific() {
+    // Session builder spawns one warrior + one builder for the player.
+    // Engine-derived actions: warrior gets attack/fortify; builder gets
+    // build (because builders spawn with charges).
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    let (status, u) = get_with(&app, "/api/v1/units", &token).await;
+    assert_eq!(status, StatusCode::OK);
+    let units = u["units"].as_array().expect("units array");
+    let own: Vec<_> = units.iter().filter(|u| u["is_own"] == true).collect();
+    assert!(!own.is_empty(), "expected at least one own unit, got {units:?}");
+
+    // Every own unit has Move + Sleep.
+    for u in &own {
+        let actions = u["actions"].as_array().expect("actions");
+        let kinds: Vec<&str> = actions.iter().map(|a| a["id"].as_str().unwrap()).collect();
+        assert!(kinds.contains(&"move"), "unit missing 'move': {u:?}");
+        assert!(kinds.contains(&"sleep"), "unit missing 'sleep': {u:?}");
+    }
+
+    // At least one own unit (the warrior) has attack + fortify.
+    assert!(
+        own.iter().any(|u| {
+            let actions = u["actions"].as_array().unwrap();
+            let kinds: Vec<&str> = actions.iter().map(|a| a["id"].as_str().unwrap()).collect();
+            kinds.contains(&"attack") && kinds.contains(&"fortify")
+        }),
+        "expected at least one combat unit with attack + fortify in {own:?}"
+    );
+}
+
+#[tokio::test]
 async fn turn_queue_lists_required_choose_research_on_fresh_game() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;

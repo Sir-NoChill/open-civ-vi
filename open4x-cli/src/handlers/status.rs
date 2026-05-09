@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use libciv::{all_scores, CityId, DefaultRulesEngine, PendingActionKind, RulesEngine};
+use libciv::{all_scores, CityId, DefaultRulesEngine, PendingActionKind, RulesEngine, UnitActionKind};
 use libhexgrid::board::HexBoard;
 use libhexgrid::coord::HexCoord;
 use serde_json::json;
@@ -214,6 +214,28 @@ pub fn handle_status(
                 "researched": researched,
                 "in_progress": in_progress,
             })
+        }
+        StatusKind::UnitActions { id } => {
+            let unit_id = parse_ulid(id).map(libciv::UnitId::from_ulid)?;
+            let rules = DefaultRulesEngine;
+            let actions = rules.available_unit_actions(&state, unit_id);
+            let entries: Vec<_> = actions
+                .into_iter()
+                .map(|a| {
+                    let kind = match a.kind {
+                        UnitActionKind::Move           => "move",
+                        UnitActionKind::Attack         => "attack",
+                        UnitActionKind::Fortify        => "fortify",
+                        UnitActionKind::Sleep          => "sleep",
+                        UnitActionKind::FoundCity      => "found_city",
+                        UnitActionKind::Build          => "build",
+                        UnitActionKind::TradeRoute     => "trade_route",
+                        UnitActionKind::SpreadReligion => "spread_religion",
+                    };
+                    json!({ "kind": kind, "enabled": a.enabled })
+                })
+                .collect();
+            json!(entries)
         }
         StatusKind::Victory => {
             let rules = DefaultRulesEngine;

@@ -175,7 +175,7 @@ pub use game::{
     all_scores, compute_score,
     BuiltinVictoryCondition, DefaultRulesEngine, GameOver,
     GameState, GameStateDiff, PendingAction, PendingActionKind, RulesEngine,
-    SCIENCE_MILESTONES, TurnEngine, VictoryKind,
+    SCIENCE_MILESTONES, TurnEngine, UnitAction, UnitActionKind, VictoryKind,
 };
 pub use civ::era::EraAge;
 pub use game::{apply_delta, apply_diff};

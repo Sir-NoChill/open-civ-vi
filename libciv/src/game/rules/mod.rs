@@ -20,8 +20,10 @@ pub(crate) mod religion;
 pub(crate) mod trade;
 pub(crate) mod turn_pending;
 pub(crate) mod turn_phase;
+pub(crate) mod unit_actions;
 
 pub use turn_pending::{PendingAction, PendingActionKind};
+pub use unit_actions::{UnitAction, UnitActionKind};
 
 /// Look up a civ's ability bundle by identity. Returns None for custom civs.
 pub(crate) fn lookup_bundle(civ_identity: Option<BuiltinCiv>) -> Option<CivAbilityBundle> {
@@ -120,6 +122,16 @@ pub trait RulesEngine: std::fmt::Debug {
     /// rules-specific items (e.g. mandatory great-person promotions).
     fn pending_actions(&self, state: &GameState, civ: CivId) -> Vec<PendingAction> {
         turn_pending::pending_actions(state, civ)
+    }
+
+    /// Enumerate the actions available to a single unit right now.
+    /// Returns `(kind, enabled)` pairs in display order: `Move` always
+    /// first, then category-specific actions (attack/fortify for combat,
+    /// build for builders, found_city for settlers, etc.). The default
+    /// impl in [`unit_actions::available_unit_actions`] handles the
+    /// stock unit categories; engines can override to add custom ones.
+    fn available_unit_actions(&self, state: &GameState, unit: UnitId) -> Vec<UnitAction> {
+        unit_actions::available_unit_actions(state, unit)
     }
 
     /// Compute progress on every registered victory condition for `civ`.
