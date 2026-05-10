@@ -41,10 +41,18 @@ pub fn Docs() -> impl IntoView {
             <Panel>
                 <div class="h3" style="margin-bottom:10px">"Status"</div>
                 <p class="muted small" style="margin-top:0">
-                    "The mdBook isn't yet served by the lobby binary — links above will 404 in dev "
-                    "until the static-mdbook router lands. For now build it locally with "
-                    <code>"mdbook serve book/"</code>
-                    " and read the same pages on " <code>"localhost:3000"</code> "."
+                    "The lobby serves "
+                    <code>"./book/book/"</code>
+                    " under "
+                    <code>"/book/"</code>
+                    " (overridable via "
+                    <code>"OPEN4X_LOBBY_BOOK_DIR"</code>
+                    "). Run "
+                    <code>"mdbook build book/"</code>
+                    " from the repo root once to populate the directory; rerun whenever "
+                    "you edit the source under "
+                    <code>"book/src/"</code>
+                    "."
                 </p>
             </Panel>
         </div>

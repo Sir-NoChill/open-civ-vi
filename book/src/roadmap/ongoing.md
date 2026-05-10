@@ -115,12 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Static mdBook serve route** — the Docs screen
-      links to `/book/...` URLs that 404 today. Add a
-      `tower_http::ServeDir` mount at `/book/` pointed at
-      `OPEN4X_LOBBY_BOOK_DIR` (default `./book/book`) so an
-      mdbook-built site is served alongside the SPA. Document the
-      build step in the Docs screen's status note.
+- [ ] **Phase 6 ▸ Rate limiting + audit log** — first real op
+      hardening. Magic-link mint capped per email + per IP
+      (`tower_governor` keyed on the email body field; per-IP
+      via `axum_client_ip`). New `audit_events` table logs
+      sign-in / identity link / unlink / account-delete with
+      ts + actor_player_id + ip; surface via a CLI dump.
 
 ### Up next (Phase 5 polish)
 

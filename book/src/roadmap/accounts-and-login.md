@@ -530,10 +530,13 @@ User-visible quality once the platform basics are wired.
       Slow marathon) and a "My presets" empty-state. Load /
       Save / Import JSON buttons inert pending the
       preset-persistence column.
-- [~] **Docs screen** — `screens/docs.rs` ships a quick-links
+- [x] **Docs screen** — `screens/docs.rs` ships a quick-links
       panel pointing at `/book/`, the accounts-and-login roadmap,
-      and the web-client REST reference. Static-mdbook router
-      lands as a separate task; the links 404 in dev today.
+      and the web-client REST reference. The lobby binary mounts
+      `tower_http::ServeDir` at `/book/` (overridable via
+      `OPEN4X_LOBBY_BOOK_DIR`, default `./book/book`); the screen's
+      status note tells contributors to run `mdbook build book/`
+      once to populate the directory.
 - [ ] **Email verification flow** — "Verify email" CTA on unverified
       identities, second magic-link to confirm.
 - [ ] **Sign-in feedback states** — pending / success / failure for

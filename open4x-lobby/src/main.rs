@@ -19,6 +19,8 @@ async fn main() {
         .unwrap_or_else(|_| "./open4x-lobby/dist".to_string());
     let data_dir = std::env::var("OPEN4X_LOBBY_DATA_DIR")
         .unwrap_or_else(|_| "./data/lobby".to_string());
+    let book_dir = std::env::var("OPEN4X_LOBBY_BOOK_DIR")
+        .unwrap_or_else(|_| "./book/book".to_string());
 
     let state = AppState::boot(&data_dir)
         .await
@@ -27,6 +29,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
         .nest("/api/v1", server::rest::v1_router())
+        .nest_service("/book", ServeDir::new(&book_dir))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             server::auth::session_layer,
@@ -40,6 +43,7 @@ async fn main() {
     println!("open4x-lobby listening on {addr}");
     println!("  static files: {static_dir}");
     println!("  data dir:     {data_dir}");
+    println!("  book dir:     {book_dir} (run `mdbook build book/` to populate)");
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("failed to bind");
