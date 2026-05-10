@@ -79,6 +79,17 @@ pub struct ProcessConfig {
     /// How long to wait for the spawned child's `/health` to flip
     /// to 200 before giving up. Defaults to 10 seconds.
     pub health_timeout: Duration,
+    /// Public URL template that the *browser* should hit when
+    /// resuming a game in this instance. The substring `{port}`
+    /// is substituted with the per-game allocated port; everything
+    /// else is taken literally. Examples:
+    ///   `https://g-{port}.example.com`     — wildcard subdomain
+    ///   `https://example.com/play/{port}`  — path-prefix routing
+    /// When unset, the lobby writes the in-process URL
+    /// `http://127.0.0.1:<port>` directly — fine for localhost
+    /// dev, broken for any deploy where the browser isn't on the
+    /// lobby host. See `book/src/multiplayer/reverse-proxy.md`.
+    pub public_url_template: Option<String>,
 }
 
 impl ProcessConfig {
@@ -101,13 +112,27 @@ impl ProcessConfig {
                 .and_then(|s| s.parse::<u64>().ok())
                 .unwrap_or(10),
         );
+        let public_url_template = std::env::var("OPEN4X_LOBBY_PUBLIC_GAME_URL_TEMPLATE")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
         Self {
             binary,
             port_lo,
             port_hi,
             data_root,
             health_timeout,
+            public_url_template,
         }
+    }
+}
+
+/// Substitute `{port}` in `template` with the literal port
+/// number. If the template is `None`, returns the local URL
+/// (`http://127.0.0.1:<port>`) unchanged.
+pub fn render_public_url(template: Option<&str>, port: u16, fallback: &str) -> String {
+    match template {
+        Some(t) => t.replace("{port}", &port.to_string()),
+        None => fallback.to_string(),
     }
 }
 
@@ -227,7 +252,7 @@ impl ProcessOrchestrator {
             return Err(e);
         }
 
-        let bootstrapped = match orchestrator::bootstrap_game(&url, req).await {
+        let mut bootstrapped = match orchestrator::bootstrap_game(&url, req).await {
             Ok(b) => b,
             Err(e) => {
                 let _ = child.kill().await;
@@ -235,6 +260,15 @@ impl ProcessOrchestrator {
                 return Err(e.into());
             }
         };
+        // Rewrite the URL the *games row* (and therefore the
+        // browser at Resume time) sees if a public template is
+        // configured. The lobby itself keeps talking to the child
+        // over the loopback URL stored in `GameProcess.url`.
+        bootstrapped.server_url = render_public_url(
+            self.cfg.public_url_template.as_deref(),
+            port,
+            &url,
+        );
 
         let proc = GameProcess {
             port,
@@ -331,6 +365,27 @@ mod tests {
         assert_eq!(parse_port_range("4100-4001"), None);
         assert_eq!(parse_port_range("badrange"), None);
         assert_eq!(parse_port_range("0-100"), None);
+    }
+
+    #[test]
+    fn renders_public_url_with_and_without_template() {
+        assert_eq!(
+            render_public_url(None, 4501, "http://127.0.0.1:4501"),
+            "http://127.0.0.1:4501",
+        );
+        assert_eq!(
+            render_public_url(Some("https://g-{port}.example.com"), 4501, "ignored"),
+            "https://g-4501.example.com",
+        );
+        assert_eq!(
+            render_public_url(Some("https://example.com/play/{port}"), 4502, "ignored"),
+            "https://example.com/play/4502",
+        );
+        // Template without {port} substitution is taken literally.
+        assert_eq!(
+            render_public_url(Some("https://example.com/static"), 4501, "ignored"),
+            "https://example.com/static",
+        );
     }
 
     #[test]

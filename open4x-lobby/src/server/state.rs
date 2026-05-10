@@ -111,11 +111,12 @@ impl AppState {
             DeployMode::PerGame => {
                 let cfg = ProcessConfig::from_env();
                 eprintln!(
-                    "[orchestrator] per-game mode: binary={} ports={}-{} data_root={}",
+                    "[orchestrator] per-game mode: binary={} ports={}-{} data_root={} public_url={}",
                     cfg.binary.display(),
                     cfg.port_lo,
                     cfg.port_hi,
-                    cfg.data_root.display()
+                    cfg.data_root.display(),
+                    cfg.public_url_template.as_deref().unwrap_or("<none, loopback only>"),
                 );
                 Some(ProcessOrchestrator::new(cfg))
             }
