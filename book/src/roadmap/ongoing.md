@@ -115,13 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Presets screen ▸ schema + persist** — `screens/presets.rs`
-      renders three built-in presets + a "My presets" empty
-      state. Wire the data layer: new `presets` table
-      (player_id FK, name, body_json, created_at, updated_at)
-      + GET /api/v1/presets, POST /api/v1/presets (save current
-      wizard state), DELETE /api/v1/presets/{id}. SPA's
-      Save preset / Import JSON buttons wire through.
+- [ ] **NewGame ▸ "+ Save current" preset shortcut** — the
+      wizard's Review step should expose a Btn that serializes
+      `WizardState` and POSTs to /api/v1/presets so users can
+      stash a configuration without navigating to the Presets
+      tab + pasting JSON. Mirror sites should appear on Step Civ
+      / Step Rules / Step Players so saving works from any step.
 
 ### Up next (Phase 6)
 

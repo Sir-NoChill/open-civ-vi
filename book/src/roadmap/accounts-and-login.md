@@ -546,11 +546,17 @@ User-visible quality once the platform basics are wired.
       friends/search` resolves the broader query shapes server-
       side, gated by the target's `discoverable_by_id`
       preference.
-- [~] **Presets screen** — `screens/presets.rs` renders the page
-      with three built-in presets (Standard prince / Deity duel /
-      Slow marathon) and a "My presets" empty-state. Load /
-      Save / Import JSON buttons inert pending the
-      preset-persistence column.
+- [x] **Presets screen** — `0007_presets.sql` adds the
+      `presets` table (id ULID, player_id FK CASCADE, name,
+      body_json, timestamps). `PresetsStore` in
+      `open4x-accounts` validates name + body-is-JSON +
+      size caps. Lobby exposes GET / POST /api/v1/presets and
+      DELETE /api/v1/presets/{id}. SPA screen lists "My
+      presets" with per-row Delete; "↑ import JSON…" toggle
+      reveals a name + textarea form + Save that persists.
+      Load-from-built-in and the wizard-tab "+ Save current"
+      ergonomic shortcut are follow-ups (deliberately out of
+      scope for the persistence slice).
 - [x] **Docs screen** — `screens/docs.rs` ships a quick-links
       panel pointing at `/book/`, the accounts-and-login roadmap,
       and the web-client REST reference. The lobby binary mounts
@@ -936,6 +942,15 @@ Running record of work performed against this plan, newest at top.
   resolves non-hex inputs through it before posting
   /friends/request. Smoke verified email + hex resolution and
   the opt-out gating both paths.
+- `38c1e50e` — feat(open4x-{accounts,lobby}): presets schema
+  + routes + screen. New `0007_presets.sql` table; new
+  `PresetsStore` with create-list-delete + a unit test
+  covering all three rejection paths (empty name, oversize,
+  non-JSON body). Lobby gains GET/POST /api/v1/presets +
+  DELETE /api/v1/presets/{id}. Presets screen lists user
+  rows with delete + an Import-JSON drawer that saves a
+  name+body pair. Smoke verified create → list → invalid
+  rejections → delete → empty round-trip end-to-end.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
