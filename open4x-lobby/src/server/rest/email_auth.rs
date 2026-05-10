@@ -17,6 +17,8 @@ use axum::extract::{ConnectInfo, Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
+
+use crate::server::client_ip::client_ip;
 use chrono::{Duration, Utc};
 use open4x_accounts::audit::{AuditEventKind, AuditStore, NewAuditEvent};
 use open4x_accounts::magic_link::{DEFAULT_TTL, MagicLinkError};
@@ -62,6 +64,7 @@ const MAGIC_LINK_THROTTLE_WINDOW_SECS: i64 = 5 * 60;
 pub async fn start(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(body): Json<StartBody>,
 ) -> Response {
     let email = body.email.trim().to_lowercase();
@@ -80,7 +83,7 @@ pub async fn start(
     // limiter, and the caps survive restarts.
     let since = (Utc::now() - Duration::seconds(MAGIC_LINK_THROTTLE_WINDOW_SECS))
         .to_rfc3339();
-    let ip_str = addr.ip().to_string();
+    let ip_str = client_ip(addr.ip(), &headers, &state.trusted_proxies);
 
     if let Ok(count) = state
         .audit

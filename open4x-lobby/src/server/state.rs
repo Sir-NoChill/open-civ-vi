@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use ipnet::IpNet;
 use open4x_accounts::audit::SqliteAuditStore;
 use open4x_accounts::games::SqliteGameStore;
 use open4x_accounts::magic_link::MagicLinkSigner;
@@ -12,6 +13,8 @@ use open4x_accounts::mailer::{LogMailer, Mailer};
 use open4x_accounts::store::SqliteAccountStore;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Pool, Sqlite};
+
+use crate::server::client_ip::parse_trusted_proxies;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -30,6 +33,12 @@ pub struct AppState {
     /// disables the orchestrator (game rows ship with empty
     /// `server_url` / `server_token` and Resume returns 503).
     pub game_server_url: String,
+    /// CIDRs whose direct TCP peers are trusted to set
+    /// `X-Forwarded-For`. When the request peer matches one of
+    /// these, [`crate::server::client_ip`] reads the client address
+    /// out of the header instead. Empty (the default) means the
+    /// header is always ignored.
+    pub trusted_proxies: Vec<IpNet>,
 }
 
 impl AppState {
@@ -72,6 +81,8 @@ impl AppState {
             std::env::var("OPEN4X_LOBBY_PUBLIC_URL").unwrap_or_default();
         let game_server_url = std::env::var("OPEN4X_GAME_SERVER_URL")
             .unwrap_or_else(|_| "http://localhost:3001".to_string());
+        let trusted_proxies =
+            parse_trusted_proxies(&std::env::var("OPEN4X_LOBBY_TRUSTED_PROXIES").unwrap_or_default());
 
         Ok(Self {
             pool,
@@ -82,6 +93,7 @@ impl AppState {
             mailer,
             public_base_url,
             game_server_url,
+            trusted_proxies,
         })
     }
 }

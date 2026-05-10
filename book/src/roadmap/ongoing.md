@@ -115,14 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ X-Forwarded-For reader for production proxies** —
-      per-IP throttle currently uses `ConnectInfo<SocketAddr>`
-      which sees only the direct TCP peer. Behind nginx / caddy
-      the peer is always 127.0.0.1, so the cap is meaningless.
-      Add an `OPEN4X_LOBBY_TRUSTED_PROXIES` env (CIDR list); when
-      the request peer falls inside any trusted CIDR, prefer the
-      last entry in `X-Forwarded-For`. Otherwise fall back to the
-      peer (current behaviour).
+- [ ] **Phase 6 ▸ Single-binary deploy (`rust-embed` SPA)** —
+      `dist/` is currently shipped as a sibling directory; embed
+      it (and `book/book/`) into the binary so a self-host deploy
+      is just the `open4x-lobby` binary plus
+      `OPEN4X_LOBBY_DATA_DIR`. Falls back to `OPEN4X_LOBBY_STATIC_DIR`
+      when set so dev with `trunk serve` keeps working.
 
 ### Up next (Phase 6)
 

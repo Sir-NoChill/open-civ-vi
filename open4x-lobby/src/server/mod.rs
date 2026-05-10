@@ -7,6 +7,7 @@
 #![cfg(feature = "ssr")]
 
 pub mod auth;
+pub mod client_ip;
 pub mod orchestrator;
 pub mod rest;
 pub mod state;

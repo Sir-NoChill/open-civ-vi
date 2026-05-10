@@ -566,9 +566,10 @@ production.
       `POST /api/v1/auth/email/start`, both backed by the audit
       log via `recent_count_by_kind_and_{detail,ip}`. Per-IP cap
       is higher because a household / NAT can legitimately request
-      links for several addresses. `axum::extract::ConnectInfo`
-      reads the peer; production behind a reverse proxy still
-      wants an X-Forwarded-For reader (separate task). Returns
+      links for several addresses. `OPEN4X_LOBBY_TRUSTED_PROXIES`
+      (CIDR list) gates X-Forwarded-For; when the peer falls inside
+      a trusted CIDR, `client_ip` returns the rightmost untrusted
+      hop in `X-Forwarded-For` instead of the proxy. Returns
       `429 rate_limited` + `Retry-After: 60` with a structured
       body distinguishing the two limits. OIDC-callback-per-state-
       cookie limit lands with the OIDC handler in Phase 2.3 part 2.

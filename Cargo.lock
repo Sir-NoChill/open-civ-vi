@@ -1825,6 +1825,7 @@ dependencies = [
  "console_error_panic_hook",
  "getrandom 0.3.4",
  "gloo-timers",
+ "ipnet",
  "js-sys",
  "leptos",
  "open4x-accounts",
