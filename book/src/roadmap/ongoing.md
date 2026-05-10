@@ -76,7 +76,9 @@ into the server projector.
       idempotent pop of `research_queue` front; partial progress
       discarded (matches Civ VI switch-research semantics). CLI:
       `action cancel-research`.
-- [ ] `GameAction::CancelCivic` + `DELETE /civics/research`
+- [x] `GameAction::CancelCivic` + `DELETE /civics/research` —
+      idempotent clear of `civic_in_progress` Option; partial progress
+      discarded. CLI: `action cancel-civic`.
 - [ ] `GameAction::ChangeGovernment` + `POST /government/change`
 
 ### Client (Leptos)
@@ -104,6 +106,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `nttqzwzx` — feat(open4x-server): GameAction::CancelCivic + DELETE
+  /civics/research.
 - `oumzyopv` — feat(open4x-server): GameAction::CancelResearch +
   DELETE /tech/research.
 - `lynqxskw` — feat(open4x-server): GameAction::RenameCity + POST
