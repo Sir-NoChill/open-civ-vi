@@ -242,9 +242,14 @@ minting behind those types.
       `open4x-accounts/src/magic_link.rs`. 6 tests cover round-trip
       / reuse-rejection / expired-rejection /
       tampered-signature-rejection / unknown-nonce / env-key-load.
-- [ ] Email transport: pluggable `Mailer` trait. Default `LogMailer`
-      (writes the magic link to stderr — useful for dev). SMTP impl
-      gated on a `mailer-smtp` feature.
+- [x] Email transport: pluggable `Mailer` trait at
+      `open4x-accounts/src/mailer.rs`. `Mailer: Send + Sync` async
+      trait with `send_magic_link(email, link)` plus a `send_raw`
+      escape hatch (default-impl errors `NotConfigured`).
+      `LogMailer` impl writes the magic link to stderr in a
+      grep-friendly `[magic-link] to=… link=…` shape. `SmtpMailer`
+      stub is gated on a new `mailer-smtp` cargo feature; the
+      `lettre` wiring lands in Phase 6 self-host work.
 
 #### 2.3 OIDC client
 

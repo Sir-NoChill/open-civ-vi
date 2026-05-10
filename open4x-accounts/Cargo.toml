@@ -36,3 +36,6 @@ persistence = [
     "dep:hmac", "dep:sha2", "dep:subtle", "dep:base64", "dep:rand",
 ]
 postgres    = ["persistence", "sqlx/postgres"]
+# SMTP transport for the magic-link Mailer. Stub today; real lettre
+# wiring lands in Phase 6 (self-host).
+mailer-smtp = ["persistence"]

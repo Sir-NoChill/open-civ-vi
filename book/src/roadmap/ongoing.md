@@ -115,17 +115,19 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 2.2 ▸ Mailer trait** — pluggable transport interface in
-      `open4x-accounts/src/mailer.rs`: `Mailer: Send + Sync` async
-      trait with `send_magic_link(email, link)` plus `send_raw(to,
-      subject, body)` for future use. Default impl `LogMailer`
-      writes the magic link to stderr (developer ergonomics). SMTP
-      impl gated on a `mailer-smtp` cargo feature using
-      `lettre`. Errors via typed `MailerError`.
+- [ ] **Phase 2.5 ▸ Session tokens** — bearer shape
+      `lobby_<base64url(48 bytes)>`, stored as SHA-256 hex in the
+      `sessions.token_hash` PK so a DB compromise can't mint logins.
+      `mint_session(player_id, ttl) -> RawToken`,
+      `validate_session(raw) -> Option<PlayerId>` with a
+      constant-time compare against the hash table,
+      `revoke_session(raw)`. Lives in
+      `open4x-accounts/src/session.rs`. Sessions Phase 2.5 is
+      logically next-up before Phase 2.3 (OIDC) so the session-cookie
+      middleware on the lobby has a target type to mint into.
 
 ### Up next (Phase 2)
 
-- [ ] Session token mint / validate / revoke (SHA-256 hashed bearer)
 - [ ] OIDC client (discovery + PKCE + ID-token verification +
       claims → `Identity::OpenId` mapping)
 - [ ] OIDC custom-issuer support

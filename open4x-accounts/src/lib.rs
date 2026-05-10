@@ -23,6 +23,9 @@
 pub mod magic_link;
 
 #[cfg(feature = "persistence")]
+pub mod mailer;
+
+#[cfg(feature = "persistence")]
 pub mod store;
 
 use serde::{Deserialize, Serialize};
