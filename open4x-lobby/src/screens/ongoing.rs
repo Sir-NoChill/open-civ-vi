@@ -12,9 +12,24 @@ use wasm_bindgen_futures::spawn_local;
 use crate::components::api::games as games_api;
 use crate::components::{Btn, MiniMap, Tag};
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum Filter {
+    All,
+    YourTurn,
+    Waiting,
+    Completed,
+    Multiplayer,
+}
+
 #[component]
 pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
     let games = LocalResource::new(|| async { games_api::list().await.ok() });
+    let filter = RwSignal::new(Filter::YourTurn);
+    let search = RwSignal::new(String::new());
+
+    let chip_class = move |target: Filter| -> &'static str {
+        if filter.get() == target { "chip active" } else { "chip" }
+    };
 
     view! {
         <div style="flex:1; display:flex; flex-direction:column; min-height:0">
@@ -42,13 +57,35 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
 
             <div class="filter-bar">
                 <span class="muted xsmall" style="padding-left:4px">"⌕"</span>
-                <input class="filter-search" placeholder="search games and notes…" />
+                <input
+                    class="filter-search"
+                    placeholder="search games and notes…"
+                    prop:value=move || search.get()
+                    on:input=move |ev| {
+                        use wasm_bindgen::JsCast as _;
+                        if let Some(el) = ev.target()
+                            .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                        {
+                            search.set(el.value());
+                        }
+                    }
+                />
                 <span class="sep-v"></span>
-                <button class="chip active">"your turn " <span class="x">"×"</span></button>
-                <button class="chip">"waiting"</button>
-                <button class="chip">"completed"</button>
-                <button class="chip">"multiplayer"</button>
-                <button class="chip">"+ filter"</button>
+                <button
+                    class=move || chip_class(Filter::YourTurn)
+                    on:click=move |_| filter.set(Filter::YourTurn)
+                >
+                    "your turn"
+                    {move || (filter.get() == Filter::YourTurn).then(|| view! { " " <span class="x">"×"</span> })}
+                </button>
+                <button class=move || chip_class(Filter::Waiting)
+                        on:click=move |_| filter.set(Filter::Waiting)>"waiting"</button>
+                <button class=move || chip_class(Filter::Completed)
+                        on:click=move |_| filter.set(Filter::Completed)>"completed"</button>
+                <button class=move || chip_class(Filter::Multiplayer)
+                        on:click=move |_| filter.set(Filter::Multiplayer)>"multiplayer"</button>
+                <button class=move || chip_class(Filter::All)
+                        on:click=move |_| filter.set(Filter::All)>"all"</button>
                 <span style="margin-left:auto" class="muted xsmall">"sort"</span>
                 <button class="chip">"recent ↓"</button>
             </div>
@@ -74,7 +111,31 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                 </div>
                             }.into_any();
                         }
-                        let rows = resp.games.into_iter().enumerate().map(|(i, g)| {
+                        let f = filter.get();
+                        let q = search.get().to_lowercase();
+                        let filtered: Vec<_> = resp.games.into_iter()
+                            .filter(|g| match f {
+                                Filter::All => true,
+                                Filter::YourTurn => g.status == "your_turn",
+                                Filter::Waiting => g.status == "waiting",
+                                Filter::Completed => g.status == "completed",
+                                Filter::Multiplayer => g.players_human > 1,
+                            })
+                            .filter(|g| {
+                                if q.is_empty() { return true; }
+                                g.name.to_lowercase().contains(&q)
+                                    || g.leader.to_lowercase().contains(&q)
+                                    || g.civ_id.to_lowercase().contains(&q)
+                            })
+                            .collect();
+                        if filtered.is_empty() {
+                            return view! {
+                                <div style="padding:24px; text-align:center; color:var(--dim)">
+                                    <p class="small">"No games match the current filter."</p>
+                                </div>
+                            }.into_any();
+                        }
+                        let rows = filtered.into_iter().enumerate().map(|(i, g)| {
                             let is_yours = g.status == "your_turn";
                             let tile_class = if is_yours { "game-tile your-turn" } else { "game-tile" };
                             let resume_label = match g.status.as_str() {

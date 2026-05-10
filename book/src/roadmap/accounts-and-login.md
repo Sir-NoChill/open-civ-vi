@@ -452,9 +452,14 @@ PRIMARY KEY (game_id, player_id)
       MiniMap thumbnails seeded from the world seed (`g.seed.bytes()`
       hashed). Loading + empty-state copy. Crumbs counter
       (`<n> games · <m> awaiting you`) live from the response.
-- [ ] Filter chips functional (`your_turn` / `waiting` / `completed` /
-      `multiplayer`) — push filter to query params.
-- [ ] Search box filters client-side over names + notes.
+- [x] Filter chips functional (`your_turn` / `waiting` / `completed`
+      / `multiplayer` / `all`) — RwSignal-backed; active chip flips
+      class. Filtering happens client-side over the loaded list;
+      pushing the filter to query params is a small follow-up if /
+      when the list grows past 100 rows per player.
+- [x] Search box filters client-side over `name` / `leader` /
+      `civ_id` (case-insensitive substring match). "Notes" is
+      reserved until the per-game notes route ships.
 - [ ] Sort dropdown.
 - [x] "Resume" CTA wired in `screens/ongoing.rs`: clicking the
       tile's resume button posts `/api/v1/games/{id}/resume` via a
