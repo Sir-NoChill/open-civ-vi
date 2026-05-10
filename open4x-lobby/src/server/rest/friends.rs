@@ -153,6 +153,53 @@ pub async fn accept(
     }
 }
 
+// ───────────────────────────── POST /friends/search ──────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct SearchBody {
+    pub query: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SearchHitView {
+    pub player_id: String,
+    pub kind: String,
+    pub label: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SearchResp {
+    pub matches: Vec<SearchHitView>,
+}
+
+pub async fn search(
+    State(state): State<AppState>,
+    RequireSession(_me): RequireSession,
+    Json(body): Json<SearchBody>,
+) -> Response {
+    match state.store.search_for_friend(&body.query).await {
+        Ok(hits) => Json(SearchResp {
+            matches: hits
+                .into_iter()
+                .map(|h| SearchHitView {
+                    player_id: h.player_id.display(),
+                    kind: h.kind,
+                    label: h.label,
+                })
+                .collect(),
+        })
+        .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody {
+                error: "store_error",
+                message: Some(e.to_string()),
+            }),
+        )
+            .into_response(),
+    }
+}
+
 // ───────────────────────────── DELETE /friends/{id} ──────────────────────────
 
 pub async fn unfriend(

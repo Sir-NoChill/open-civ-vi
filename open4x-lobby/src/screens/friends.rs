@@ -24,21 +24,59 @@ pub fn Friends() -> impl IntoView {
     let pending = RwSignal::new(false);
     let err = RwSignal::new(String::new());
 
+    // True if the input parses as a 16-hex PlayerId (canonical
+    // dot-grouped form or bare hex). Skips the search hop.
+    fn looks_like_hex_pid(s: &str) -> bool {
+        let body = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s);
+        let stripped: String = body.chars().filter(|c| c.is_ascii_hexdigit()).collect();
+        stripped.len() == 16
+    }
+
     let on_add = move |_| {
-        let pid = input.get_untracked().trim().to_string();
-        if pid.is_empty() {
-            err.set("paste a player ID first".into());
+        let q = input.get_untracked().trim().to_string();
+        if q.is_empty() {
+            err.set("paste a player ID, email, or handle first".into());
             return;
         }
         err.set(String::new());
         pending.set(true);
         spawn_local(async move {
-            match friends_api::request(pid).await {
-                Ok(()) => {
-                    input.set(String::new());
-                    tick.update(|t| *t += 1);
+            // Resolve to a PlayerId. If the user pasted a hex form
+            // we skip the round-trip; otherwise the lobby's search
+            // route maps email/handle/OpenID → PlayerId (gated by
+            // the target's `discoverable_by_id` preference).
+            let pid_to_request = if looks_like_hex_pid(&q) {
+                Some(q.clone())
+            } else {
+                match friends_api::search(q.clone()).await {
+                    Ok(matches) if matches.is_empty() => {
+                        err.set(format!("no match for {q}"));
+                        None
+                    }
+                    Ok(matches) if matches.len() == 1 => {
+                        Some(matches[0].player_id.clone())
+                    }
+                    Ok(matches) => {
+                        err.set(format!(
+                            "multiple matches ({}). paste the player ID directly to disambiguate.",
+                            matches.len()
+                        ));
+                        None
+                    }
+                    Err(e) => {
+                        err.set(format!("search failed: {e}"));
+                        None
+                    }
                 }
-                Err(e) => err.set(e.to_string()),
+            };
+            if let Some(pid) = pid_to_request {
+                match friends_api::request(pid).await {
+                    Ok(()) => {
+                        input.set(String::new());
+                        tick.update(|t| *t += 1);
+                    }
+                    Err(e) => err.set(e.to_string()),
+                }
             }
             pending.set(false);
         });
@@ -49,7 +87,7 @@ pub fn Friends() -> impl IntoView {
             <div class="content-header">
                 <div class="title">"Friends"</div>
                 <span class="crumbs">
-                    "// search by player ID — email / handle search ships with /friends/search"
+                    "// search by player ID, email, atproto handle, or OpenID URL"
                 </span>
                 <div class="actions">
                     <Btn
@@ -67,7 +105,7 @@ pub fn Friends() -> impl IntoView {
                     <span class="muted xsmall" style="padding-left:4px">"⌕"</span>
                     <input
                         class="filter-search"
-                        placeholder="0xA9C3·7F12·EE04·AB55  or  A9C37F12EE04AB55"
+                        placeholder="alice@example.com  ·  did:plc:…  ·  0xA9C3·7F12·EE04·AB55"
                         prop:value=move || input.get()
                         on:input=move |ev| {
                             use wasm_bindgen::JsCast as _;

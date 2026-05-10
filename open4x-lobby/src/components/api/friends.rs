@@ -46,3 +46,27 @@ pub async fn unfriend(player_id: &str) -> Result<(), ApiError> {
         .await
         .map(|_| ())
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SearchHit {
+    pub player_id: String,
+    pub kind: String,
+    pub label: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct SearchResp {
+    matches: Vec<SearchHit>,
+}
+
+#[derive(Debug, Serialize)]
+struct SearchBody {
+    query: String,
+}
+
+pub async fn search(query: String) -> Result<Vec<SearchHit>, ApiError> {
+    let body = SearchBody { query };
+    let r: SearchResp =
+        fetch_json::<SearchResp, SearchBody>("POST", "/api/v1/friends/search", Some(&body)).await?;
+    Ok(r.matches)
+}

@@ -138,6 +138,100 @@ impl SqliteAccountStore {
         sqlx::migrate!("./migrations").run(&self.pool).await?;
         Ok(())
     }
+
+    /// Friends-search: resolve `query` (16-hex PlayerId, email,
+    /// atproto handle, OpenID URL) to one or more
+    /// (player_id, kind, label) hits. Filtered by the candidate's
+    /// `Preferences.discoverable_by_id` so users can opt out of
+    /// being findable. Returns at most 8 matches to keep the UX
+    /// honest.
+    pub async fn search_for_friend(
+        &self,
+        query: &str,
+    ) -> StoreResult<Vec<SearchHit>> {
+        let q = query.trim();
+        if q.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Path 1: PlayerId hex (canonical or bare). Single
+        // candidate, look up by player_id directly.
+        if let Some(pid) = parse_player_id_query(q) {
+            let pid_text = format!("{:016X}", pid.0);
+            let acct_opt = match load_account(&self.pool, &pid_text).await {
+                Ok(a) => Some(a),
+                Err(StoreError::NotFound) => None,
+                Err(e) => return Err(e),
+            };
+            return Ok(acct_opt
+                .into_iter()
+                .filter(|a| a.prefs.discoverable_by_id)
+                .map(|a| SearchHit {
+                    player_id: a.player_id,
+                    kind: "player_id".into(),
+                    label: a.player_id.display(),
+                })
+                .collect());
+        }
+
+        // Path 2: identity primary_key match. Email is lower-cased
+        // by `identity_key`; atproto + oidc match verbatim. We OR
+        // both forms into a single query so the same input can
+        // hit multiple identity kinds (rare but legal).
+        let q_lower = q.to_lowercase();
+        let rows: Vec<IdentityRow> = sqlx::query_as::<_, IdentityRow>(
+            "SELECT id, player_id, kind, primary_key, label, is_primary, verified \
+             FROM identities \
+             WHERE primary_key = ?1 OR primary_key = ?2 \
+             LIMIT 8",
+        )
+        .bind(q)
+        .bind(&q_lower)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut hits = Vec::new();
+        for r in rows {
+            let acct = match load_account(&self.pool, &r.player_id).await {
+                Ok(a) => a,
+                Err(StoreError::NotFound) => continue,
+                Err(e) => return Err(e),
+            };
+            if !acct.prefs.discoverable_by_id {
+                continue;
+            }
+            hits.push(SearchHit {
+                player_id: acct.player_id,
+                kind: r.kind,
+                label: r.label,
+            });
+        }
+        Ok(hits)
+    }
+}
+
+/// One hit from [`SqliteAccountStore::search_for_friend`].
+#[derive(Debug, Clone)]
+pub struct SearchHit {
+    pub player_id: PlayerId,
+    /// `email` / `oidc` / `atproto` / `player_id`.
+    pub kind: String,
+    pub label: String,
+}
+
+fn parse_player_id_query(s: &str) -> Option<PlayerId> {
+    let body = s
+        .strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s);
+    let stripped: String = body
+        .chars()
+        .filter(|c| c.is_ascii_hexdigit())
+        .collect();
+    if stripped.len() != 16 {
+        return None;
+    }
+    Some(PlayerId::new(u64::from_str_radix(&stripped, 16).ok()?))
 }
 
 #[async_trait]

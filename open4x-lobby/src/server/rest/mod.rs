@@ -36,6 +36,7 @@ pub fn v1_router() -> Router<AppState> {
         .route("/games/{id}/thumbnail", get(games::thumbnail))
         .route("/friends", get(friends::list))
         .route("/friends/request", post(friends::request))
+        .route("/friends/search", post(friends::search))
         .route("/friends/{id}/accept", post(friends::accept))
         .route("/friends/{id}", delete(friends::unfriend))
 }
