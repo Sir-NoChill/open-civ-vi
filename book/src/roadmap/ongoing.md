@@ -115,15 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.4 ▸ OngoingGames + NewGame SPA wiring** —
-      `screens/ongoing.rs` reads `/api/v1/games` via
-      `components::api::games::list` (new binding), drops the baked
-      sample data, renders one tile per row with the MiniMap seeded
-      from `game.seed.parse()`. `screens/newgame.rs` "⌬ Generate
-      world" CTA on the Review step posts the wizard params to
-      `POST /api/v1/games`; on 201 routes the user back to the
-      Ongoing tab with the new tile visible. Resume button on a
-      tile is inert until Phase 4.3 fills `server_url`.
+- [ ] **Phase 4.3 ▸ Orchestrator + open4x-server token validation** —
+      teach `open4x-server` to accept a session token issued by
+      `open4x-accounts` (shared HMAC key in dev, HTTP introspection
+      later). The lobby's `POST /api/v1/games` translates the wizard
+      params into a `POST /api/v1/games/new` against `open4x-server`,
+      records the returned `server_url` + `server_token` in the
+      games row. `POST /api/v1/games/{id}/resume` switches from 503
+      to 200 once both are populated.
 
 ### Up next (Phase 4)
 - [ ] Phase 4.3 orchestrator — shared-server-multi-room v1 (teach

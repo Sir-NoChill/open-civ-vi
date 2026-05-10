@@ -6,7 +6,9 @@
 use std::sync::Arc;
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
+use crate::components::api::games as games_api;
 use crate::components::{
     Btn, MiniMap, Panel, PanelHead, Popup, PopupActions, PopupBody, PopupList,
     PopupListItem, PopupSize, PopupTrigger, Segmented, Slider, Tag, Toggle,
@@ -49,8 +51,14 @@ impl Step {
 }
 
 #[component]
-pub fn NewGame() -> impl IntoView {
+pub fn NewGame(#[prop(optional)] on_generated: Option<Callback<String>>) -> impl IntoView {
     let step = RwSignal::new(Step::Map);
+
+    // Make the on_generated callback available to StepReview via context
+    // so the deeply-nested CTA can fire it without a prop chain.
+    if let Some(cb) = on_generated {
+        provide_context(GeneratedCb(cb));
+    }
 
     view! {
         <div style="flex:1; display:flex; flex-direction:column; min-height:0">
@@ -132,6 +140,12 @@ fn StepStrip(step: RwSignal<Step>) -> impl IntoView {
 }
 
 // (StepPlaceholder removed — every wizard step now has a real port.)
+
+/// Carrier for the optional on_generated callback so deeply-nested
+/// children (StepReview) can fire it from context without a prop
+/// chain through every Step component.
+#[derive(Clone)]
+struct GeneratedCb(Callback<String>);
 
 // ─────────────────────────────── Step: map ────────────────────────────────────
 
@@ -267,8 +281,55 @@ const REVIEW_ROWS: &[(&str, &str)] = &[
     ("turn mode", "play-by-turn · invite-only · cross-play"),
 ];
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+enum GenerateState {
+    #[default]
+    Idle,
+    Pending,
+    Error(String),
+}
+
 #[component]
 fn StepReview() -> impl IntoView {
+    let gen_state = RwSignal::new(GenerateState::Idle);
+    let gen_cb = use_context::<GeneratedCb>();
+
+    let on_generate = move |_| {
+        if matches!(gen_state.get_untracked(), GenerateState::Pending) {
+            return;
+        }
+        gen_state.set(GenerateState::Pending);
+        // Wizard state isn't yet hoisted to NewGame — for the
+        // first end-to-end pass we post the same defaults the
+        // Review summary shows. Threading per-step RwSignals up to
+        // NewGame is a follow-up.
+        let body = games_api::CreateGameBody {
+            name: "New game".into(),
+            leader: "Saladin".into(),
+            civ_id: "arabia".into(),
+            difficulty: "prince".into(),
+            players_human: 1,
+            players_ai: 7,
+            map_type: "continents".into(),
+            map_size: "std".into(),
+            seed: "0xCAFE·B33F·1A77".into(),
+        };
+        let cb = gen_cb.clone();
+        spawn_local(async move {
+            match games_api::create(body).await {
+                Ok(game) => {
+                    if let Some(GeneratedCb(cb)) = cb {
+                        cb.run(game.game_id);
+                    } else {
+                        gen_state.set(GenerateState::Idle);
+                    }
+                }
+                Err(e) => gen_state.set(GenerateState::Error(e.to_string())),
+            }
+        });
+    };
+    let pending = Signal::derive(move || matches!(gen_state.get(), GenerateState::Pending));
+
     view! {
         <div class="wizard-body">
             <Panel flush=true>
@@ -306,10 +367,25 @@ fn StepReview() -> impl IntoView {
                         "Generation deterministically builds the world from your seed. "
                         "You can copy the seed to recreate this exact map elsewhere."
                     </p>
-                    <Btn variant="accent" size="lg" class="block">"⌬  Generate world"</Btn>
-                    <p class="muted xsmall" style="text-align:center; margin-top:10px; margin-bottom:0">
-                        "// calls /api/games · returns game_id · routes you to gameplay client"
-                    </p>
+                    <Btn
+                        variant="accent"
+                        size="lg"
+                        class="block"
+                        disabled=pending
+                        on_click=Callback::new(on_generate)
+                    >
+                        {move || if pending.get() { "Generating…" } else { "⌬  Generate world" }}
+                    </Btn>
+                    {move || match gen_state.get() {
+                        GenerateState::Error(msg) => view! {
+                            <p class="xsmall" style="color:var(--accent); margin-top:8px">{msg}</p>
+                        }.into_any(),
+                        _ => view! {
+                            <p class="muted xsmall" style="text-align:center; margin-top:10px; margin-bottom:0">
+                                "// calls POST /api/v1/games · returns game_id · routes back to Ongoing"
+                            </p>
+                        }.into_any(),
+                    }}
                 </Panel>
             </div>
         </div>

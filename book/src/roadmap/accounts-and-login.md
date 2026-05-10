@@ -440,16 +440,21 @@ PRIMARY KEY (game_id, player_id)
 
 #### 4.4 SPA wiring
 
-- [ ] `OngoingGames` reads `/api/v1/games`, renders real tiles with
-      MiniMap thumbnails seeded by the actual game seed (not the row
-      index).
+- [x] `OngoingGames` reads `/api/v1/games`, renders real tiles with
+      MiniMap thumbnails seeded from the world seed (`g.seed.bytes()`
+      hashed). Loading + empty-state copy. Crumbs counter
+      (`<n> games · <m> awaiting you`) live from the response.
 - [ ] Filter chips functional (`your_turn` / `waiting` / `completed` /
       `multiplayer`) — push filter to query params.
 - [ ] Search box filters client-side over names + notes.
 - [ ] Sort dropdown.
 - [ ] "Resume" CTA → `GET /api/v1/games/{id}/resume` → follow redirect.
-- [ ] `+ New game` wizard's "⌬ Generate world" → `POST /api/v1/games`
-      → on success, redirect to in-game URL.
+- [x] `+ New game` wizard's "⌬ Generate world" → `POST /api/v1/games`
+      → on success, switches MenuTab back to Ongoing so the new tile
+      appears immediately. Wizard step state isn't yet hoisted into
+      the parent so the body uses the Review-summary defaults; per-step
+      RwSignal threading is a follow-up. Pending / error states surface
+      under the button.
 - [ ] Notes popup: markdown textarea, persisted via
       `POST /api/v1/games/{id}/notes`.
 - [ ] Per-tile `···` menu: View summary / Copy game ID / Share invite

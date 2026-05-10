@@ -101,19 +101,26 @@ pub fn App() -> impl IntoView {
                     Screen::Login => view! {
                         <Login on_back=go_landing />
                     }.into_any(),
-                    Screen::Menu => view! {
-                        <MenuShell tab=menu_tab on_signout=on_signout>
-                            {move || match menu_tab.get() {
-                                MenuTab::Ongoing => view! {
-                                    <OngoingGames on_new=go_newgame />
-                                }.into_any(),
-                                MenuTab::NewGame => view! { <NewGame /> }.into_any(),
-                                MenuTab::Profile => view! {
-                                    <Profile on_signout=on_signout />
-                                }.into_any(),
-                            }}
-                        </MenuShell>
-                    }.into_any(),
+                    Screen::Menu => {
+                        let on_generated = Callback::new(move |_game_id: String| {
+                            menu_tab.set(MenuTab::Ongoing);
+                        });
+                        view! {
+                            <MenuShell tab=menu_tab on_signout=on_signout>
+                                {move || match menu_tab.get() {
+                                    MenuTab::Ongoing => view! {
+                                        <OngoingGames on_new=go_newgame />
+                                    }.into_any(),
+                                    MenuTab::NewGame => view! {
+                                        <NewGame on_generated=on_generated />
+                                    }.into_any(),
+                                    MenuTab::Profile => view! {
+                                        <Profile on_signout=on_signout />
+                                    }.into_any(),
+                                }}
+                            </MenuShell>
+                        }.into_any()
+                    },
                 }}
             </div>
         </div>
