@@ -513,8 +513,13 @@ User-visible quality once the platform basics are wired.
 - [ ] **Avatar pipeline** — multipart upload, image-rs decode, downscale
       to 256×256 PNG, store under `accounts.avatars/`. Profile shows
       the uploaded image instead of the initial.
-- [ ] **Show invite QR popup** — render the player ID as a QR code
-      (`qrcode` crate, base64 PNG). Copy player-ID action.
+- [x] **Show invite QR popup** — `components/qr.rs::qr_svg` builds
+      a self-contained SVG (one `<rect>` per dark module + a 1-
+      module quiet zone) using the `qrcode` crate. Profile's
+      "▦ Show invite QR" button is now a click-trigger Popup
+      that renders the player_id as a 220 px QR with the hex
+      label below. Copy player-ID action wired to
+      `navigator.clipboard.write_text` on the same row.
 - [ ] **Friends screen** — search-by-identity, friend requests, friends
       list. Schema additions.
 - [ ] **Presets screen** — save / load / import-JSON wizard configs.

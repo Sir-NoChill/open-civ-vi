@@ -11,6 +11,7 @@ pub mod minimap;
 pub mod panel;
 pub mod popup;
 pub mod popup_body;
+pub mod qr;
 pub mod segmented;
 pub mod slider;
 pub mod tag;

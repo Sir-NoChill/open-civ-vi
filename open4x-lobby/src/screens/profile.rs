@@ -7,11 +7,14 @@
 //! straight from `MeView.identities` and `+ link another` / `unlink`
 //! buttons are still TODO behind their respective HTTP routes.
 
+use std::sync::Arc;
+
 use leptos::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::components::api::me as me_api;
-use crate::components::{Btn, Panel, Segmented, segmented::Segment, Toggle};
+use crate::components::{Btn, Panel, Popup, PopupBody, PopupSize, PopupTrigger, Segmented, segmented::Segment, Toggle};
+use crate::components::qr::qr_svg;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 enum SaveState {
@@ -120,8 +123,47 @@ pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoV
                     <hr class="divider" />
                     <div class="h3" style="margin-bottom:10px">"Quick actions"</div>
                     <div class="col" style="gap:4px">
-                        <Btn variant="bare" size="sm">"⎘ Copy player ID"</Btn>
-                        <Btn variant="bare" size="sm">"▦ Show invite QR"</Btn>
+                        <Btn
+                            variant="bare"
+                            size="sm"
+                            on_click=Callback::new(move |_| {
+                                let id = player_id_text.get_untracked();
+                                if let Some(win) = web_sys::window() {
+                                    let _ = win.navigator().clipboard().write_text(&id);
+                                }
+                            })
+                        >"⎘ Copy player ID"</Btn>
+                        {
+                            let pid_for_qr = player_id_text;
+                            let qr_content = Arc::new(move || {
+                                let pid = pid_for_qr.get();
+                                let svg = qr_svg(&pid, 220);
+                                view! {
+                                    <PopupBody>
+                                        <p class="xsmall muted" style="text-align:center; margin-bottom:6px">
+                                            "Scan to add as a friend"
+                                        </p>
+                                        <div
+                                            style="display:flex; justify-content:center; padding:8px"
+                                            inner_html=svg
+                                        ></div>
+                                        <p class="xsmall" style="text-align:center; font-family:var(--font-mono); margin-top:4px">
+                                            {pid}
+                                        </p>
+                                    </PopupBody>
+                                }.into_any()
+                            });
+                            view! {
+                                <Popup
+                                    title="Invite QR"
+                                    size=PopupSize::Narrow
+                                    trigger=PopupTrigger::Click
+                                    content=qr_content
+                                >
+                                    <Btn variant="bare" size="sm">"▦ Show invite QR"</Btn>
+                                </Popup>
+                            }
+                        }
                         <Btn variant="bare" size="sm">"↓ Export save data"</Btn>
                         <Btn
                             variant="bare"
