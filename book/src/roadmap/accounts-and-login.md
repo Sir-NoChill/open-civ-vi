@@ -389,7 +389,15 @@ The Menu currently shows hard-coded sample games. This phase puts a
 games index behind `/api/v1/games` and wires the New-Game wizard to
 actually create one.
 
-#### 4.1 Schema
+#### 4.1 Schema ✅
+
+`migrations/0002_games.sql` ships the two tables; soft-delete via
+`deleted_at`; `status` enum (`your_turn` / `waiting` / `completed` /
+`archived`). `GameStore` trait + `SqliteGameStore` impl at
+`open4x-accounts/src/games.rs` with `create_game`, `get_game`,
+`list_for_player`, `soft_delete`, `touch_last_played`,
+`update_runtime_view`. 3 tests cover create→list, soft-delete
+hiding, runtime-view round-trip.
 
 ```
 games(game_id PRIMARY KEY, owner_player_id FK,

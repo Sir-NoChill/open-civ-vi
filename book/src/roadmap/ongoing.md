@@ -115,17 +115,17 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.1 ▸ Games index schema migration** — add
-      `0002_games.sql` migration with the games + game_members
-      tables from §4.1 of the plan. Schema first; wire-types and
-      handlers follow once the migration is in place.
+- [ ] **Phase 4.2 ▸ Games HTTP routes** — wire the GameStore from
+      kwtktvux/this-tick into the lobby's REST surface:
+      `GET /api/v1/games` (RequireSession + list_for_player),
+      `POST /api/v1/games` (body = wizard params; creates a stub
+      record without orchestration yet — server_url + server_token
+      empty for now, populated when Phase 4.3 lands),
+      `GET /api/v1/games/{id}` (auth + ownership check),
+      `DELETE /api/v1/games/{id}` (soft-delete; 403 on
+      cross-account). All under `RequireSession`.
 
 ### Up next (Phase 4)
-
-- [ ] Phase 4.2 routes — `GET /api/v1/games`, `POST /api/v1/games`,
-      `GET /api/v1/games/{id}`, `DELETE /api/v1/games/{id}`,
-      `POST /api/v1/games/{id}/notes`, `POST
-      /api/v1/games/{id}/resume`.
 - [ ] Phase 4.3 orchestrator — shared-server-multi-room v1 (teach
       open4x-server to validate accounts-issued tokens; lobby
       `POST /games` translates wizard params into a server-side
