@@ -19,6 +19,7 @@ pub mod segmented;
 pub mod slider;
 pub mod tag;
 pub mod toggle;
+pub mod tweaks_panel;
 
 pub use btn::Btn;
 pub use minimap::MiniMap;
@@ -30,3 +31,4 @@ pub use segmented::Segmented;
 pub use slider::{FormatFn, Slider};
 pub use tag::Tag;
 pub use toggle::Toggle;
+pub use tweaks_panel::TweaksPanel;

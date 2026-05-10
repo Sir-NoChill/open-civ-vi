@@ -8,7 +8,7 @@
 
 use leptos::prelude::*;
 
-use crate::components::PopupProvider;
+use crate::components::{PopupProvider, TweaksPanel};
 use crate::screens::{Landing, Login, MenuShell, MenuTab, NewGame, OngoingGames, Profile};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -34,6 +34,7 @@ impl Screen {
 pub fn App() -> impl IntoView {
     let screen = RwSignal::new(Screen::Landing);
     let menu_tab = RwSignal::new(MenuTab::Ongoing);
+    let density = RwSignal::new("comfortable".to_string());
 
     // Callbacks reused across screens.
     let go_login = Callback::new(move |_: ()| screen.set(Screen::Login));
@@ -45,7 +46,7 @@ pub fn App() -> impl IntoView {
 
     view! {
         <PopupProvider>
-        <div class="app" data-density="comfortable">
+        <div class="app" data-density=move || density.get()>
             // ── App bar ─────────────────────────────────────────────────
             <header class="app-bar">
                 <div class="brand">
@@ -90,6 +91,7 @@ pub fn App() -> impl IntoView {
                 }}
             </div>
         </div>
+        <TweaksPanel density=density />
         </PopupProvider>
     }
 }

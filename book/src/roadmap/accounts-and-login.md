@@ -184,9 +184,14 @@ plumbing.
       value display. `RwSignal<i32>`-driven; `min` / `max` default to
       `0` / `100`. Lives at
       `open4x-lobby/src/components/slider.rs`.
-- [ ] **Tweaks panel port** — runtime density toggle (`compact` /
-      `comfortable` / `spacious`) wired to the `data-density` attr on
-      `.app`. Already on the JSX side; just port the React component.
+- [x] **Tweaks panel port** — `components/tweaks_panel.rs` ships a
+      fixed-position card (bottom-right) with a Segmented density
+      picker. App owns the `RwSignal<String>` density and binds it
+      to the root `.app` element's `data-density` attr (was a
+      hard-coded literal). Collapsing into a "⚙ tweaks" pill is
+      supported. Sliders / color pickers / postMessage host
+      protocol from the JSX original are deliberately omitted —
+      out of scope today; extend the module if needed.
 
 **Done when**: every screen in `docs/open4x-landing/project/hifi/`
 renders identically to the JSX prototype (ignoring purposeful Leptos

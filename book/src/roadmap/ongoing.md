@@ -115,18 +115,18 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ Tweaks panel port** — runtime density toggle.
-      Mounts a fixed-position `.tweaks` panel at bottom-right that
-      flips `data-density` on the root `.app` between `compact` /
-      `comfortable` / `spacious`. Source:
-      `docs/open4x-landing/project/tweaks-panel.jsx`. Make App's
-      `data-density` reactive on a top-level `RwSignal<&'static
-      str>` instead of the current hard-coded literal.
+- [ ] **Phase 1 ▸ Cleanup sweep** — migrate the remaining bare
+      `<span class="trigger" title="…">` sites in newgame.rs
+      StepMap (map type, map size) + menu.rs (online indicator) to
+      real `<Popup>` wrappers, then drop the now-unused
+      `components/popup_stub.rs` `Trigger` placeholder. Closes out
+      Phase 1.
 
-### Up next (Phase 1)
+### Up next
 
-- [ ] Sweep remaining `<span class="trigger">` sites in
-      newgame.rs StepMap, menu.rs, profile.rs into real Popups
+_(Phase 1 effectively done after this cleanup. Phase 2 — `open4x-accounts`
+substrate — picks up the persistence + magic-link + OIDC + atproto
+build-out next.)_
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
