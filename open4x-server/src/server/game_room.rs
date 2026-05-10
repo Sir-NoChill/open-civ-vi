@@ -370,6 +370,22 @@ impl GameRoom {
                     .map(|_| ())
                     .map_err(|e| format!("{e:?}"))
             }
+            GameAction::RenameCity { city, name } => {
+                let city_id = to_libciv_city_id(*city);
+                let trimmed = name.trim();
+                if trimmed.is_empty() {
+                    return Err("city name must not be empty".into());
+                }
+                if trimmed.chars().count() > 64 {
+                    return Err("city name must be 64 characters or fewer".into());
+                }
+                let city = self.state.cities.iter_mut()
+                    .find(|c| c.id == city_id)
+                    .ok_or("city not found")?;
+                if city.owner != civ_id { return Err("not your city".into()); }
+                city.name = trimmed.to_string();
+                Ok(())
+            }
             GameAction::AssignCityFocus { city, focus } => {
                 let city_id = to_libciv_city_id(*city);
                 let city = self.state.cities.iter_mut()

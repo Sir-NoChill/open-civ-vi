@@ -65,6 +65,13 @@ pub enum GameAction {
         city: CityId,
         focus: CityFocus,
     },
+    /// Rename a city. The new name is stored on `City.name`. Server
+    /// validates length (1..=64) and ownership. No engine-side side
+    /// effects beyond the rename.
+    RenameCity {
+        city: CityId,
+        name: String,
+    },
     UnassignCitizen {
         city: CityId,
         tile: HexCoord,

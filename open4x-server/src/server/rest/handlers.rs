@@ -562,6 +562,60 @@ pub async fn assign_city_focus(
     ))
 }
 
+// ── mutations: city rename ───────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct RenameCityBody {
+    /// New city name. Server enforces 1..=64 chars after trim.
+    pub name: String,
+}
+
+/// `POST /api/v1/cities/{id}/rename` — replace `City.name`. Returns the
+/// updated city wire row.
+pub async fn rename_city(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    Json(body): Json<RenameCityBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let city_ulid: ulid::Ulid = id
+        .parse()
+        .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
+    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+
+    // Validate at the boundary — match the rule the engine enforces, but
+    // surface a structured 400 rather than a generic 'apply_action failed'.
+    let trimmed = body.name.trim().to_string();
+    if trimmed.is_empty() {
+        return Err(crate::server::rest::auth::bad_request(
+            "invalid_name",
+            "city name must not be empty",
+        ));
+    }
+    if trimmed.chars().count() > 64 {
+        return Err(crate::server::rest::auth::bad_request(
+            "invalid_name",
+            "city name must be 64 characters or fewer",
+        ));
+    }
+
+    let action = crate::types::messages::GameAction::RenameCity { city: city_id, name: trimmed };
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+
+    let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view,
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
 // ── mutations: unit actions ──────────────────────────────────────────────────
 
 #[derive(Deserialize)]

@@ -235,6 +235,13 @@ pub enum ActionKind {
         #[arg(long)]
         focus: String,
     },
+    /// Rename a city
+    RenameCity {
+        #[arg(long)]
+        city: String,
+        #[arg(long)]
+        name: String,
+    },
     /// Unassign a citizen from a tile in a city
     UnassignCitizen {
         #[arg(long)]

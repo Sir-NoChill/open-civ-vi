@@ -270,6 +270,23 @@ pub(crate) fn dispatch_action(
                 .assign_citizen(state, cid, tile, *lock)
                 .map_err(|e| format!("{e:?}"))
         }
+        ActionKind::RenameCity { city, name } => {
+            let cid = parse_city_id(city)?;
+            let trimmed = name.trim();
+            if trimmed.is_empty() {
+                return Err("city name must not be empty".into());
+            }
+            if trimmed.chars().count() > 64 {
+                return Err("city name must be 64 characters or fewer".into());
+            }
+            let city_obj = state
+                .cities
+                .iter_mut()
+                .find(|c| c.id == cid)
+                .ok_or("city not found")?;
+            city_obj.name = trimmed.to_string();
+            Ok(GameStateDiff { deltas: Vec::new() })
+        }
         ActionKind::AssignCityFocus { city, focus } => {
             let cid = parse_city_id(city)?;
             let f = match focus.to_lowercase().as_str() {

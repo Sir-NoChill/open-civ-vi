@@ -339,6 +339,61 @@ async fn units_actions_are_engine_derived_and_role_specific() {
 }
 
 #[tokio::test]
+async fn city_rename_round_trip_persists_via_post_rename() {
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    let (_, cities) = get_with(&app, "/api/v1/cities", &token).await;
+    let city_id = cities["cities"][0]["id"].as_str().unwrap().to_string();
+    let original = cities["cities"][0]["name"].as_str().unwrap().to_string();
+    assert!(!original.is_empty());
+
+    // Set a new name.
+    let (status, body) = post_with(
+        &app,
+        &format!("/api/v1/cities/{city_id}/rename"),
+        Some(&token),
+        serde_json::json!({"name": "  New Capital  "}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "rename body: {body:?}");
+    assert_eq!(body["ok"], true);
+    // Server trims whitespace.
+    assert_eq!(body["view"]["name"], "New Capital");
+
+    // Re-read to confirm persistence.
+    let (_, cities) = get_with(&app, "/api/v1/cities", &token).await;
+    let row = cities["cities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["id"] == city_id.as_str())
+        .unwrap();
+    assert_eq!(row["name"], "New Capital");
+
+    // Empty-name rejection.
+    let (status, _) = post_with(
+        &app,
+        &format!("/api/v1/cities/{city_id}/rename"),
+        Some(&token),
+        serde_json::json!({"name": "   "}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // 65-char name rejection.
+    let too_long = "x".repeat(65);
+    let (status, _) = post_with(
+        &app,
+        &format!("/api/v1/cities/{city_id}/rename"),
+        Some(&token),
+        serde_json::json!({"name": too_long}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
 async fn city_focus_round_trip_persists_via_post_focus() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;
