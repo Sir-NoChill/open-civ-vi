@@ -19,6 +19,9 @@ pub mod components;
 #[cfg(feature = "csr")]
 pub mod screens;
 
+#[cfg(feature = "ssr")]
+pub mod server;
+
 #[cfg(feature = "csr")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn start() {

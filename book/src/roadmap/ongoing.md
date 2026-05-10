@@ -115,24 +115,26 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 3 ▸ Session-cookie middleware** — axum `Layer` /
-      from_extractor in `open4x-lobby/src/server/auth.rs` that:
-      reads the `lobby_session` cookie, looks up the player via
-      `open4x_accounts::session::validate_session`, attaches a
-      `PlayerId` to the request extensions, and rejects with a
-      structured 401 `{error: "no_session"}` on miss when the
-      handler is auth-required. The lobby crate gains an `ssr`
-      dependency on `open4x-accounts/persistence` (currently
-      type-only). Unblocks every Phase 3.1/3.2 route.
+- [ ] **Phase 3 ▸ Email auth route pair** —
+      `POST /api/v1/auth/email/start` (body `{email}`,
+      MagicLinkSigner mints a token + persists the nonce, LogMailer
+      writes the link to stderr, returns 202) and
+      `GET /api/v1/auth/email/verify?token=…` (consumes the nonce,
+      finds-or-creates the account via AccountStore, mints a
+      session via `session::mint_session`, sets `Set-Cookie:
+      lobby_session=…; HttpOnly; SameSite=Lax; Path=/`, redirects
+      to `/`). End-to-end magic-link login against the existing
+      substrate.
 
 ### Up next (Phase 3)
 
-- [ ] `POST /api/v1/auth/email/start` + `GET
-      /api/v1/auth/email/verify` (uses MagicLinkSigner +
-      LogMailer)
 - [ ] `GET /api/v1/me` + `PATCH /api/v1/me` (reads the player from
       the cookie, hits AccountStore)
-- [ ] `POST /api/v1/auth/signout` (revokes the session)
+- [ ] `POST /api/v1/auth/signout` (revokes the session, clears
+      cookie)
+- [ ] `components/api/{auth,me,identities}.rs` Leptos bindings.
+- [ ] Login screen wires email-panel "Send magic link →" button to
+      `POST /auth/email/start` and shows a "magic link sent" panel.
 
 ### Up next (deferred Phase 2 items)
 

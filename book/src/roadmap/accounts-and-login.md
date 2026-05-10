@@ -351,9 +351,18 @@ data with a real REST call.
 - [ ] `Profile` screen: fetch `/me` on mount, populate fields, push
       changes via `PATCH /me`. Linked-identities list fed by `/me`.
       Identity unlink confirmations.
-- [ ] Session-cookie middleware on the axum side: parse cookie, attach
-      `PlayerId` to request extensions; auth-required endpoints reject
-      with 401 + structured `{error: "no_session"}`.
+- [x] Session-cookie middleware on the axum side at
+      `open4x-lobby/src/server/auth.rs`. Parses the `lobby_session`
+      cookie via a hand-rolled extractor, calls
+      `open4x_accounts::session::validate_session`, attaches the
+      resulting `PlayerId` (and the raw `AuthCookie`) to request
+      extensions when valid. The `RequireSession` extractor pulls
+      it back; missing → 401 with structured
+      `{"error":"no_session"}` body. Middleware is wired in
+      `main.rs` ahead of the static-file fallback so /health and
+      the SPA continue to work without auth. Three cookie-parser
+      tests cover named-cookie / missing-cookie / empty-value
+      cases.
 
 **Done when**: the user can sign in with email or any of the four
 pre-configured OIDC providers, see their account, link a second

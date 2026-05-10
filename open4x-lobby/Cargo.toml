@@ -21,6 +21,10 @@ open4x-accounts = { path = "../open4x-accounts" }
 axum       = { version = "0.8", optional = true }
 tokio      = { workspace = true, optional = true }
 tower-http = { version = "0.6", features = ["cors", "fs"], optional = true }
+sqlx       = { version = "0.8", optional = true, features = [
+    "runtime-tokio", "tls-rustls", "macros", "sqlite",
+] }
+chrono     = { version = "0.4", default-features = false, features = ["clock"], optional = true }
 
 # ── Client-only (WASM frontend) ───────────────────────────────────────
 leptos                  = { version = "0.7", features = ["csr"], optional = true }
@@ -42,7 +46,11 @@ send_wrapper            = { version = "0.6", optional = true }
 
 [features]
 default = ["ssr"]
-ssr = ["dep:axum", "dep:tokio", "dep:tower-http"]
+ssr = [
+    "dep:axum", "dep:tokio", "dep:tower-http",
+    "dep:sqlx", "dep:chrono",
+    "open4x-accounts/persistence",
+]
 csr = [
     "dep:leptos", "dep:wasm-bindgen", "dep:console_error_panic_hook",
     "dep:js-sys", "dep:wasm-bindgen-futures", "dep:web-sys",
