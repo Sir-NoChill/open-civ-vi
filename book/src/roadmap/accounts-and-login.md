@@ -157,10 +157,16 @@ plumbing.
       `var(--accent-soft)` per the JSX. Real catalogue
       handshake with libciv lands in Phase 4 alongside the games
       index.
-- [ ] **NewGame `StepRules`** — difficulty Segmented (settler → deity),
-      starting era, game speed, victory toggles ×6, world dynamics
-      sliders (disasters, barbarians, city-states, AI aggression, AI
-      personality). `Slider` component port.
+- [x] **NewGame `StepRules`** — `screens/newgame.rs::StepRules`
+      ships the two-panel layout: difficulty / era / game-speed
+      Segmenteds, six victory-condition Toggles seeded from a
+      `VICTORY_CONDITIONS` table (Diplomacy off by default per the
+      JSX), plus the world-dynamics sliders (disasters 0-4 with the
+      off/light/std/heavy/apocalyptic categorical formatter,
+      barbarians 0-4 off/rare/std/raging/horde, city-states 0-24,
+      AI aggression with passive/balanced/warlike thresholds at
+      34/66) and the AI-personality Segmented (historic / random /
+      scripted). Help triggers are real `<Popup>` wrappers.
 - [ ] **NewGame `StepPlayers`** — player slot list with invite popup
       (paste email / OpenID / atproto / player ID), turn-mode params
       (timer, simultaneous, private, cross-play).

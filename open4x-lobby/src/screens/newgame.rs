@@ -9,7 +9,7 @@ use leptos::prelude::*;
 
 use crate::components::{
     Btn, MiniMap, Panel, PanelHead, Popup, PopupActions, PopupBody, Segmented,
-    Toggle, segmented::Segment,
+    Slider, Toggle, segmented::Segment, slider::FormatFn,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -67,6 +67,7 @@ pub fn NewGame() -> impl IntoView {
                 {move || match step.get() {
                     Step::Map => view! { <StepMap /> }.into_any(),
                     Step::Civ => view! { <StepCiv /> }.into_any(),
+                    Step::Rules => view! { <StepRules /> }.into_any(),
                     Step::Review => view! { <StepReview /> }.into_any(),
                     other => view! { <StepPlaceholder name=other.label() /> }.into_any(),
                 }}
@@ -409,6 +410,218 @@ fn StepCiv() -> impl IntoView {
                                 </Popup>
                             }
                         }).collect::<Vec<_>>()}
+                    </div>
+                </div>
+            </Panel>
+        </div>
+    }
+}
+
+// ─────────────────────────────── Step: rules ──────────────────────────────────
+
+const VICTORY_CONDITIONS: &[(&str, &str, bool)] = &[
+    ("Science",    "Launch a colony to a habitable exoplanet.",                                  true),
+    ("Culture",    "Attract more tourists than any other civ has domestic visitors.",            true),
+    ("Domination", "Capture every other civ's original capital.",                                true),
+    ("Religion",   "Convert every other civ to your founded religion.",                          true),
+    ("Diplomacy",  "Earn the most diplomatic favor in the World Congress.",                      false),
+    ("Score",      "Highest score when the time runs out.",                                      true),
+];
+
+#[component]
+fn StepRules() -> impl IntoView {
+    let difficulty = RwSignal::new("prince".to_string());
+    let starting_era = RwSignal::new("ancient".to_string());
+    let game_speed = RwSignal::new("std".to_string());
+    let ai_personality = RwSignal::new("historic".to_string());
+
+    // World-dynamics sliders.
+    let disasters = RwSignal::new(2_i32);
+    let barbarians = RwSignal::new(2_i32);
+    let city_states = RwSignal::new(12_i32);
+    let ai_aggression = RwSignal::new(50_i32);
+
+    // Victory toggles — one RwSignal per condition, seeded from the table.
+    let victory_signals: Vec<RwSignal<bool>> = VICTORY_CONDITIONS
+        .iter()
+        .map(|(_, _, default)| RwSignal::new(*default))
+        .collect();
+
+    let difficulty_opts = Signal::derive(|| {
+        ["settler", "chieftain", "warlord", "prince", "king", "emperor", "deity"]
+            .iter().map(|s| Segment::from_str(s)).collect()
+    });
+    let era_opts = Signal::derive(|| {
+        ["ancient", "classical", "medieval", "renaissance", "industrial"]
+            .iter().map(|s| Segment::from_str(s)).collect()
+    });
+    let speed_opts = Signal::derive(|| {
+        ["online", "quick", "std", "epic", "marathon"]
+            .iter().map(|s| Segment::from_str(s)).collect()
+    });
+    let personality_opts = Signal::derive(|| {
+        ["historic", "random", "scripted"].iter().map(|s| Segment::from_str(s)).collect()
+    });
+
+    // Categorical formatters for the world-dynamics sliders.
+    let disaster_fmt: FormatFn = Arc::new(|v: i32| {
+        ["off", "light", "std", "heavy", "apocalyptic"][v.clamp(0, 4) as usize].to_string()
+    });
+    let barb_fmt: FormatFn = Arc::new(|v: i32| {
+        ["off", "rare", "std", "raging", "horde"][v.clamp(0, 4) as usize].to_string()
+    });
+    let aggr_fmt: FormatFn = Arc::new(|v: i32| {
+        if v < 34 { "passive" } else if v > 66 { "warlike" } else { "balanced" }.to_string()
+    });
+
+    view! {
+        <div class="wizard-body">
+            <Panel flush=true>
+                <PanelHead title="Difficulty & pace".to_string() />
+                <div class="panel-body">
+                    <div class="param-row stack">
+                        <div class="label">
+                            <Popup
+                                title="difficulty"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p>"Affects AI bonuses, barbarian aggression, and yield modifiers."</p>
+                                        <div class="kv xsmall" style="margin-top:6px">
+                                            <span class="k">"settler"</span><span>"−40% AI yields"</span>
+                                            <span class="k">"prince"</span><span>"baseline"</span>
+                                            <span class="k">"deity"</span><span>"+50% AI yields"</span>
+                                        </div>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"difficulty"</span>
+                            </Popup>
+                        </div>
+                        <div class="control"><Segmented options=difficulty_opts value=difficulty /></div>
+                    </div>
+
+                    <div class="param-row stack">
+                        <div class="label">"starting era"</div>
+                        <div class="control"><Segmented options=era_opts value=starting_era /></div>
+                    </div>
+
+                    <div class="param-row stack">
+                        <div class="label">
+                            <Popup
+                                title="game speed"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p>"Game speed scales tech, civic, production, and unit costs uniformly."</p>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"game speed"</span>
+                            </Popup>
+                        </div>
+                        <div class="control"><Segmented options=speed_opts value=game_speed /></div>
+                        <div class="value">"standard"</div>
+                    </div>
+
+                    <hr class="divider" />
+                    <div class="h3" style="margin-bottom:10px">"Victory conditions"</div>
+                    {VICTORY_CONDITIONS.iter().enumerate().map(|(i, (name, desc, _))| {
+                        let sig = victory_signals[i];
+                        let lower = name.to_lowercase();
+                        let desc_static: &'static str = desc;
+                        view! {
+                            <div class="param-row">
+                                <div class="label">
+                                    <Popup
+                                        title=name.to_string()
+                                        content=Arc::new(move || view! {
+                                            <PopupBody><p>{desc_static}</p></PopupBody>
+                                        }.into_any())
+                                    >
+                                        <span class="trigger">{lower}</span>
+                                    </Popup>
+                                </div>
+                                <div class="control">
+                                    <Toggle on=sig />
+                                </div>
+                                <div class="value muted xsmall">
+                                    {move || if sig.get() { "enabled" } else { "off" }}
+                                </div>
+                            </div>
+                        }
+                    }).collect::<Vec<_>>()}
+                </div>
+            </Panel>
+
+            <Panel flush=true>
+                <PanelHead title="World dynamics".to_string() />
+                <div class="panel-body">
+                    <div class="param-row">
+                        <div class="label">
+                            <Popup
+                                title="disasters"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p>"Volcanoes, floods, droughts, blizzards. Higher intensity = more frequent & severe."</p>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"disasters"</span>
+                            </Popup>
+                        </div>
+                        <div class="control">
+                            <Slider value=disasters min=0 max=4 format=disaster_fmt />
+                        </div>
+                    </div>
+
+                    <div class="param-row">
+                        <div class="label">"barbarians"</div>
+                        <div class="control">
+                            <Slider value=barbarians min=0 max=4 format=barb_fmt />
+                        </div>
+                    </div>
+
+                    <div class="param-row">
+                        <div class="label">"city-states"</div>
+                        <div class="control">
+                            <Slider value=city_states min=0 max=24 />
+                        </div>
+                    </div>
+
+                    <div class="param-row">
+                        <div class="label">
+                            <Popup
+                                title="AI aggression"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p>"Affects how often AI civs declare war, denounce, or accept peace."</p>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"AI aggression"</span>
+                            </Popup>
+                        </div>
+                        <div class="control">
+                            <Slider value=ai_aggression format=aggr_fmt />
+                        </div>
+                    </div>
+
+                    <div class="param-row">
+                        <div class="label">
+                            <Popup
+                                title="AI personality"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p><strong>"Historic"</strong>" — each leader behaves like their flavor text."</p>
+                                        <p><strong>"Random"</strong>" — personalities reshuffled each game."</p>
+                                        <p><strong>"Scripted"</strong>" — load a JSON personality pack."</p>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"AI personality"</span>
+                            </Popup>
+                        </div>
+                        <div class="control"><Segmented options=personality_opts value=ai_personality /></div>
+                        <div class="value">{move || ai_personality.get()}</div>
                     </div>
                 </div>
             </Panel>

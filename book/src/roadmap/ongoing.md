@@ -115,21 +115,20 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ NewGame StepRules** — port
-      `docs/open4x-landing/project/hifi/newgame.jsx::StepRules`. Two
-      side-by-side panels: "Difficulty & pace" (difficulty Segmented
-      settler→deity, starting era, game speed, six victory toggles)
-      + "World dynamics" (disasters / barbarians slider 0-4,
-      city-states slider 0-24, AI aggression slider with
-      categorical labels, AI personality Segmented). Uses the Slider
-      primitive landed in `kpnxvpkm`.
+- [ ] **Phase 1 ▸ NewGame StepPlayers** — port
+      `hifi/newgame.jsx::StepPlayers`. Player-slot list (8 rows by
+      default, mix of human / open / AI), `Tag` per type, invite
+      popup with email/OpenID/atproto/PlayerID input + recent-recipients
+      chips, slot ⋯ menu (Change civ / AI personality / Swap with… /
+      Remove). Plus a "Turn mode" panel: turn-timer Segmented
+      (off/5min/10min/30min/24hr), simultaneous Toggle, private-game
+      Toggle, cross-play Toggle.
 
 ### Up next (Phase 1)
 
-- [ ] NewGame StepPlayers (slot list + invite popup + turn-mode params)
 - [ ] Tweaks panel port (runtime density toggle)
-- [ ] Sweep remaining `<Trigger>` and `<span class="trigger">` sites
-      in menu.rs / newgame.rs / profile.rs into real Popups
+- [ ] Sweep remaining `<span class="trigger">` sites in
+      newgame.rs StepMap, menu.rs, profile.rs into real Popups
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
