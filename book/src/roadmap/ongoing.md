@@ -115,14 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Foreign-game-membership anonymisation** —
-      delete-account currently cascades sessions + identities +
-      games-where-the-account-is-owner. It does NOT touch
-      `game_members` rows where the deleted player is a *member*
-      of someone else's game (e.g. invitations they accepted).
-      Add an "anonymise" pass that nullifies the player_id on
-      foreign membership rows so the host's game roster doesn't
-      break. Bumps GDPR row from `~` to `✅`.
+- [ ] **Phase 5 ▸ Email verification flow** — "Verify email"
+      CTA on identity rows in Profile that have `verified=false`.
+      Click sends a magic-link email; the verify route flips
+      the identity's `verified` column and redirects back to
+      Profile. The schema already has the column; this is route
+      + screen wiring.
 
 ### Up next (Phase 6)
 

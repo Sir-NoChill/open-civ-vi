@@ -598,14 +598,19 @@ production.
       dump subcommand still pending. Smoke-tested:
       `magic_link_mint` → `sign_in` → `sign_out` → `sign_in_failed`
       land in order with the right `player_id` / `detail`.
-- [~] **Account deletion (GDPR)** — `DELETE /api/v1/me` and the
+- [x] **Account deletion (GDPR)** — `DELETE /api/v1/me` and the
       `open4x-accounts delete-account` CLI both invoke the
       schema cascade: sessions + identities + games (via the
       `owner_player_id ON DELETE CASCADE` from `0002_games.sql`)
-      all disappear with the account row. Pending: anonymise
-      game-membership rows for *foreign* players (e.g. a deleted
-      user's invitations to other people's games), retention
-      policy doc.
+      all disappear with the account row. Foreign
+      `game_members` rows (where the deleted player was a member
+      of someone *else's* game) are anonymised via migration
+      0005: a sentinel `0000000000000000` account is reserved at
+      migrate-time, and `delete_account` runs in a transaction
+      that `UPDATE OR IGNORE`s those rows to the sentinel before
+      the cascade fires. Host's roster keeps a `(anonymous)`
+      placeholder. Unit test (~30 lines) covers the foreign-
+      membership path against a real on-disk SqliteAccountStore.
 - [x] **Process-per-game orchestrator** — `OPEN4X_LOBBY_PER_GAME=1`
       flips `AppState.deploy_mode` to PerGame. New
       `server::process::ProcessOrchestrator` allocates a free port
@@ -792,6 +797,17 @@ Running record of work performed against this plan, newest at top.
   Smoke verified server_url=https://g-4601.example.com on a
   fresh game. 1 unit test covers None / subdomain / path /
   literal templates.
+- `37942a34` — feat(open4x-accounts): anonymise foreign
+  game-membership on delete. New migration `0005_anon_sentinel
+  .sql` reserves a `0000000000000000` "(anonymous)" account
+  row. `SqliteAccountStore::delete_account` now runs in a
+  transaction that `UPDATE OR IGNORE`s `game_members.player_id`
+  to the sentinel for rows where the player was a member of
+  *someone else's* game, before the FK cascade tears down
+  the deleted player's own data. Host rosters survive an
+  invitee's GDPR delete. Bumps Phase 6 GDPR row from `~` to
+  `✅`. New unit test covers the round-trip end-to-end against
+  real Sqlite.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
