@@ -654,14 +654,30 @@ These don't fit cleanly into one phase but need to be settled early.
 | 2     | `open4x-accounts` substrate ◐      | Magic-link, OIDC client, atproto resolver, session tokens, sqlite store     | Phase 3                      |
 | 3     | Lobby HTTP + auth wiring ✅        | Sign in via 3 methods, link identities, profile round-trip via `/me`        | Phase 4                      |
 | 4     | Games index + orchestration ◐      | New-game wizard creates a real `GameRoom`, ongoing list reflects reality    | Phase 5                      |
-| 5     | Polish                             | Avatar, QR, friends, presets, real thumbnails, email verify                 | Phase 6                      |
-| 6     | Self-host + ops                    | Single-binary deploy, SMTP, rate limit, audit log, process-per-game         | —                            |
+| 5     | Polish ◐                           | Avatar, QR, friends, presets, real thumbnails, email verify                 | Phase 6                      |
+| 6     | Self-host + ops ◐                  | Single-binary deploy, SMTP, rate limit, audit log, process-per-game         | —                            |
 
 ---
 
 ## 9. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 6 — Self-host + ops (2026-05-10, in progress)
+
+- `0da19288` — feat(open4x-{accounts,lobby}): append-only audit log.
+  `0004_audit_events.sql` adds the table; `audit.rs` ships
+  `AuditEventKind` (8 variants) + `AuditStore` + `SqliteAuditStore`.
+  Lobby handlers write `magic_link_mint` / `sign_in` /
+  `sign_in_failed` (with MagicLinkError variant in detail) /
+  `sign_out` / `account_deleted` / `new_game_created`. Best-effort
+  writes — never fail user flows.
+- `4daa2fd1` — feat(open4x-accounts): CLI binary `open4x-accounts`
+  with `dump-audit --limit <n>` subcommand. clap-driven, TSV
+  output with hex PlayerId display, sanitised tabs/newlines.
+- `adf79a0a` — feat(open4x-lobby): static mdBook serve under
+  `/book/`. ServeDir mount via `OPEN4X_LOBBY_BOOK_DIR` (default
+  `./book/book`); Docs screen status note updated.
 
 ### Phase 5 — Polish (2026-05-10, in progress)
 
