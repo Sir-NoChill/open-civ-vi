@@ -27,7 +27,11 @@ enum SaveState {
 
 #[component]
 pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoView {
-    let me = LocalResource::new(|| async { me_api::get().await.ok() });
+    let me_tick = RwSignal::new(0u32);
+    let me = LocalResource::new(move || {
+        let _ = me_tick.get();
+        async { me_api::get().await.ok() }
+    });
 
     let preferred_name = RwSignal::new(String::new());
     let pronouns = RwSignal::new(String::new());
@@ -263,25 +267,86 @@ pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoV
                             {move || identities.get().is_empty().then(|| view! {
                                 <p class="muted xsmall">"No identities linked yet."</p>
                             })}
-                            {move || identities.get().into_iter().enumerate().map(|(i, id)| {
-                                let is_primary_email = id.kind == "email"
-                                    && id.primary.unwrap_or(false);
-                                let kind_label = match id.kind.as_str() {
-                                    "email"   => if is_primary_email { "EMAIL · primary".into() } else { "EMAIL".into() },
-                                    "oidc"    => "OPENID".into(),
-                                    "atproto" => "ATPROTO".into(),
-                                    other     => other.to_uppercase(),
-                                };
-                                let row_class = if is_primary_email { "id-row primary" } else { "id-row" };
-                                let action = if is_primary_email { "manage" } else { "unlink" };
-                                view! {
-                                    <div class=row_class data-i=i>
-                                        <span class="id-type">{kind_label}</span>
-                                        <span class="id-val">{id.label.clone()}</span>
-                                        <Btn variant="bare" size="sm">{action}</Btn>
-                                    </div>
-                                }
-                            }).collect::<Vec<_>>()}
+                            {move || {
+                                let total = identities.get().len();
+                                identities.get().into_iter().enumerate().map(|(i, id)| {
+                                    let is_primary_email = id.kind == "email"
+                                        && id.primary.unwrap_or(false);
+                                    let kind_label = match id.kind.as_str() {
+                                        "email"   => if is_primary_email { "EMAIL · primary".into() } else { "EMAIL".into() },
+                                        "oidc"    => "OPENID".into(),
+                                        "atproto" => "ATPROTO".into(),
+                                        other     => other.to_uppercase(),
+                                    };
+                                    let row_class = if is_primary_email { "id-row primary" } else { "id-row" };
+                                    let row_id = id.id.clone();
+                                    // Refuse to show a working unlink when this would orphan
+                                    // the account; the server returns the same error but the
+                                    // client UX is clearer this way.
+                                    let last_one = total <= 1;
+                                    let row_label = id.label.clone();
+                                    let action_btn = if is_primary_email {
+                                        view! { <Btn variant="bare" size="sm">"manage"</Btn> }.into_any()
+                                    } else {
+                                        let confirm_content = {
+                                            let row_id = row_id.clone();
+                                            let row_label = row_label.clone();
+                                            Arc::new(move || {
+                                                let row_id = row_id.clone();
+                                                let row_label = row_label.clone();
+                                                view! {
+                                                    <PopupBody>
+                                                        <p>"Unlink "
+                                                            <code>{row_label.clone()}</code>
+                                                            "? You'll need at least one other "
+                                                            "identity linked to keep signing in."
+                                                        </p>
+                                                    </PopupBody>
+                                                    <crate::components::PopupActions right=true>
+                                                        <Btn
+                                                            variant="bare"
+                                                            size="sm"
+                                                            on_click=Callback::new(move |_| {
+                                                                let id = row_id.clone();
+                                                                spawn_local(async move {
+                                                                    let _ = me_api::unlink_identity(&id).await;
+                                                                    me_tick.update(|t| *t += 1);
+                                                                });
+                                                            })
+                                                        >"yes, unlink"</Btn>
+                                                    </crate::components::PopupActions>
+                                                }
+                                                .into_any()
+                                            })
+                                        };
+                                        if last_one {
+                                            view! {
+                                                <Btn variant="bare" size="sm" disabled=Signal::derive(|| true)>
+                                                    "unlink"
+                                                </Btn>
+                                            }.into_any()
+                                        } else {
+                                            view! {
+                                                <Popup
+                                                    title="Confirm unlink"
+                                                    size=PopupSize::Narrow
+                                                    trigger=PopupTrigger::Click
+                                                    content=confirm_content
+                                                >
+                                                    <Btn variant="bare" size="sm">"unlink"</Btn>
+                                                </Popup>
+                                            }.into_any()
+                                        }
+                                    };
+                                    view! {
+                                        <div class=row_class data-i=i>
+                                            <span class="id-type">{kind_label}</span>
+                                            <span class="id-val">{id.label.clone()}</span>
+                                            {action_btn}
+                                        </div>
+                                    }
+                                }).collect::<Vec<_>>()
+                            }}
                         </Suspense>
 
                         <p class="muted xsmall" style="margin-top:10px">

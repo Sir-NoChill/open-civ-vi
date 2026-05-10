@@ -16,6 +16,11 @@ pub struct MeView {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct IdentityView {
+    /// Stable row id — pass to `unlink_identity` / `set_primary`.
+    /// May be empty on responses that didn't carry id metadata
+    /// (e.g. the PATCH /me echo).
+    #[serde(default)]
+    pub id: String,
     pub kind: String,
     pub label: String,
     pub primary_key: String,
@@ -54,6 +59,14 @@ pub async fn patch(body: PatchMeBody) -> Result<MeView, ApiError> {
 
 pub async fn delete_me() -> Result<(), ApiError> {
     fetch_json::<serde_json::Value, ()>("DELETE", "/api/v1/me", None)
+        .await
+        .map(|_| ())
+}
+
+/// `DELETE /api/v1/me/identities/{id}`.
+pub async fn unlink_identity(id: &str) -> Result<(), ApiError> {
+    let url = format!("/api/v1/me/identities/{id}");
+    fetch_json::<serde_json::Value, ()>("DELETE", &url, None)
         .await
         .map(|_| ())
 }

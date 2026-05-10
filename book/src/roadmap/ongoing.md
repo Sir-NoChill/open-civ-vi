@@ -115,11 +115,13 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ Wire identity unlink in Profile** — the
-      `DELETE /api/v1/me/identities/{id}` route just landed; wire
-      the Profile screen's per-row "unlink" button to call it via
-      a new `components::api::me::unlink_identity` binding +
-      confirm popup. Refresh `/me` on success.
+- [ ] **Phase 6 ▸ Per-IP throttle on auth/email/start** — add a
+      lightweight in-memory IP→last-N-timestamps ring on AppState
+      (e.g. DashMap<IpAddr, ArrayVec<Instant, N>>) keyed via
+      `axum::extract::ConnectInfo` or a forwarded-for header
+      reader. Refuses with 429 when the same IP burst-mints magic
+      links across many emails, complementing the per-email cap
+      already in place.
 
 ### Up next (Phase 6)
 

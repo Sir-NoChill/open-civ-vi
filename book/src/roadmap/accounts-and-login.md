@@ -363,9 +363,11 @@ data with a real REST call.
       diffs back through `me::patch`; SaveState shows
       pending / saved ✓ / error feedback. Avatar initial flips to
       the first character of `preferred_name`. Linked-identities
-      list now reads from `MeView.identities` instead of the baked
-      Alice fixture; the manage / unlink button wiring lands when
-      the unlink HTTP route does.
+      list reads from `MeView.identities`; per-row "unlink" button
+      opens a confirm-Popup that calls `DELETE /me/identities/{id}`
+      and bumps the resource tick on success. Disabled (no popup)
+      when the row is the only identity, mirroring the server-side
+      "would_orphan_account" guard. "+ link another" still pending.
 - [x] Session-cookie middleware on the axum side at
       `open4x-lobby/src/server/auth.rs`. Parses the `lobby_session`
       cookie via a hand-rolled extractor, calls
