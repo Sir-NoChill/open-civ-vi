@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use ipnet::IpNet;
 use open4x_accounts::audit::SqliteAuditStore;
+use open4x_accounts::friends::SqliteFriendsStore;
 use open4x_accounts::games::SqliteGameStore;
 use open4x_accounts::magic_link::MagicLinkSigner;
 use open4x_accounts::mailer::{LogMailer, Mailer, SmtpConfig, SmtpMailer};
@@ -23,6 +24,7 @@ pub struct AppState {
     pub store: Arc<SqliteAccountStore>,
     pub games: Arc<SqliteGameStore>,
     pub audit: Arc<SqliteAuditStore>,
+    pub friends: Arc<SqliteFriendsStore>,
     pub signer: MagicLinkSigner,
     pub mailer: Arc<dyn Mailer>,
     /// Base URL for outgoing magic-link URLs (e.g. `https://lobby.example`).
@@ -85,6 +87,7 @@ impl AppState {
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         let games = SqliteGameStore::from_pool(pool.clone());
         let audit = SqliteAuditStore::from_pool(pool.clone());
+        let friends = SqliteFriendsStore::from_pool(pool.clone());
 
         let signer = MagicLinkSigner::from_env_or_path(data_dir.join("lobby.key"))
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -136,6 +139,7 @@ impl AppState {
             store: Arc::new(store),
             games: Arc::new(games),
             audit: Arc::new(audit),
+            friends: Arc::new(friends),
             signer,
             mailer,
             public_base_url,

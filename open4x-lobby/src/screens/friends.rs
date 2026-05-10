@@ -1,22 +1,64 @@
-//! Friends screen — Phase 5 polish placeholder.
+//! Friends screen — Phase 5 polish.
 //!
-//! Visual port of the design's "Friends" tab. The interactive
-//! search-by-identity / friend-requests / friends-list flows land
-//! when the friends schema + routes ship.
+//! Wires the design's Friends tab to the live `/api/v1/friends`
+//! surface: list (split into Friends + Requests), Add-friend by
+//! `0xAAAA·BBBB·CCCC·DDDD` (the only identity form supported in
+//! v1 — email / handle resolution lands with the search route).
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
+use crate::components::api::friends as friends_api;
 use crate::components::{Btn, Panel};
 
 #[component]
 pub fn Friends() -> impl IntoView {
+    let tick = RwSignal::new(0u32);
+    let rows: LocalResource<Vec<friends_api::FriendView>> = LocalResource::new(move || {
+        // Re-fetch on every tick increment.
+        let _ = tick.get();
+        async move { friends_api::list().await.unwrap_or_default() }
+    });
+
+    let input = RwSignal::new(String::new());
+    let pending = RwSignal::new(false);
+    let err = RwSignal::new(String::new());
+
+    let on_add = move |_| {
+        let pid = input.get_untracked().trim().to_string();
+        if pid.is_empty() {
+            err.set("paste a player ID first".into());
+            return;
+        }
+        err.set(String::new());
+        pending.set(true);
+        spawn_local(async move {
+            match friends_api::request(pid).await {
+                Ok(()) => {
+                    input.set(String::new());
+                    tick.update(|t| *t += 1);
+                }
+                Err(e) => err.set(e.to_string()),
+            }
+            pending.set(false);
+        });
+    };
+
     view! {
         <div style="flex:1; overflow:auto">
             <div class="content-header">
                 <div class="title">"Friends"</div>
-                <span class="crumbs">"// search by email · OpenID · atproto · player ID"</span>
+                <span class="crumbs">
+                    "// search by player ID — email / handle search ships with /friends/search"
+                </span>
                 <div class="actions">
-                    <Btn variant="accent">"+ Add friend"</Btn>
+                    <Btn
+                        variant="accent"
+                        disabled=Signal::derive(move || pending.get())
+                        on_click=Callback::new(on_add)
+                    >
+                        {move || if pending.get() { "Sending…" } else { "+ Add friend" }}
+                    </Btn>
                 </div>
             </div>
 
@@ -25,27 +67,156 @@ pub fn Friends() -> impl IntoView {
                     <span class="muted xsmall" style="padding-left:4px">"⌕"</span>
                     <input
                         class="filter-search"
-                        placeholder="paste an identity to add — alice@… · did:plc:… · 0xA9C3·…"
+                        placeholder="0xA9C3·7F12·EE04·AB55  or  A9C37F12EE04AB55"
+                        prop:value=move || input.get()
+                        on:input=move |ev| {
+                            use wasm_bindgen::JsCast as _;
+                            if let Some(el) = ev.target()
+                                .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                            {
+                                input.set(el.value());
+                            }
+                        }
                     />
                 </div>
+                {move || (!err.get().is_empty()).then(|| view! {
+                    <p class="xsmall" style="color:var(--accent); margin:8px 0 0">
+                        {err.get()}
+                    </p>
+                })}
             </Panel>
 
-            <Panel>
-                <div class="h3" style="margin-bottom:10px">"Friends"</div>
-                <p class="muted small">
-                    "No friends yet. Search above to send your first friend request."
-                </p>
-            </Panel>
+            <Suspense fallback=move || view! { <p class="muted xsmall">"Loading…"</p> }>
+                {move || rows.get().map(|wrap| {
+                    let all: Vec<friends_api::FriendView> = (*wrap).clone();
+                    let accepted: Vec<_> = all.iter()
+                        .filter(|r| r.status == "accepted")
+                        .cloned()
+                        .collect();
+                    let incoming: Vec<_> = all.iter()
+                        .filter(|r| r.status == "pending_incoming")
+                        .cloned()
+                        .collect();
+                    let outgoing: Vec<_> = all.iter()
+                        .filter(|r| r.status == "pending_outgoing")
+                        .cloned()
+                        .collect();
+                    view! {
+                        <Panel>
+                            <div class="h3" style="margin-bottom:10px">{
+                                format!("Friends ({})", accepted.len())
+                            }</div>
+                            {if accepted.is_empty() {
+                                view! { <p class="muted small">"No friends yet."</p> }.into_any()
+                            } else {
+                                view! {
+                                    <div class="col" style="gap:6px">
+                                        {accepted.into_iter().map(|f| {
+                                            let pid = f.player_id.clone();
+                                            let pid_for_btn = pid.clone();
+                                            view! {
+                                                <div class="row between center-y">
+                                                    <code style="font-family:var(--font-mono); font-size:12px">
+                                                        {pid}
+                                                    </code>
+                                                    <Btn
+                                                        variant="bare"
+                                                        size="sm"
+                                                        on_click=Callback::new(move |_| {
+                                                            let id = pid_for_btn.clone();
+                                                            spawn_local(async move {
+                                                                let _ = friends_api::unfriend(&id).await;
+                                                                tick.update(|t| *t += 1);
+                                                            });
+                                                        })
+                                                    >"unfriend"</Btn>
+                                                </div>
+                                            }
+                                        }).collect::<Vec<_>>()}
+                                    </div>
+                                }.into_any()
+                            }}
+                        </Panel>
 
-            <Panel>
-                <div class="h3" style="margin-bottom:10px">"Requests"</div>
-                <p class="muted small">"No pending requests."</p>
-            </Panel>
-
-            <p class="muted xsmall" style="margin-top:14px; text-align:center">
-                "// schema + routes pending — Phase 5 polish · "
-                <code>"book/src/roadmap/accounts-and-login.md"</code>
-            </p>
+                        <Panel>
+                            <div class="h3" style="margin-bottom:10px">{
+                                format!("Requests · {} incoming · {} outgoing",
+                                    incoming.len(), outgoing.len())
+                            }</div>
+                            {if incoming.is_empty() && outgoing.is_empty() {
+                                view! { <p class="muted small">"No pending requests."</p> }.into_any()
+                            } else {
+                                view! {
+                                    <div class="col" style="gap:6px">
+                                        {incoming.into_iter().map(|f| {
+                                            let pid = f.player_id.clone();
+                                            let pid_accept = pid.clone();
+                                            let pid_decline = pid.clone();
+                                            view! {
+                                                <div class="row between center-y">
+                                                    <span>
+                                                        <code style="font-family:var(--font-mono); font-size:12px">{pid}</code>
+                                                        " "
+                                                        <span class="muted xsmall">"wants to add you"</span>
+                                                    </span>
+                                                    <span class="row gap-xs">
+                                                        <Btn
+                                                            variant="accent"
+                                                            size="sm"
+                                                            on_click=Callback::new(move |_| {
+                                                                let id = pid_accept.clone();
+                                                                spawn_local(async move {
+                                                                    let _ = friends_api::accept(&id).await;
+                                                                    tick.update(|t| *t += 1);
+                                                                });
+                                                            })
+                                                        >"accept"</Btn>
+                                                        <Btn
+                                                            variant="bare"
+                                                            size="sm"
+                                                            on_click=Callback::new(move |_| {
+                                                                let id = pid_decline.clone();
+                                                                spawn_local(async move {
+                                                                    let _ = friends_api::unfriend(&id).await;
+                                                                    tick.update(|t| *t += 1);
+                                                                });
+                                                            })
+                                                        >"decline"</Btn>
+                                                    </span>
+                                                </div>
+                                            }
+                                        }).collect::<Vec<_>>()}
+                                        {outgoing.into_iter().map(|f| {
+                                            let pid = f.player_id.clone();
+                                            let pid_cancel = pid.clone();
+                                            view! {
+                                                <div class="row between center-y">
+                                                    <span>
+                                                        <code style="font-family:var(--font-mono); font-size:12px">{pid}</code>
+                                                        " "
+                                                        <span class="muted xsmall">"awaiting their response"</span>
+                                                    </span>
+                                                    <Btn
+                                                        variant="bare"
+                                                        size="sm"
+                                                        on_click=Callback::new(move |_| {
+                                                            let id = pid_cancel.clone();
+                                                            spawn_local(async move {
+                                                                let _ = friends_api::unfriend(&id).await;
+                                                                tick.update(|t| *t += 1);
+                                                            });
+                                                        })
+                                                    >"cancel"</Btn>
+                                                </div>
+                                            }
+                                        }).collect::<Vec<_>>()}
+                                    </div>
+                                }.into_any()
+                            }}
+                        </Panel>
+                    }
+                })}
+            </Suspense>
         </div>
     }
 }

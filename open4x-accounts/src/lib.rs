@@ -23,6 +23,9 @@
 pub mod audit;
 
 #[cfg(feature = "persistence")]
+pub mod friends;
+
+#[cfg(feature = "persistence")]
 pub mod games;
 
 #[cfg(feature = "persistence")]

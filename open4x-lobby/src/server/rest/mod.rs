@@ -4,6 +4,7 @@
 #![cfg(feature = "ssr")]
 
 pub mod email_auth;
+pub mod friends;
 pub mod games;
 pub mod me;
 
@@ -33,4 +34,8 @@ pub fn v1_router() -> Router<AppState> {
         .route("/games/{id}/notes", post(games::set_notes))
         .route("/games/{id}/resume", post(games::resume))
         .route("/games/{id}/thumbnail", get(games::thumbnail))
+        .route("/friends", get(friends::list))
+        .route("/friends/request", post(friends::request))
+        .route("/friends/{id}/accept", post(friends::accept))
+        .route("/friends/{id}", delete(friends::unfriend))
 }

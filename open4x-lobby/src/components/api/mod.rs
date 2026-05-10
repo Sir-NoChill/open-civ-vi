@@ -6,6 +6,7 @@
 //! `web_sys::Fetch` + `wasm-bindgen`.
 
 pub mod auth;
+pub mod friends;
 pub mod games;
 pub mod http;
 pub mod me;
