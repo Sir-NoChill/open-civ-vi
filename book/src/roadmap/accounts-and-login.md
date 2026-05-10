@@ -614,6 +614,35 @@ These don't fit cleanly into one phase but need to be settled early.
 
 Running record of work performed against this plan, newest at top.
 
+### Phase 4 — Games index + orchestration (2026-05-10, in progress)
+
+- `13a6440f` — feat(open4x-lobby): orchestrator bootstrap (Phase 4.3
+  v1). New `server::orchestrator::bootstrap_game` calls
+  `open4x-server`'s `POST /api/v1/games/new` with the wizard
+  params, captures the URL + token, stores them on the lobby
+  row. Best-effort: orchestrator failure does not fail the lobby
+  write. `OPEN4X_GAME_SERVER_URL` env (default
+  `http://localhost:3001`) selects the target server. Cargo
+  gains `reqwest` (rustls-tls + json, default features off) +
+  `thiserror`. Smoke-tested end-to-end: lobby creates a real
+  `GameRoom` in the in-game server, Resume returns the bearer,
+  the bearer authenticates against `/api/v1/cities`.
+- `2f7ba0bd` — feat(open4x-lobby): wire OngoingGames Resume CTA.
+  New `components::api::games::resume` binding; the tile button
+  navigates `window.location` to `<server_url>/?token=<token>`.
+  Disabled when `server_url` is empty.
+- `7ff2bd72` — feat(open4x-server): RestGamePage honors `?token=`
+  query (lobby Resume). Bootstrap Effect prefers the URL bearer
+  when present; anonymous `/games/new` fallback stays for guest
+  play. `read_token_from_query` + `decode_uri_component` helpers
+  added.
+- `72b5f3d5` — feat(open4x-lobby): wire filter chips + search.
+  `Filter` enum (All / YourTurn / Waiting / Completed /
+  Multiplayer) RwSignal-bound; chip CSS class flips active. Search
+  input filters case-insensitively over name / leader / civ_id.
+  Empty-set messaging for both 'no games yet' and 'no games match
+  the current filter'.
+
 ### Phase 4 — Games index + SPA wiring (2026-05-10, in progress)
 
 - `dfd30b85` — feat(open4x-accounts): games index schema + GameStore

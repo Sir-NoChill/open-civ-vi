@@ -115,16 +115,24 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.4 ▸ Resume CTA wiring** — the OngoingGames tile's
-      "→ Resume" button currently lands but does nothing. Make it
-      `POST /api/v1/games/{id}/resume`; on 200, navigate the
-      browser to `<url>` with `?token=<token>` so the in-game SPA
-      hosted by `open4x-server` picks up the bearer. (The in-game
-      `RestGamePage` already mints its own token via
-      `POST /games/new` for guest play; this gives it the
-      lobby-issued one instead.) Add `components::api::games::resume`.
+- [ ] **Phase 4.4 ▸ Wizard state hoisting** — currently the New-Game
+      wizard's StepMap / StepCiv / StepRules / StepPlayers each own
+      a screen-local `RwSignal` for their fields, so the Review
+      Generate world POST sends the static review-summary defaults
+      instead of the user's actual selections. Hoist every step's
+      RwSignals up to the parent `NewGame` component (or use
+      `provide_context` for a `WizardState` struct) so the body
+      reads from the live values.
 
-### Up next (Phase 4)
+### Up next (Phase 4 polish)
+
+- [ ] Per-tile `···` menu: View summary / Copy game ID / Share
+      invite link / Archive / Resign.
+- [ ] Notes popup: markdown textarea, persisted via
+      `POST /api/v1/games/{id}/notes` (route is also still TODO).
+- [ ] Sort dropdown (recent ↓ / oldest / by score / by turn).
+- [ ] Push filter selection into URL query params for
+      shareability + back-button.
 - [ ] Phase 4.3 orchestrator — shared-server-multi-room v1 (teach
       open4x-server to validate accounts-issued tokens; lobby
       `POST /games` translates wizard params into a server-side
