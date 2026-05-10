@@ -101,6 +101,35 @@ into the server projector.
 
 - [ ] Full deletion of `server/{api,reports}.rs` and `types/reports.rs`
 
+## Accounts and Login — ACTIVE
+
+> **Plan**: [book/src/roadmap/accounts-and-login.md](./accounts-and-login.md)
+> **Status**: Phase 0 complete (workspace split + paper SPA scaffold).
+> Phase 1 (visual completeness — popups, slider, remaining wizard steps,
+> tweaks panel) starting next.
+> **Cron**: `dfdcd4f5` — fires every 10 minutes (session-only, expires
+> after 7 days). `CronDelete dfdcd4f5` to cancel.
+
+### In progress
+_(this section is the running tracker — items here are picked up by the
+next loop tick; mark items done in `accounts-and-login.md` and delete
+from this list when complete)_
+
+- [ ] **Phase 1 ▸ Slider primitive** —
+      `open4x-lobby/src/components/slider.rs`. Wraps
+      `<input type=range>` with optional `format` callback. Source:
+      `docs/open4x-landing/project/primitives.jsx`.
+
+### Up next (Phase 1)
+
+- [ ] PopupBody / PopupActions / PopupList containers
+- [ ] Popup component (Gwern-style: hover preview, pin on click,
+      esc-close, click-outside, smart positioning)
+- [ ] NewGame StepCiv (civ picker grid + CivSheet popups)
+- [ ] NewGame StepRules (difficulty / victory / world dynamics)
+- [ ] NewGame StepPlayers (slot list + invite popup + turn-mode params)
+- [ ] Tweaks panel port (runtime density toggle)
+
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
 - [x] Phase 0–5 (see git log).
