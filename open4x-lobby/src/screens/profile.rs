@@ -44,6 +44,9 @@ pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoV
     let player_id_text = RwSignal::new(String::from("—"));
     let identities = RwSignal::new(Vec::<me_api::IdentityView>::new());
     let save_state = RwSignal::new(SaveState::Idle);
+    let avatar_url: RwSignal<Option<String>> = RwSignal::new(None);
+    let avatar_pending = RwSignal::new(false);
+    let avatar_error = RwSignal::new(String::new());
 
     // Seed signals once the resource arrives.
     Effect::new(move |_| {
@@ -59,6 +62,7 @@ pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoV
         discoverable.set(view.prefs.discoverable_by_id);
         player_id_text.set(view.player_id);
         identities.set(view.identities);
+        avatar_url.set(view.avatar_url);
     });
 
     let density_opts = Signal::derive(|| {
@@ -115,14 +119,84 @@ pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoV
                 <Panel>
                     <div class="col" style="align-items:center; gap:12px">
                         <div class="avatar">
-                            {move || preferred_name
-                                .get()
-                                .chars()
-                                .next()
-                                .map(|c| c.to_string())
-                                .unwrap_or_else(|| "?".into())}
+                            {move || match avatar_url.get() {
+                                // Cache-bust on every refresh by appending the
+                                // current `avatar_pending` tick — when the user
+                                // re-uploads, we toggle the flag, which forces
+                                // the browser to re-fetch.
+                                Some(u) if !u.is_empty() => view! {
+                                    <img
+                                        src=u
+                                        alt="avatar"
+                                        style="width:100%; height:100%; border-radius:50%; object-fit:cover"
+                                    />
+                                }.into_any(),
+                                _ => view! {
+                                    <span>{
+                                        preferred_name.get()
+                                            .chars()
+                                            .next()
+                                            .map(|c| c.to_string())
+                                            .unwrap_or_else(|| "?".into())
+                                    }</span>
+                                }.into_any(),
+                            }}
                         </div>
-                        <Btn variant="ghost" size="sm">"change"</Btn>
+                        // Hidden file input + visible "change" Btn that
+                        // triggers .click() on the input. The file's first
+                        // entry is uploaded via me_api::upload_avatar.
+                        <input
+                            id="avatar-file"
+                            r#type="file"
+                            accept="image/png,image/jpeg"
+                            style="display:none"
+                            on:change=move |ev| {
+                                use wasm_bindgen::JsCast as _;
+                                let file = ev.target()
+                                    .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                                    .and_then(|el| el.files())
+                                    .and_then(|fl| fl.item(0));
+                                let Some(file) = file else { return; };
+                                avatar_pending.set(true);
+                                avatar_error.set(String::new());
+                                spawn_local(async move {
+                                    match me_api::upload_avatar(file).await {
+                                        Ok(url) => {
+                                            // Append a cache-buster so browsers
+                                            // pick up the new bytes; same path
+                                            // otherwise.
+                                            let now = js_sys::Date::now() as u64;
+                                            let busted = format!("{url}?t={now}");
+                                            avatar_url.set(Some(busted));
+                                        }
+                                        Err(e) => avatar_error.set(e.to_string()),
+                                    }
+                                    avatar_pending.set(false);
+                                });
+                            }
+                        />
+                        <Btn
+                            variant="ghost"
+                            size="sm"
+                            disabled=Signal::derive(move || avatar_pending.get())
+                            on_click=Callback::new(move |_| {
+                                use wasm_bindgen::JsCast as _;
+                                if let Some(input) = web_sys::window()
+                                    .and_then(|w| w.document())
+                                    .and_then(|d| d.get_element_by_id("avatar-file"))
+                                    .and_then(|e| e.dyn_into::<web_sys::HtmlInputElement>().ok())
+                                {
+                                    input.click();
+                                }
+                            })
+                        >
+                            {move || if avatar_pending.get() { "Uploading…" } else { "change" }}
+                        </Btn>
+                        {move || (!avatar_error.get().is_empty()).then(|| view! {
+                            <p class="xsmall" style="color:var(--accent); margin:0">
+                                {avatar_error.get()}
+                            </p>
+                        })}
                     </div>
                     <hr class="divider" />
                     <div class="h3" style="margin-bottom:10px">"Quick actions"</div>

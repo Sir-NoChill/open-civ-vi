@@ -36,7 +36,10 @@ pub async fn get_me(
                 .list_identities_with_ids(player_id)
                 .await
                 .unwrap_or_default();
-            Json(MeView::from_account_and_ids(acct, with_ids)).into_response()
+            let pid_hex = format!("{:016X}", player_id.0);
+            let view = MeView::from_account_and_ids(acct, with_ids)
+                .with_avatar_url(&state, &pid_hex);
+            Json(view).into_response()
         }
         Ok(None) => (
             StatusCode::NOT_FOUND,
@@ -131,6 +134,13 @@ pub struct MeView {
     pub bio: String,
     pub identities: Vec<IdentityView>,
     pub prefs: Preferences,
+    /// Public URL the SPA should `<img src=...>` for the player's
+    /// avatar. Populated by [`MeView::with_avatar_url`] when the
+    /// per-player `<player_id>.png` exists under
+    /// `<data_dir>/avatars/`. `None` falls back to the design's
+    /// initial-letter circle.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -165,7 +175,19 @@ impl MeView {
             bio: a.bio,
             identities,
             prefs: a.prefs,
+            avatar_url: None,
         }
+    }
+
+    /// Layer the on-disk avatar URL onto a freshly-built MeView,
+    /// if the file exists. Read-time check so the field stays
+    /// honest even after a delete.
+    pub fn with_avatar_url(mut self, state: &AppState, player_id_hex: &str) -> Self {
+        let path = state.avatar_dir.join(format!("{player_id_hex}.png"));
+        if path.is_file() {
+            self.avatar_url = Some(format!("/avatars/{player_id_hex}.png"));
+        }
+        self
     }
 }
 
@@ -187,6 +209,7 @@ impl From<Account> for MeView {
             bio: a.bio,
             identities,
             prefs: a.prefs,
+            avatar_url: None,
         }
     }
 }
@@ -395,4 +418,142 @@ pub async fn verify_email_identity(
         .await;
 
     Json(serde_json::json!({"ok": true, "message": "verify_email_sent"})).into_response()
+}
+
+// ───────────────────────── POST /me/avatar ───────────────────────────────────
+
+/// Multipart upload pipeline:
+///   1. Read the first file field (≤4 MiB cap).
+///   2. Decode via image-rs (PNG / JPEG only — Cargo features
+///      gate the rest off).
+///   3. Downscale to 256×256 with `Lanczos3` filtering, preserving
+///      aspect via `thumbnail_exact` (square crop is fine — the
+///      design's avatar slot is round).
+///   4. Encode to PNG and write atomically to
+///      `<data_dir>/avatars/<player_id_hex>.png`.
+///   5. Audit-log the IdentityLinked variant with detail
+///      `avatar:<bytes_written>` for ops visibility.
+pub async fn upload_avatar(
+    State(state): State<AppState>,
+    RequireSession(player_id): RequireSession,
+    mut multipart: axum::extract::Multipart,
+) -> Response {
+    const MAX_BYTES: usize = 4 * 1024 * 1024;
+    let mut bytes: Option<Vec<u8>> = None;
+    while let Ok(Some(field)) = multipart.next_field().await {
+        // First non-empty file-shaped field wins. Some clients send
+        // multiple fields (a CSRF token + the file); we pick the
+        // file by content-type heuristic, falling back to the
+        // first sufficiently-large blob.
+        let ct = field.content_type().map(str::to_owned).unwrap_or_default();
+        if !ct.starts_with("image/") && !ct.is_empty() {
+            continue;
+        }
+        let data = match field.bytes().await {
+            Ok(b) => b,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorBody {
+                        error: "multipart_read",
+                        message: Some(e.to_string()),
+                    }),
+                )
+                    .into_response();
+            }
+        };
+        if data.len() > MAX_BYTES {
+            return (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                Json(ErrorBody {
+                    error: "too_large",
+                    message: Some(format!("max {MAX_BYTES} bytes")),
+                }),
+            )
+                .into_response();
+        }
+        bytes = Some(data.to_vec());
+        break;
+    }
+    let Some(raw) = bytes else {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorBody {
+                error: "no_file",
+                message: Some("expected a multipart field with a PNG or JPEG body".into()),
+            }),
+        )
+            .into_response();
+    };
+
+    let img = match image::load_from_memory(&raw) {
+        Ok(i) => i,
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorBody {
+                    error: "decode_failed",
+                    message: Some(e.to_string()),
+                }),
+            )
+                .into_response();
+        }
+    };
+    let small = img.thumbnail_exact(256, 256);
+    let mut buf: Vec<u8> = Vec::new();
+    if let Err(e) = small.write_to(
+        &mut std::io::Cursor::new(&mut buf),
+        image::ImageFormat::Png,
+    ) {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody {
+                error: "encode_failed",
+                message: Some(e.to_string()),
+            }),
+        )
+            .into_response();
+    }
+
+    let pid_hex = format!("{:016X}", player_id.0);
+    let final_path = state.avatar_dir.join(format!("{pid_hex}.png"));
+    let tmp_path = state.avatar_dir.join(format!("{pid_hex}.png.tmp"));
+    if let Err(e) = std::fs::write(&tmp_path, &buf) {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody {
+                error: "write_failed",
+                message: Some(e.to_string()),
+            }),
+        )
+            .into_response();
+    }
+    if let Err(e) = std::fs::rename(&tmp_path, &final_path) {
+        let _ = std::fs::remove_file(&tmp_path);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody {
+                error: "rename_failed",
+                message: Some(e.to_string()),
+            }),
+        )
+            .into_response();
+    }
+
+    let _ = state
+        .audit
+        .record(NewAuditEvent {
+            kind: AuditEventKind::IdentityLinked,
+            player_id: Some(player_id),
+            ip: None,
+            detail: format!("avatar:{}", buf.len()),
+        })
+        .await;
+
+    Json(serde_json::json!({
+        "ok": true,
+        "avatar_url": format!("/avatars/{pid_hex}.png"),
+        "bytes": buf.len(),
+    }))
+    .into_response()
 }

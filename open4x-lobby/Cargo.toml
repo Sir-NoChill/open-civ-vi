@@ -18,7 +18,8 @@ serde_json  = { workspace = true }
 open4x-accounts = { path = "../open4x-accounts" }
 
 # ── Server-only (native binary) ───────────────────────────────────────
-axum       = { version = "0.8", optional = true }
+axum       = { version = "0.8", optional = true, features = ["multipart"] }
+image      = { version = "0.25", optional = true, default-features = false, features = ["png", "jpeg"] }
 tokio      = { workspace = true, optional = true }
 tower-http = { version = "0.6", features = ["cors", "fs"], optional = true }
 sqlx       = { version = "0.8", optional = true, features = [
@@ -43,6 +44,7 @@ web-sys                 = { version = "0.3", features = [
     "HtmlInputElement", "HtmlAnchorElement", "HtmlTextAreaElement",
     "Response", "Headers", "RequestInit", "Request", "RequestCredentials",
     "KeyboardEvent", "MouseEvent",
+    "Blob", "File", "FileList", "FormData",
 ], optional = true }
 serde-wasm-bindgen      = { version = "0.6", optional = true }
 getrandom               = { version = "0.3", features = ["wasm_js"], optional = true }
@@ -55,7 +57,7 @@ default = ["ssr"]
 ssr = [
     "dep:axum", "dep:tokio", "dep:tower-http",
     "dep:sqlx", "dep:chrono", "dep:reqwest", "dep:thiserror", "dep:ipnet",
-    "dep:rust-embed", "dep:mime_guess",
+    "dep:rust-embed", "dep:mime_guess", "dep:image",
     "open4x-accounts/persistence", "open4x-accounts/mailer-smtp",
 ]
 csr = [

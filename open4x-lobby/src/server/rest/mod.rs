@@ -25,6 +25,7 @@ pub fn v1_router() -> Router<AppState> {
             "/me/identities/{id}/verify-start",
             post(me::verify_email_identity),
         )
+        .route("/me/avatar", post(me::upload_avatar))
         .route("/games", get(games::list))
         .route("/games", post(games::create))
         .route("/games/{id}", get(games::get_one))

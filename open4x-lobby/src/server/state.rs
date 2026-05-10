@@ -47,6 +47,11 @@ pub struct AppState {
     /// Process registry — only set when [`deploy_mode`] is
     /// `PerGame`. Cloneable; cheap to hand out to handlers.
     pub process_orch: Option<ProcessOrchestrator>,
+    /// Where the avatar pipeline writes per-player PNGs. Always
+    /// `<data_dir>/avatars/`. Files are named
+    /// `<player_id_hex>.png` and served at `/avatars/<file>` by
+    /// the binary's `ServeDir`.
+    pub avatar_dir: PathBuf,
 }
 
 impl AppState {
@@ -123,6 +128,9 @@ impl AppState {
             DeployMode::Shared => None,
         };
 
+        let avatar_dir = data_dir.join("avatars");
+        std::fs::create_dir_all(&avatar_dir)?;
+
         Ok(Self {
             pool,
             store: Arc::new(store),
@@ -135,6 +143,7 @@ impl AppState {
             trusted_proxies,
             deploy_mode,
             process_orch,
+            avatar_dir,
         })
     }
 }

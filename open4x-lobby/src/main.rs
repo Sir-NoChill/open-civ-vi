@@ -35,7 +35,12 @@ async fn main() {
 
     let mut app = Router::new()
         .route("/health", get(health_handler))
-        .nest("/api/v1", server::rest::v1_router());
+        .nest("/api/v1", server::rest::v1_router())
+        // Per-player PNGs land here as
+        // `<data_dir>/avatars/<player_id_hex>.png`. ServeDir 404s
+        // when missing, which is fine — the SPA falls back to the
+        // initial-letter circle.
+        .nest_service("/avatars", ServeDir::new(state.avatar_dir.clone()));
 
     // Book: prefer the on-disk path if set, then fall back to
     // embedded assets, then 404 with a hint.
