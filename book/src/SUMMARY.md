@@ -45,6 +45,7 @@
 - [Game Server](./multiplayer/server.md)
 - [Web Client](./multiplayer/web-client.md)
 - [Reverse Proxy](./multiplayer/reverse-proxy.md)
+- [i18n](./multiplayer/i18n.md)
 
 # Roadmap
 

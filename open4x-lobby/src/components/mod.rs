@@ -14,6 +14,7 @@ pub mod popup_body;
 pub mod qr;
 pub mod segmented;
 pub mod slider;
+pub mod i18n;
 pub mod tag;
 pub mod thumbnail;
 pub mod toggle;

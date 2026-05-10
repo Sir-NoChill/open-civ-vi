@@ -12,6 +12,7 @@ use leptos::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::components::api::auth as auth_api;
+use crate::components::i18n::{tr, Key};
 use crate::components::{Btn, Popup, PopupBody, PopupSize};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -72,16 +73,17 @@ impl EmailFlowError {
     /// transient kinds are concerned.
     fn copy(&self) -> String {
         match self {
-            EmailFlowError::EmptyEmail => "Enter an email address first.".into(),
-            EmailFlowError::RateLimited { message } => message.clone().unwrap_or_else(|| {
-                "Too many recent sends. Try again in a minute.".into()
-            }),
+            EmailFlowError::EmptyEmail => tr(Key::LoginEmailErrorEmpty).into(),
+            EmailFlowError::RateLimited { message } => message
+                .clone()
+                .unwrap_or_else(|| tr(Key::LoginEmailErrorRateLimit).into()),
             EmailFlowError::ServerBusy { code, message } => match message {
                 Some(m) => format!("Server's having trouble ({code}): {m}"),
-                None => format!("Server's having trouble ({code}). Try again in a moment."),
+                None => tr(Key::LoginEmailErrorServerBusyTemplate)
+                    .replace("{code}", code),
             },
             EmailFlowError::Network { detail } => {
-                format!("Couldn't reach the server. Check your connection.\n{detail}")
+                format!("{}\n{detail}", tr(Key::LoginEmailErrorNetwork))
             }
             EmailFlowError::Other { code, message } => match message {
                 Some(m) => format!("{code}: {m}"),
@@ -119,17 +121,17 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
             <div class="row between center-y" style="padding:10px 20px; border-bottom:1px solid var(--hairline)">
                 <Btn variant="bare" size="sm"
                      on_click=Callback::new(move |_| on_back.run(()))>
-                    "← back"
+                    {tr(Key::LoginBack)}
                 </Btn>
                 <span class="muted xsmall" style="letter-spacing:0.08em">
-                    "OPEN4X·VI / SIGN IN"
+                    {tr(Key::LoginNavTitle)}
                 </span>
             </div>
 
             <div style="width:460px; max-width:100%; margin:32px auto; padding:4px">
-                <h1 class="h1" style="margin-bottom:4px">"Sign in"</h1>
+                <h1 class="h1" style="margin-bottom:4px">{tr(Key::LoginPageTitle)}</h1>
                 <p class="muted small" style="margin-bottom:24px">
-                    "Any method below — they all link to the same "
+                    {tr(Key::LoginIntroPrefix)}
                     <Popup
                         title="player ID"
                         content=Arc::new(|| view! {
@@ -143,15 +145,15 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                             </PopupBody>
                         }.into_any())
                     >
-                        <span class="trigger">"player ID"</span>
+                        <span class="trigger">{tr(Key::LoginIntroPlayerIdLink)}</span>
                     </Popup>
-                    "."
+                    {tr(Key::LoginIntroSuffix)}
                 </p>
 
                 // ─── Email ──────────────────────────────────────────
                 <div class="panel" style="margin-bottom:12px">
                     <div class="row between center-y" style="margin-bottom:10px">
-                        <span class="h3">"Email"</span>
+                        <span class="h3">{tr(Key::LoginEmailHeading)}</span>
                         <Popup
                             title="How it works"
                             size=PopupSize::Narrow
@@ -163,13 +165,13 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                                 </PopupBody>
                             }.into_any())
                         >
-                            <span class="trigger xsmall muted">"how it works"</span>
+                            <span class="trigger xsmall muted">{tr(Key::LoginEmailHowItWorks)}</span>
                         </Popup>
                     </div>
                     <div class="field" style="margin-bottom:10px">
                         <input
                             class="input mono"
-                            placeholder="you@example.com"
+                            placeholder=tr(Key::LoginEmailPlaceholder)
                             prop:value=move || email.get()
                             on:input=move |ev| {
                                 use wasm_bindgen::JsCast as _;
@@ -188,12 +190,16 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                         disabled=pending
                         on_click=Callback::new(on_send)
                     >
-                        {move || if pending.get() { "Sending…" } else { "Send magic link →" }}
+                        {move || if pending.get() {
+                            tr(Key::LoginEmailSendingButton)
+                        } else {
+                            tr(Key::LoginEmailSendButton)
+                        }}
                     </Btn>
                     {move || match flow.get() {
                         EmailFlow::Sent(to) => view! {
                             <p class="xsmall" style="color:var(--good); margin-top:8px">
-                                {format!("Magic link sent to {to}. Check your inbox.")}
+                                {tr(Key::LoginEmailSentTemplate).replace("{to}", &to)}
                             </p>
                         }.into_any(),
                         EmailFlow::Error(err) => {
@@ -209,7 +215,7 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                                             variant="ghost"
                                             size="sm"
                                             on_click=Callback::new(on_retry)
-                                        >"↻ Try again"</Btn>
+                                        >{tr(Key::LoginEmailRetry)}</Btn>
                                     })}
                                 </div>
                             }.into_any()
@@ -221,7 +227,7 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                 // ─── OpenID ─────────────────────────────────────────
                 <div class="panel" style="margin-bottom:12px">
                     <div class="row between center-y" style="margin-bottom:10px">
-                        <span class="h3">"OpenID"</span>
+                        <span class="h3">{tr(Key::LoginOidcHeading)}</span>
                         <Popup
                             title="OIDC"
                             content=Arc::new(|| view! {
@@ -231,7 +237,7 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                                 </PopupBody>
                             }.into_any())
                         >
-                            <span class="trigger xsmall muted">"about OIDC"</span>
+                            <span class="trigger xsmall muted">{tr(Key::LoginOidcAbout)}</span>
                         </Popup>
                     </div>
                     <div class="row wrap" style="gap:6px">
@@ -245,7 +251,7 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                 // ─── atproto ────────────────────────────────────────
                 <div class="panel" style="margin-bottom:16px">
                     <div class="row between center-y" style="margin-bottom:10px">
-                        <span class="h3">"atproto"</span>
+                        <span class="h3">{tr(Key::LoginAtprotoHeading)}</span>
                         <Popup
                             title="atproto"
                             content=Arc::new(|| view! {
@@ -258,18 +264,18 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                                 </PopupBody>
                             }.into_any())
                         >
-                            <span class="trigger xsmall muted">"about atproto"</span>
+                            <span class="trigger xsmall muted">{tr(Key::LoginAtprotoAbout)}</span>
                         </Popup>
                     </div>
                     <div class="field" style="margin-bottom:10px">
                         <input class="input mono"
-                               placeholder="alice.bsky.social  or  did:plc:…" />
+                               placeholder=tr(Key::LoginAtprotoPlaceholder) />
                     </div>
-                    <Btn class="block">"Continue with atproto →"</Btn>
+                    <Btn class="block">{tr(Key::LoginAtprotoButton)}</Btn>
                 </div>
 
                 <p class="muted xsmall" style="text-align:center; margin-top:14px">
-                    "New here? A player ID is created automatically on first sign-in."
+                    {tr(Key::LoginFooter)}
                 </p>
             </div>
         </div>
