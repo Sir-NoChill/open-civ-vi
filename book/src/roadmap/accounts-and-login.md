@@ -129,8 +129,13 @@ plumbing.
       / esc-to-close / click-outside-to-dismiss / smart positioning.
       Replace every `<Trigger>` stub call site. Source:
       `docs/open4x-landing/project/hifi/popup.jsx` (165 LOC).
-- [ ] **`PopupBody`, `PopupActions`, `PopupList`** — body containers
-      used inside the popups (kv tables, action rows, list-of-items).
+- [x] **`PopupBody`, `PopupActions`, `PopupList`** — body containers
+      live at `open4x-lobby/src/components/popup_body.rs`. `PopupBody`
+      / `PopupActions` are pure layout wrappers; `PopupList` takes a
+      `Vec<PopupListItem>` (`Row { icon, label, desc? }` or
+      `Separator`) so menu definitions read structurally rather than
+      as untyped JSX. No interactivity yet — wired up when the Popup
+      shell lands.
 - [ ] **NewGame `StepCiv`** — civ picker grid (8 leaders), per-leader
       `CivSheet` popup with unique unit / unique building / leader
       ability / civ ability. Selection state stored on `RwSignal`.

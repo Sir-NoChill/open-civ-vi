@@ -12,6 +12,7 @@
 pub mod btn;
 pub mod minimap;
 pub mod panel;
+pub mod popup_body;
 pub mod popup_stub;
 pub mod segmented;
 pub mod slider;
@@ -21,6 +22,7 @@ pub mod toggle;
 pub use btn::Btn;
 pub use minimap::MiniMap;
 pub use panel::{Panel, PanelHead};
+pub use popup_body::{PopupActions, PopupBody, PopupList, PopupListItem};
 pub use popup_stub::Trigger;
 pub use segmented::Segmented;
 pub use slider::{FormatFn, Slider};
