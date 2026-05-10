@@ -3,7 +3,11 @@
 //! New game / Profile), secondary nav (Friends / Presets / Docs as TODO
 //! popups), versioned footer with online dot.
 
+use std::sync::Arc;
+
 use leptos::prelude::*;
+
+use crate::components::{Popup, PopupBody, PopupSize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MenuTab {
@@ -72,7 +76,21 @@ pub fn MenuShell(tab: RwSignal<MenuTab>, children: Children) -> impl IntoView {
 
                 <div class="footer">
                     <span>"v0.1.0"</span>
-                    <span class="trigger" style="color:var(--good)" title="api operational · latency 42ms · region auto">"● online"</span>
+                    <Popup
+                        title="Server status"
+                        size=PopupSize::Narrow
+                        content=Arc::new(|| view! {
+                            <PopupBody>
+                                <div class="kv xsmall">
+                                    <span class="k">"api"</span><span style="color:var(--good)">"● operational"</span>
+                                    <span class="k">"latency"</span><span>"42 ms"</span>
+                                    <span class="k">"region"</span><span>"auto"</span>
+                                </div>
+                            </PopupBody>
+                        }.into_any())
+                    >
+                        <span class="trigger" style="color:var(--good)">"● online"</span>
+                    </Popup>
                 </div>
             </aside>
             <div class="content">{children()}</div>

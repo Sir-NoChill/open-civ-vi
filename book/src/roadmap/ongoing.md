@@ -104,9 +104,9 @@ into the server projector.
 ## Accounts and Login — ACTIVE
 
 > **Plan**: [book/src/roadmap/accounts-and-login.md](./accounts-and-login.md)
-> **Status**: Phase 0 complete (workspace split + paper SPA scaffold).
-> Phase 1 (visual completeness — popups, slider, remaining wizard steps,
-> tweaks panel) starting next.
+> **Status**: Phase 0 + Phase 1 complete. Phase 2 (`open4x-accounts`
+> substrate — sqlite store + magic-link minting + OIDC client +
+> atproto resolver + session tokens) starting next.
 > **Cron**: `dfdcd4f5` — fires every 10 minutes (session-only, expires
 > after 7 days). `CronDelete dfdcd4f5` to cancel.
 
@@ -115,18 +115,24 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ Cleanup sweep** — migrate the remaining bare
-      `<span class="trigger" title="…">` sites in newgame.rs
-      StepMap (map type, map size) + menu.rs (online indicator) to
-      real `<Popup>` wrappers, then drop the now-unused
-      `components/popup_stub.rs` `Trigger` placeholder. Closes out
-      Phase 1.
+- [ ] **Phase 2.1 ▸ Persistence layer** — pick `sqlx + sqlite by
+      default`, add migrations dir at `open4x-accounts/migrations/`,
+      schema for `accounts` / `identities` / `sessions` per
+      §4 Phase 2.1 of the plan, `AccountStore` trait with sqlite
+      and in-memory test impls. Heavy lift — split into a sub-tick
+      per concern (schema migrations, AccountStore trait, sqlite
+      impl, in-memory impl, smoke tests).
 
-### Up next
+### Up next (Phase 2)
 
-_(Phase 1 effectively done after this cleanup. Phase 2 — `open4x-accounts`
-substrate — picks up the persistence + magic-link + OIDC + atproto
-build-out next.)_
+- [ ] Magic-link mint / verify (HMAC over (email, expires_at, nonce),
+      single-use nonce table, 15-minute expiry)
+- [ ] Pluggable Mailer trait + LogMailer default + `mailer-smtp` feature
+- [ ] OIDC client (discovery + PKCE + ID-token verification +
+      claims → `Identity::OpenId` mapping)
+- [ ] OIDC custom-issuer support
+- [ ] atproto handle/DID resolver + OAuth/DPoP flow
+- [ ] Session token mint / validate / revoke (SHA-256 hashed bearer)
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 

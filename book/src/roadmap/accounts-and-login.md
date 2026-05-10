@@ -118,12 +118,12 @@ manager (systemd / podman / k8s) instead of `Command::spawn`.
 Each phase ends in a working, mergeable state. None requires more than
 one accounts PR + one lobby PR.
 
-### Phase 1 — Visual completeness
+### Phase 1 — Visual completeness ✅
 
 Get the SPA pixel-perfect against the design before wiring anything to
 the network. No persistence, no auth, no orchestration; just finishing
 the JSX → Leptos translation so we can iterate UX without backend
-plumbing.
+plumbing. **Done.**
 
 - [x] **Popup component** — `open4x-lobby/src/components/popup.rs`
       ports the Gwern-style behaviour: 180 ms hover-show, 140 ms
@@ -508,7 +508,7 @@ These don't fit cleanly into one phase but need to be settled early.
 | Phase | Theme                              | Done when                                                                   | Blocks                       |
 |-------|------------------------------------|-----------------------------------------------------------------------------|------------------------------|
 | 0     | Scaffolding ✅                     | Workspace split + paper SPA renders all screens (some w/ placeholder data)  | —                            |
-| 1     | Visual completeness                | Pixel-perfect against design; popups + slider work; remaining wizard steps  | none — pure UI               |
+| 1     | Visual completeness ✅             | Pixel-perfect against design; popups + slider work; remaining wizard steps  | none — pure UI               |
 | 2     | `open4x-accounts` substrate        | Magic-link, OIDC client, atproto resolver, session tokens, sqlite store     | Phase 3                      |
 | 3     | Lobby HTTP + auth wiring           | Sign in via 3 methods, link identities, profile round-trip via `/me`        | Phase 4                      |
 | 4     | Games index + orchestration        | New-game wizard creates a real `GameRoom`, ongoing list reflects reality    | Phase 5                      |
@@ -521,7 +521,7 @@ These don't fit cleanly into one phase but need to be settled early.
 
 Running record of work performed against this plan, newest at top.
 
-### Phase 1 — Visual completeness (2026-05-10, in progress)
+### Phase 1 — Visual completeness (2026-05-10, complete)
 
 Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
 
@@ -552,6 +552,39 @@ Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
   stubs to real Popups. Six call sites swept (3 landing footer +
   player-ID + 3 login panel headers). Trigger stub remains for the
   unmigrated screens (menu / newgame / profile).
+- `stwyqnyu` — feat(open4x-lobby): port NewGame StepCiv. 8-card
+  picker grid backed by a static `CIVS` table, hover popup with
+  CivSheet body + footer actions, click-to-select with the active
+  card flipping border + background to the accent.
+- `pslzypqv` — feat(open4x-lobby): port NewGame StepRules. Two
+  panels: difficulty / era / game-speed Segmenteds + six victory
+  toggles seeded from a `VICTORY_CONDITIONS` table; world-dynamics
+  Sliders for disasters / barbarians / city-states / AI aggression
+  with categorical formatters; AI-personality Segmented. Help
+  triggers are real `<Popup>` wrappers.
+- `vmzkmour` — feat(open4x-lobby): port NewGame StepPlayers. 8-slot
+  baseline (1 human-you, 1 open invite slot, 6 AI), invite Popup
+  with email/OpenID/atproto/PlayerID input + recent-recipients
+  chips, slot-management `PopupList` (Change civ / AI personality
+  / Swap / Remove). Turn-mode panel with timer Segmented and
+  simultaneous / private / cross-play Toggles. Drops the now-unused
+  `StepPlaceholder`. `PanelHead`'s `right` slot was removed (its
+  optional `Children` shape was double-wrapping under leptos's
+  `#[prop(optional)]` macro); the one head that needed it inlines
+  the head DOM.
+- `kszpskql` — feat(open4x-lobby): port runtime Tweaks panel.
+  Fixed-position card with a Segmented density picker bound to a
+  parent-owned `RwSignal<String>`. App now reads density into the
+  root `.app` element's `data-density` attr reactively (was a
+  hard-coded literal). Sliders / color pickers / postMessage host
+  protocol from the JSX original deliberately omitted.
+- `vmtvmnwv` — refactor(open4x-lobby): final Trigger sweep.
+  Migrates the bare `<span class="trigger" title="…">` sites in
+  `screens/menu.rs` (server-status indicator) and
+  `screens/newgame.rs::StepMap` (map type, map size) into real
+  `<Popup>` wrappers; deletes the now-unused
+  `components/popup_stub.rs` placeholder and its public re-export
+  from `components/mod.rs`. Phase 1 done.
 
 ### Phase 0 — Scaffolding (2026-05-10)
 

@@ -160,9 +160,20 @@ fn StepMap() -> impl IntoView {
                 <div class="panel-body">
                     <div class="param-row stack">
                         <div class="label">
-                            <span class="trigger" title="Continents · Pangaea · Archipelago · Fractal · Custom">
-                                "map type"
-                            </span>
+                            <Popup
+                                title="map type"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p><strong>"Continents"</strong>" — 2-3 large landmasses with ocean separation."</p>
+                                        <p><strong>"Pangaea"</strong>" — one supercontinent."</p>
+                                        <p><strong>"Archipelago"</strong>" — many small islands."</p>
+                                        <p><strong>"Fractal"</strong>" — Perlin-noise seeded; unpredictable shapes."</p>
+                                        <p><strong>"Custom"</strong>" — paste a seed or import from JSON."</p>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"map type"</span>
+                            </Popup>
                         </div>
                         <div class="control">
                             <Segmented options=map_type_opts value=map_type />
@@ -171,9 +182,24 @@ fn StepMap() -> impl IntoView {
 
                     <div class="param-row stack">
                         <div class="label">
-                            <span class="trigger" title="Tile dimensions of the world. duel 44×26 · tiny 60×38 · small 74×46 · std 84×54 · large 96×60 · huge 106×66">
-                                "map size"
-                            </span>
+                            <Popup
+                                title="map size"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p>"Tile dimensions of the world."</p>
+                                        <div class="kv xsmall">
+                                            <span class="k">"duel"</span><span>"44×26"</span>
+                                            <span class="k">"tiny"</span><span>"60×38"</span>
+                                            <span class="k">"small"</span><span>"74×46"</span>
+                                            <span class="k">"std"</span><span>"84×54"</span>
+                                            <span class="k">"large"</span><span>"96×60"</span>
+                                            <span class="k">"huge"</span><span>"106×66"</span>
+                                        </div>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"map size"</span>
+                            </Popup>
                             <span class="muted xsmall" style="text-transform:none; letter-spacing:0; margin-left:6px">
                                 "standard · 84×54"
                             </span>
