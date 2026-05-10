@@ -250,13 +250,37 @@ impl AccountStore for SqliteAccountStore {
 
     async fn delete_account(&self, player_id: PlayerId) -> StoreResult<()> {
         let player_id_text = player_id_text(&player_id);
+        // Two-step GDPR cascade in one transaction:
+        //   1. Repoint foreign `game_members` rows (where the
+        //      deleted player is a member of someone else's game)
+        //      to the sentinel row from migration 0005. The host's
+        //      roster keeps a placeholder instead of losing the row.
+        //   2. DELETE the account. The schema's existing FK
+        //      cascades clean up sessions, identities, owned games,
+        //      and the deleted player's own game_members rows.
+        // OR IGNORE on the UPDATE: if the same foreign game already
+        // has a sentinel row from a prior delete, the conflict-row
+        // gets cascaded out at step 2 instead.
+        let mut tx = self.pool.begin().await?;
+        sqlx::query(
+            "UPDATE OR IGNORE game_members \
+             SET player_id = '0000000000000000' \
+             WHERE player_id = ?1 \
+               AND game_id NOT IN (\
+                   SELECT game_id FROM games WHERE owner_player_id = ?1\
+               )",
+        )
+        .bind(&player_id_text)
+        .execute(&mut *tx)
+        .await?;
         let res = sqlx::query("DELETE FROM accounts WHERE player_id = ?1")
             .bind(&player_id_text)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await?;
         if res.rows_affected() == 0 {
             return Err(StoreError::NotFound);
         }
+        tx.commit().await?;
         Ok(())
     }
 
@@ -576,6 +600,134 @@ mod mem {
             .await
             .unwrap();
         assert_eq!(a.player_id, b.player_id);
+    }
+
+    #[tokio::test]
+    async fn delete_account_anonymises_foreign_game_membership() {
+        use crate::games::{GameStore, NewGame, SqliteGameStore};
+
+        struct TempFile(std::path::PathBuf);
+        impl Drop for TempFile {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_file(&self.0);
+                let _ = std::fs::remove_file(self.0.with_extension("sqlite-wal"));
+                let _ = std::fs::remove_file(self.0.with_extension("sqlite-shm"));
+            }
+        }
+
+        // tempfile keeps the Sqlite pool sharing one disk-backed
+        // db; `:memory:` would give each pool connection its own
+        // empty database.
+        let mut p = std::env::temp_dir();
+        p.push(format!(
+            "open4x_anon_{}_{}.sqlite",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let tmp = TempFile(p);
+        let path = &tmp.0;
+
+        let store = SqliteAccountStore::connect(&path).await.unwrap();
+        let games = SqliteGameStore::from_pool(store.pool.clone());
+
+        // Two real accounts: bob hosts a game, alice joins as a
+        // member. (Two separate emails so they get distinct
+        // player_ids.)
+        let alice = store
+            .find_or_create_account_for_identity(Identity::Email {
+                address: "alice@example.com".into(),
+                verified: true,
+                primary: true,
+            })
+            .await
+            .unwrap();
+        let bob = store
+            .find_or_create_account_for_identity(Identity::Email {
+                address: "bob@example.com".into(),
+                verified: true,
+                primary: true,
+            })
+            .await
+            .unwrap();
+
+        // Bob owns this game — `create_game` seeds an owner row
+        // in `game_members`. We then add alice as a foreign
+        // member.
+        let g = games
+            .create_game(NewGame {
+                owner_player_id: bob.player_id,
+                name: "Bob's Game".into(),
+                leader: "Bob".into(),
+                civ_id: "ROME".into(),
+                difficulty: "prince".into(),
+                players_human: 2,
+                players_ai: 0,
+                map_type: "continents".into(),
+                map_size: "tiny".into(),
+                seed: "0xABCD".into(),
+                server_url: String::new(),
+                server_token: String::new(),
+            })
+            .await
+            .unwrap();
+        let alice_pid = format!("{:016X}", alice.player_id.0);
+        let now = chrono::Utc::now().to_rfc3339();
+        sqlx::query(
+            "INSERT INTO game_members (game_id, player_id, role, invited_at) \
+             VALUES (?1, ?2, 'player', ?3)",
+        )
+        .bind(&g.game_id)
+        .bind(&alice_pid)
+        .bind(&now)
+        .execute(&store.pool)
+        .await
+        .unwrap();
+
+        // Sanity: alice's membership row exists.
+        let pre: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM game_members WHERE game_id = ?1 AND player_id = ?2",
+        )
+        .bind(&g.game_id)
+        .bind(&alice_pid)
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+        assert_eq!(pre.0, 1, "precondition: alice is in bob's game");
+
+        // GDPR delete.
+        store.delete_account(alice.player_id).await.unwrap();
+
+        // Bob's game still exists.
+        let game_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM games WHERE game_id = ?1")
+            .bind(&g.game_id)
+            .fetch_one(&store.pool)
+            .await
+            .unwrap();
+        assert_eq!(game_count.0, 1, "host's game must survive a member's deletion");
+
+        // Alice's row is gone, but a sentinel-anonymised row took
+        // its place — i.e. the host still has a non-empty roster.
+        let alice_left: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM game_members WHERE game_id = ?1 AND player_id = ?2",
+        )
+        .bind(&g.game_id)
+        .bind(&alice_pid)
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+        assert_eq!(alice_left.0, 0, "alice's member row must be repointed");
+        let sentinel_present: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM game_members \
+             WHERE game_id = ?1 AND player_id = '0000000000000000'",
+        )
+        .bind(&g.game_id)
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+        assert_eq!(sentinel_present.0, 1, "sentinel row must replace alice");
     }
 
     #[tokio::test]
