@@ -4,6 +4,8 @@ members = [
     "libciv",
     "open4x-server",
     "open4x-cli",
+    "open4x-accounts",
+    "open4x-lobby",
 ]
 resolver = "2"
 

@@ -1433,6 +1433,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
+name = "open4x-accounts"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ulid",
+]
+
+[[package]]
 name = "open4x-cli"
 version = "0.1.0"
 dependencies = [
@@ -1444,6 +1453,26 @@ dependencies = [
  "serde",
  "serde_json",
  "ulid",
+]
+
+[[package]]
+name = "open4x-lobby"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "console_error_panic_hook",
+ "getrandom 0.3.4",
+ "js-sys",
+ "leptos",
+ "open4x-accounts",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "tokio",
+ "tower-http",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
