@@ -44,6 +44,7 @@
 - [Wire Protocol](./multiplayer/protocol.md)
 - [Game Server](./multiplayer/server.md)
 - [Web Client](./multiplayer/web-client.md)
+- [Reverse Proxy](./multiplayer/reverse-proxy.md)
 
 # Roadmap
 

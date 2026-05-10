@@ -621,8 +621,18 @@ production.
       4501/4502, both children visible as ppid=lobby; resume
       returns the spawned URL+token; SIGTERM the lobby and both
       children die within 1.5s with no orphans.
-- [ ] **Reverse-proxy story** — example nginx + caddy configs that
-      route `/api/v1/games/{id}/play/*` to the right per-game backend.
+- [x] **Reverse-proxy story** — `book/src/multiplayer/reverse-proxy.md`
+      ships worked Caddy + nginx configs for both deploy
+      topologies (shared-server-multi-room and process-per-game),
+      including X-Forwarded-For + trusted-proxies setup, per-game
+      subdomain routing, path-prefix routing with a regex
+      pinned to the configured `OPEN4X_LOBBY_PORT_RANGE`, and
+      WebSocket upgrade support for `/ws`. Paired with a small
+      code change: per-game mode now substitutes `{port}` in
+      `OPEN4X_LOBBY_PUBLIC_GAME_URL_TEMPLATE` so the row-and-
+      browser URL is the public form (e.g.
+      `https://g-4501.example.com`) rather than the loopback URL
+      it spawns the child on.
 - [x] **Backup & restore** — `open4x-accounts db-dump --out
       <path>` runs SQLite's `VACUUM INTO` (online-safe; refuses
       to overwrite). `db-restore --from <path> [--force]`
@@ -773,6 +783,15 @@ Running record of work performed against this plan, newest at top.
   snapshot in place. Smoke roundtrip verified (mutate→dump→
   mutate→restore→original reads back) plus three validation
   paths (existing target / garbage source / missing source).
+- `486a1f18` — feat(open4x-lobby): public-URL template for the
+  per-game orchestrator. New
+  `OPEN4X_LOBBY_PUBLIC_GAME_URL_TEMPLATE` substitutes `{port}`
+  with the per-game allocated port at spawn time; row /
+  browser see the public URL while the lobby keeps talking to
+  the child over loopback. Boot banner surfaces the template.
+  Smoke verified server_url=https://g-4601.example.com on a
+  fresh game. 1 unit test covers None / subdomain / path /
+  literal templates.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`

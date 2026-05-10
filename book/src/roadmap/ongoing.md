@@ -115,12 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Reverse-proxy story** — example `nginx` and
-      `caddy` configs in `book/src/multiplayer/` that route
-      `/api/v1/games/{id}/play/*` to the right per-game backend
-      port (registered by the new process orchestrator). With
-      `OPEN4X_LOBBY_TRUSTED_PROXIES` already wired, this is a
-      docs-only deliverable plus a worked example in the book.
+- [ ] **Phase 6 ▸ Foreign-game-membership anonymisation** —
+      delete-account currently cascades sessions + identities +
+      games-where-the-account-is-owner. It does NOT touch
+      `game_members` rows where the deleted player is a *member*
+      of someone else's game (e.g. invitations they accepted).
+      Add an "anonymise" pass that nullifies the player_id on
+      foreign membership rows so the host's game roster doesn't
+      break. Bumps GDPR row from `~` to `✅`.
 
 ### Up next (Phase 6)
 
