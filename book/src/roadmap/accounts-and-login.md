@@ -555,8 +555,14 @@ User-visible quality once the platform basics are wired.
 Everything that's not a feature but is required to run this in
 production.
 
-- [ ] **Single-binary deploy** — `open4x-lobby` ships with embedded
-      migrations, sqlite default DB path under `OPEN4X_DATA_DIR`.
+- [x] **Single-binary deploy** — `rust-embed` snapshots
+      `open4x-lobby/dist/` and `book/book/` into the binary.
+      `OPEN4X_LOBBY_STATIC_DIR` (when set) keeps the dev
+      `trunk serve` flow working; without it the binary serves
+      embedded assets straight off its own `.rodata`. Binary
+      grows from ~10 MB to ~13 MB. Migrations were already
+      embedded via `sqlx::migrate!`. Deploys: `open4x-lobby` +
+      `OPEN4X_LOBBY_DATA_DIR`.
 - [ ] **Postgres opt-in** — connection string via env, sqlx feature
       flag.
 - [ ] **SMTP config** — env-driven (`SMTP_HOST`, `SMTP_PORT`,

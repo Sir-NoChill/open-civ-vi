@@ -28,6 +28,8 @@ chrono     = { version = "0.4", default-features = false, features = ["clock"], 
 reqwest    = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
 thiserror  = { version = "1", optional = true }
 ipnet      = { version = "2", optional = true }
+rust-embed = { version = "8", optional = true, features = ["axum"] }
+mime_guess = { version = "2", optional = true }
 
 # ── Client-only (WASM frontend) ───────────────────────────────────────
 leptos                  = { version = "0.7", features = ["csr"], optional = true }
@@ -53,6 +55,7 @@ default = ["ssr"]
 ssr = [
     "dep:axum", "dep:tokio", "dep:tower-http",
     "dep:sqlx", "dep:chrono", "dep:reqwest", "dep:thiserror", "dep:ipnet",
+    "dep:rust-embed", "dep:mime_guess",
     "open4x-accounts/persistence",
 ]
 csr = [

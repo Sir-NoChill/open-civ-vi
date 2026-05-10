@@ -18,35 +18,72 @@ use open4x_lobby::server::{self, AppState};
 
 #[tokio::main]
 async fn main() {
+    // Empty-string env values fall back to the next option so an
+    // operator can deliberately disable the on-disk path.
     let static_dir = std::env::var("OPEN4X_LOBBY_STATIC_DIR")
-        .unwrap_or_else(|_| "./open4x-lobby/dist".to_string());
+        .ok()
+        .filter(|s| !s.is_empty());
     let data_dir = std::env::var("OPEN4X_LOBBY_DATA_DIR")
         .unwrap_or_else(|_| "./data/lobby".to_string());
     let book_dir = std::env::var("OPEN4X_LOBBY_BOOK_DIR")
-        .unwrap_or_else(|_| "./book/book".to_string());
+        .ok()
+        .filter(|s| !s.is_empty());
 
     let state = AppState::boot(&data_dir)
         .await
         .expect("AppState::boot failed — check db / key file permissions");
 
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/health", get(health_handler))
-        .nest("/api/v1", server::rest::v1_router())
-        .nest_service("/book", ServeDir::new(&book_dir))
-        .layer(axum::middleware::from_fn_with_state(
-            state.clone(),
-            server::auth::session_layer,
-        ))
-        .fallback_service(ServeDir::new(&static_dir))
-        .layer(CorsLayer::permissive())
-        .with_state(state);
+        .nest("/api/v1", server::rest::v1_router());
+
+    // Book: prefer the on-disk path if set, then fall back to
+    // embedded assets, then 404 with a hint.
+    app = match book_dir.as_deref() {
+        Some(path) => app.nest_service("/book", ServeDir::new(path)),
+        None if server::embed::book_assets_present() => {
+            app.route("/book/{*path}", get(server::embed::book_handler))
+        }
+        None => app,
+    };
+
+    app = app.layer(axum::middleware::from_fn_with_state(
+        state.clone(),
+        server::auth::session_layer,
+    ));
+
+    // SPA: same priority order. ServeDir handles index-fallback via
+    // .fallback_service; the embedded handler does its own.
+    app = match static_dir.as_deref() {
+        Some(path) => app.fallback_service(ServeDir::new(path)),
+        None if server::embed::spa_assets_present() => {
+            app.fallback(server::embed::spa_fallback)
+        }
+        None => app, // No SPA — non-SPA deploys (e.g. headless API) still work.
+    };
+
+    let app = app.layer(CorsLayer::permissive()).with_state(state);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3002".to_string());
     let addr = format!("0.0.0.0:{port}");
     println!("open4x-lobby listening on {addr}");
-    println!("  static files: {static_dir}");
+    println!(
+        "  static files: {}",
+        match static_dir.as_deref() {
+            Some(p) => format!("{p} (on-disk)"),
+            None if server::embed::spa_assets_present() => "embedded".into(),
+            None => "(none — API only)".into(),
+        }
+    );
     println!("  data dir:     {data_dir}");
-    println!("  book dir:     {book_dir} (run `mdbook build book/` to populate)");
+    println!(
+        "  book dir:     {}",
+        match book_dir.as_deref() {
+            Some(p) => format!("{p} (on-disk)"),
+            None if server::embed::book_assets_present() => "embedded".into(),
+            None => "(empty — run `mdbook build book/` and rebuild)".into(),
+        }
+    );
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("failed to bind");

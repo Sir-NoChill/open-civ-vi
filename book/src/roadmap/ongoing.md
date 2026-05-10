@@ -115,12 +115,13 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Single-binary deploy (`rust-embed` SPA)** —
-      `dist/` is currently shipped as a sibling directory; embed
-      it (and `book/book/`) into the binary so a self-host deploy
-      is just the `open4x-lobby` binary plus
-      `OPEN4X_LOBBY_DATA_DIR`. Falls back to `OPEN4X_LOBBY_STATIC_DIR`
-      when set so dev with `trunk serve` keeps working.
+- [ ] **Phase 6 ▸ SMTP `Mailer` impl** — `mailer-smtp` cargo
+      feature already exists as a stub; flesh it out with `lettre`
+      so production deploys can actually send mail. Env config:
+      `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` /
+      `SMTP_FROM`. AppState picks SMTP over LogMailer when all
+      five are populated. Still falls back to LogMailer in dev
+      so the magic-link flow stays printable to stderr.
 
 ### Up next (Phase 6)
 
