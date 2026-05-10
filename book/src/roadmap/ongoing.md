@@ -115,14 +115,13 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ Tile thumbnails reflect ownership** — the
-      thumbnail grid currently colours every cell by terrain
-      only. The plan calls for an "ownership" overlay so
-      captured cities show up distinctly, foreign-civ tiles
-      tint differently, and unexplored tiles dim. The game
-      server's `WorldSnapshot.tiles[]` already includes
-      ownership / explored info; the lobby's reducer drops it
-      today. Extend the wire shape + CSS class mapping.
+- [ ] **Phase 5 ▸ Avatar pipeline** — multipart upload on
+      Profile, image-rs decode, downscale to 256×256 PNG,
+      store under `accounts.avatars/<player_id>.png`. Profile
+      shows the uploaded image instead of the initial-letter
+      avatar. New `POST /api/v1/me/avatar` route + an
+      `avatar_url` field on the MeView wire shape so the SPA
+      can read it back.
 
 ### Up next (Phase 6)
 

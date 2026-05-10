@@ -577,9 +577,15 @@ User-visible quality once the platform basics are wired.
       `<rect>`s in the 100×64 viewBox using a substring-matched
       terrain → CSS-class mapping. Smoke verified end-to-end
       against a real game (60×38 tiny map, 17 explored cells).
-- [ ] **Tile thumbnails reflect ownership** — show captured cities,
-      explored vs unexplored, etc., when the snapshot is cheap to
-      fetch.
+- [x] **Tile thumbnails reflect ownership** — the thumbnail
+      proxy now passes through `fog`, `owned_by_me` (three-state),
+      `city`, and `capital` flags per cell. New `cell_class`
+      composer layers them: water > city/capital > ownership
+      (mine / foreign / unowned) > fog. New `.svg-map` CSS rules
+      (`.land-foreign`, `.city`, `.city-capital`, `.fog`) tint
+      accordingly. Captured cities show as accent-filled dots,
+      foreign territory dims, fog-of-war tiles render at 0.35
+      opacity.
 - [ ] **i18n hooks** — gettext-style; pulled from the in-game roadmap.
 
 ### Phase 6 — Self-host + ops
@@ -863,6 +869,14 @@ Running record of work performed against this plan, newest at top.
   an in-session RwSignal HashMap; MiniMap renders real per-tile
   rects when ready, falls back to the seeded blob layout while
   pending. End-to-end smoke verified against a 60×38 game.
+- `06c8fc7c` — feat(open4x-lobby): thumbnail tiles reflect
+  ownership + city + fog. ThumbCell gains `fog`, `owned_by_me`
+  (3-state), `city`, `capital`. New `cell_class` composer
+  layers water > city/capital > ownership > fog. CSS adds
+  `.land-foreign` / `.city` / `.city-capital` / `.fog` rules
+  built on the existing design vars. Smoke against a fresh
+  game showed 1 capital + 7 foreign-owned + 10 unowned cells
+  on a 17-cell explored ring.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
