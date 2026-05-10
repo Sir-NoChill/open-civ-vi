@@ -25,6 +25,29 @@ enum Filter {
     Multiplayer,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum Sort {
+    /// `last_played_at` desc, falling back to `created_at` desc.
+    Recent,
+    /// `created_at` asc.
+    Oldest,
+    /// `score` desc, then turn desc.
+    Score,
+    /// `turn` desc.
+    Turn,
+}
+
+impl Sort {
+    fn label(self) -> &'static str {
+        match self {
+            Sort::Recent => "recent ↓",
+            Sort::Oldest => "oldest",
+            Sort::Score => "score ↓",
+            Sort::Turn => "turn ↓",
+        }
+    }
+}
+
 #[component]
 pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
     let tick = RwSignal::new(0u32);
@@ -34,6 +57,7 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
     });
     let filter = RwSignal::new(Filter::YourTurn);
     let search = RwSignal::new(String::new());
+    let sort = RwSignal::new(Sort::Recent);
 
     let chip_class = move |target: Filter| -> &'static str {
         if filter.get() == target { "chip active" } else { "chip" }
@@ -95,7 +119,30 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                 <button class=move || chip_class(Filter::All)
                         on:click=move |_| filter.set(Filter::All)>"all"</button>
                 <span style="margin-left:auto" class="muted xsmall">"sort"</span>
-                <button class="chip">"recent ↓"</button>
+                <Popup
+                    title="Sort"
+                    size=PopupSize::Narrow
+                    trigger=PopupTrigger::Click
+                    content=Arc::new(move || view! {
+                        <div class="popup-list">
+                            {[Sort::Recent, Sort::Oldest, Sort::Score, Sort::Turn].iter().copied().map(|s| {
+                                let active = sort.get() == s;
+                                view! {
+                                    <button
+                                        class="item"
+                                        type="button"
+                                        on:click=move |_| sort.set(s)
+                                    >
+                                        <span class="icon">{if active { "✓" } else { " " }}</span>
+                                        <span>{s.label()}</span>
+                                    </button>
+                                }
+                            }).collect::<Vec<_>>()}
+                        </div>
+                    }.into_any())
+                >
+                    <button class="chip">{move || sort.get().label()}</button>
+                </Popup>
             </div>
 
             <div style="flex:1; overflow:auto">
@@ -121,7 +168,8 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                         }
                         let f = filter.get();
                         let q = search.get().to_lowercase();
-                        let filtered: Vec<_> = resp.games.into_iter()
+                        let s = sort.get();
+                        let mut filtered: Vec<_> = resp.games.into_iter()
                             .filter(|g| match f {
                                 Filter::All => true,
                                 Filter::YourTurn => g.status == "your_turn",
@@ -136,6 +184,21 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                     || g.civ_id.to_lowercase().contains(&q)
                             })
                             .collect();
+                        match s {
+                            Sort::Recent => filtered.sort_by(|a, b| {
+                                let key = |g: &games_api::GameView| {
+                                    g.last_played_at
+                                        .clone()
+                                        .unwrap_or_else(|| g.created_at.clone())
+                                };
+                                key(b).cmp(&key(a))
+                            }),
+                            Sort::Oldest => filtered.sort_by(|a, b| a.created_at.cmp(&b.created_at)),
+                            Sort::Score => filtered.sort_by(|a, b| {
+                                b.score.cmp(&a.score).then(b.turn.cmp(&a.turn))
+                            }),
+                            Sort::Turn => filtered.sort_by(|a, b| b.turn.cmp(&a.turn)),
+                        }
                         if filtered.is_empty() {
                             return view! {
                                 <div style="padding:24px; text-align:center; color:var(--dim)">

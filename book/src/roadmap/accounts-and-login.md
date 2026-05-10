@@ -460,7 +460,12 @@ PRIMARY KEY (game_id, player_id)
 - [x] Search box filters client-side over `name` / `leader` /
       `civ_id` (case-insensitive substring match). "Notes" is
       reserved until the per-game notes route ships.
-- [ ] Sort dropdown.
+- [x] Sort dropdown — click-trigger Popup with four options
+      (recent ↓ / oldest / score ↓ / turn ↓). Active option flagged
+      with ✓; chip label reflects the selection. Sorting is
+      client-side over the filtered list: Recent uses
+      `last_played_at` falling back to `created_at`; Score breaks
+      ties with `turn`; Turn / Oldest are straight column sorts.
 - [x] "Resume" CTA wired in `screens/ongoing.rs`: clicking the
       tile's resume button posts `/api/v1/games/{id}/resume` via a
       new `components::api::games::resume` binding and navigates
@@ -621,6 +626,21 @@ These don't fit cleanly into one phase but need to be settled early.
 ## 9. Changelog
 
 Running record of work performed against this plan, newest at top.
+
+### Phase 4 — Games index polish (2026-05-10, in progress)
+
+- `3a9abd9b` — feat(open4x-lobby): hoist NewGame wizard state into
+  a `WizardState` struct provided through context. Generate world
+  POST + Review summary now both read live values; replaces the
+  static REVIEW_ROWS table.
+- `a659eb08` — feat(open4x-lobby): per-tile menu (Copy game ID +
+  Resign). Click-trigger Popup with five rows; Copy uses
+  `navigator.clipboard`, Resign hits `DELETE /games/{id}` + bumps
+  a list-refresh tick. PopupList stays for inert call sites.
+- `c9696e0a` — feat(open4x-lobby): sort dropdown (Recent / Oldest /
+  Score / Turn) on OngoingGames. Click-trigger Popup; active
+  option flagged with ✓; sort applied client-side over the
+  filtered list.
 
 ### Phase 4 — Games index + orchestration (2026-05-10, in progress)
 
