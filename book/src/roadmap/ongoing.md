@@ -115,23 +115,20 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 3 ▸ Profile screen wiring** — fetch `/api/v1/me` on
-      mount via `components::api::me::get`, populate the form
-      fields from the response, push field changes back through
-      `me::patch` debounced on input. Linked-identities list reads
-      from `me.identities` instead of the baked Alice fixture.
-      Sign-out button in the user-card menu calls `auth::signout`
-      and switches the route back to Landing. Profile preferences
-      Segmenteds + Toggles round-trip via
-      `PATCH /me {prefs: {...}}`.
+- [ ] **Phase 3 ▸ Bootstrap auth-on-mount + sign-out wiring** —
+      App fetches `/api/v1/me` once on mount; on success switches
+      `screen` to `Menu`. Sign-out button in `Profile` quick-actions
+      and the menu sidebar's user-card menu both call
+      `auth::signout` and reset to `Landing`. Surface errors
+      (e.g. 401 → unauthenticated, 5xx → toast).
 
 ### Up next (Phase 3)
 
 - [ ] OIDC provider buttons in Login wire to
       `GET /auth/oidc/{provider}/start` (depends on Phase 2.3 part 2).
-- [ ] Menu sidebar sign-out menu item wires to `auth::signout`.
-- [ ] Bootstrap-on-mount: App fetches `/me` once, redirects Landing
-      → Menu when authenticated.
+- [ ] Profile "+ link another" + per-identity "unlink" buttons
+      wire to the Phase 3.2 identity routes (depends on those
+      handlers landing).
 
 ### Up next (deferred Phase 2 items)
 

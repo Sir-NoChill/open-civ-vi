@@ -1,28 +1,95 @@
-//! Profile screen — scaffold port of `hifi/menu.jsx::Profile`.
+//! Profile screen — wired to `GET /api/v1/me` and `PATCH /api/v1/me`.
 //!
-//! Renders the page chrome (header, three-panel grid: avatar/quick-actions,
-//! profile fields, linked identities, preferences). Form inputs are
-//! present but no save / unlink wiring — that lands when the
-//! `open4x-accounts` HTTP surface ships.
+//! On mount fetches the authenticated profile via
+//! `components::api::me::get` and seeds the form fields. Each field /
+//! preference is a local `RwSignal`; the "Save profile" button posts
+//! the diff back through `me::patch`. Linked-identities list reads
+//! straight from `MeView.identities` and `+ link another` / `unlink`
+//! buttons are still TODO behind their respective HTTP routes.
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
+use crate::components::api::me as me_api;
 use crate::components::{Btn, Panel, Segmented, segmented::Segment, Toggle};
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+enum SaveState {
+    #[default]
+    Idle,
+    Saving,
+    Saved,
+    Error(String),
+}
 
 #[component]
 pub fn Profile() -> impl IntoView {
+    let me = LocalResource::new(|| async { me_api::get().await.ok() });
+
+    let preferred_name = RwSignal::new(String::new());
+    let pronouns = RwSignal::new(String::new());
+    let bio = RwSignal::new(String::new());
     let density = RwSignal::new("comfortable".to_string());
     let scheme = RwSignal::new("paper".to_string());
     let kbd = RwSignal::new(true);
     let notifs = RwSignal::new(true);
     let discoverable = RwSignal::new(true);
+    let player_id_text = RwSignal::new(String::from("—"));
+    let identities = RwSignal::new(Vec::<me_api::IdentityView>::new());
+    let save_state = RwSignal::new(SaveState::Idle);
+
+    // Seed signals once the resource arrives.
+    Effect::new(move |_| {
+        let Some(wrap) = me.get() else { return };
+        let Some(view) = (*wrap).clone() else { return };
+        preferred_name.set(view.preferred_name);
+        pronouns.set(view.pronouns);
+        bio.set(view.bio);
+        density.set(view.prefs.density);
+        scheme.set(view.prefs.color_scheme);
+        kbd.set(view.prefs.keyboard_nav);
+        notifs.set(view.prefs.turn_notifications);
+        discoverable.set(view.prefs.discoverable_by_id);
+        player_id_text.set(view.player_id);
+        identities.set(view.identities);
+    });
 
     let density_opts = Signal::derive(|| {
-        ["compact", "comfortable", "spacious"].iter().map(|s| Segment::from_str(s)).collect()
+        ["compact", "comfortable", "spacious"]
+            .iter()
+            .map(|s| Segment::from_str(s))
+            .collect()
     });
     let scheme_opts = Signal::derive(|| {
-        ["paper", "ink", "auto"].iter().map(|s| Segment::from_str(s)).collect()
+        ["paper", "ink", "auto"]
+            .iter()
+            .map(|s| Segment::from_str(s))
+            .collect()
     });
+
+    let on_save = move |_| {
+        save_state.set(SaveState::Saving);
+        let body = me_api::PatchMeBody {
+            preferred_name: Some(preferred_name.get_untracked()),
+            pronouns: Some(pronouns.get_untracked()),
+            bio: Some(bio.get_untracked()),
+            prefs: Some(me_api::Preferences {
+                density: density.get_untracked(),
+                color_scheme: scheme.get_untracked(),
+                keyboard_nav: kbd.get_untracked(),
+                turn_notifications: notifs.get_untracked(),
+                discoverable_by_id: discoverable.get_untracked(),
+            }),
+        };
+        spawn_local(async move {
+            match me_api::patch(body).await {
+                Ok(_) => save_state.set(SaveState::Saved),
+                Err(e) => save_state.set(SaveState::Error(e.to_string())),
+            }
+        });
+    };
+
+    let saving = Signal::derive(move || matches!(save_state.get(), SaveState::Saving));
 
     view! {
         <div style="flex:1; overflow:auto">
@@ -31,8 +98,8 @@ pub fn Profile() -> impl IntoView {
                 <span class="crumbs">
                     "player_id: "
                     <code class="trigger" style="font-family:var(--font-mono)"
-                          title="Your unique identifier on the platform. Share it with friends so they can invite you.">
-                        "0xA9C3·7F12·EE04"
+                          title="Your unique identifier on the platform.">
+                        {move || player_id_text.get()}
                     </code>
                 </span>
             </div>
@@ -40,7 +107,14 @@ pub fn Profile() -> impl IntoView {
             <div class="profile-grid">
                 <Panel>
                     <div class="col" style="align-items:center; gap:12px">
-                        <div class="avatar">"A"</div>
+                        <div class="avatar">
+                            {move || preferred_name
+                                .get()
+                                .chars()
+                                .next()
+                                .map(|c| c.to_string())
+                                .unwrap_or_else(|| "?".into())}
+                        </div>
                         <Btn variant="ghost" size="sm">"change"</Btn>
                     </div>
                     <hr class="divider" />
@@ -55,19 +129,74 @@ pub fn Profile() -> impl IntoView {
 
                 <div class="col">
                     <Panel>
-                        <div class="h3" style="margin-bottom:14px">"Profile"</div>
+                        <div class="row between center-y" style="margin-bottom:14px">
+                            <div class="h3">"Profile"</div>
+                            <div class="row gap-sm center-y">
+                                {move || match save_state.get() {
+                                    SaveState::Saved => view! {
+                                        <span class="xsmall" style="color:var(--good)">"saved ✓"</span>
+                                    }.into_any(),
+                                    SaveState::Error(msg) => view! {
+                                        <span class="xsmall" style="color:var(--accent)">{msg}</span>
+                                    }.into_any(),
+                                    _ => view! { <span /> }.into_any(),
+                                }}
+                                <Btn
+                                    variant="primary"
+                                    size="sm"
+                                    disabled=saving
+                                    on_click=Callback::new(on_save)
+                                >
+                                    {move || if saving.get() { "saving…" } else { "save" }}
+                                </Btn>
+                            </div>
+                        </div>
                         <div class="field">
                             <label>"Preferred name"</label>
-                            <input class="input" prop:value="Alice" />
+                            <input
+                                class="input"
+                                prop:value=move || preferred_name.get()
+                                on:input=move |ev| {
+                                    use wasm_bindgen::JsCast as _;
+                                    if let Some(el) = ev.target()
+                                        .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                                    {
+                                        preferred_name.set(el.value());
+                                    }
+                                }
+                            />
                             <span class="hint">"Shown to other players in invites & chat."</span>
                         </div>
                         <div class="field">
                             <label>"Pronouns (optional)"</label>
-                            <input class="input" prop:value="she/her" />
+                            <input
+                                class="input"
+                                prop:value=move || pronouns.get()
+                                on:input=move |ev| {
+                                    use wasm_bindgen::JsCast as _;
+                                    if let Some(el) = ev.target()
+                                        .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                                    {
+                                        pronouns.set(el.value());
+                                    }
+                                }
+                            />
                         </div>
                         <div class="field">
                             <label>"Bio"</label>
-                            <textarea class="input" rows="2">"Plays slow. Reads everything."</textarea>
+                            <textarea
+                                class="input"
+                                rows="2"
+                                prop:value=move || bio.get()
+                                on:input=move |ev| {
+                                    use wasm_bindgen::JsCast as _;
+                                    if let Some(el) = ev.target()
+                                        .and_then(|t| t.dyn_into::<web_sys::HtmlTextAreaElement>().ok())
+                                    {
+                                        bio.set(el.value());
+                                    }
+                                }
+                            ></textarea>
                             <span class="hint">"Markdown supported. Visible on invite cards."</span>
                         </div>
                     </Panel>
@@ -78,29 +207,35 @@ pub fn Profile() -> impl IntoView {
                             <Btn variant="ghost" size="sm">"+ link another"</Btn>
                         </div>
 
-                        <div class="id-row primary">
-                            <span class="id-type">"EMAIL · primary"</span>
-                            <span class="id-val">"alice@example.com"</span>
-                            <Btn variant="bare" size="sm">"manage"</Btn>
-                        </div>
-                        <div class="id-row">
-                            <span class="id-type">"OPENID"</span>
-                            <span class="id-val">"google.com / 110293·a73f"</span>
-                            <Btn variant="bare" size="sm">"unlink"</Btn>
-                        </div>
-                        <div class="id-row">
-                            <span class="id-type">"OPENID"</span>
-                            <span class="id-val">"github.com/alice"</span>
-                            <Btn variant="bare" size="sm">"unlink"</Btn>
-                        </div>
-                        <div class="id-row">
-                            <span class="id-type">"ATPROTO"</span>
-                            <span class="id-val">"did:plc:abcd1234efgh5678 · alice.bsky.social"</span>
-                            <Btn variant="bare" size="sm">"unlink"</Btn>
-                        </div>
+                        <Suspense fallback=move || view! {
+                            <p class="muted xsmall">"Loading…"</p>
+                        }>
+                            {move || identities.get().is_empty().then(|| view! {
+                                <p class="muted xsmall">"No identities linked yet."</p>
+                            })}
+                            {move || identities.get().into_iter().enumerate().map(|(i, id)| {
+                                let is_primary_email = id.kind == "email"
+                                    && id.primary.unwrap_or(false);
+                                let kind_label = match id.kind.as_str() {
+                                    "email"   => if is_primary_email { "EMAIL · primary".into() } else { "EMAIL".into() },
+                                    "oidc"    => "OPENID".into(),
+                                    "atproto" => "ATPROTO".into(),
+                                    other     => other.to_uppercase(),
+                                };
+                                let row_class = if is_primary_email { "id-row primary" } else { "id-row" };
+                                let action = if is_primary_email { "manage" } else { "unlink" };
+                                view! {
+                                    <div class=row_class data-i=i>
+                                        <span class="id-type">{kind_label}</span>
+                                        <span class="id-val">{id.label.clone()}</span>
+                                        <Btn variant="bare" size="sm">{action}</Btn>
+                                    </div>
+                                }
+                            }).collect::<Vec<_>>()}
+                        </Suspense>
 
                         <p class="muted xsmall" style="margin-top:10px">
-                            "All four identities map to the same player. "
+                            "All identities map to the same player. "
                             "Friends can find you by any of them."
                         </p>
                     </Panel>
@@ -123,8 +258,7 @@ pub fn Profile() -> impl IntoView {
                         <div class="param-row">
                             <div class="label">"Keyboard nav"</div>
                             <div class="control">
-                                <Toggle on=kbd
-                                        on_change=Callback::new(move |v| kbd.set(v)) />
+                                <Toggle on=kbd on_change=Callback::new(move |v| kbd.set(v)) />
                             </div>
                             <div class="value muted xsmall">"vim bindings"</div>
                         </div>
@@ -132,8 +266,7 @@ pub fn Profile() -> impl IntoView {
                         <div class="param-row">
                             <div class="label">"Turn notifications"</div>
                             <div class="control">
-                                <Toggle on=notifs
-                                        on_change=Callback::new(move |v| notifs.set(v)) />
+                                <Toggle on=notifs on_change=Callback::new(move |v| notifs.set(v)) />
                             </div>
                             <div class="value muted xsmall">"email + push"</div>
                         </div>
@@ -141,8 +274,7 @@ pub fn Profile() -> impl IntoView {
                         <div class="param-row">
                             <div class="label">"Discoverable by ID"</div>
                             <div class="control">
-                                <Toggle on=discoverable
-                                        on_change=Callback::new(move |v| discoverable.set(v)) />
+                                <Toggle on=discoverable on_change=Callback::new(move |v| discoverable.set(v)) />
                             </div>
                             <div class="value muted xsmall">"others can invite"</div>
                         </div>

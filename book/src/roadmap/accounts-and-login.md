@@ -357,9 +357,15 @@ data with a real REST call.
       and Phase 2.4.
 - [ ] Magic-link landing page (`/auth/email/verify`) — server-rendered
       redirect to `/menu` (or to the SPA's Menu route via hash).
-- [ ] `Profile` screen: fetch `/me` on mount, populate fields, push
-      changes via `PATCH /me`. Linked-identities list fed by `/me`.
-      Identity unlink confirmations.
+- [x] `Profile` screen: fetches `/api/v1/me` on mount via a
+      `LocalResource` and seeds local `RwSignal`s for every editable
+      field + every preference Toggle/Segmented. The "save" button
+      diffs back through `me::patch`; SaveState shows
+      pending / saved ✓ / error feedback. Avatar initial flips to
+      the first character of `preferred_name`. Linked-identities
+      list now reads from `MeView.identities` instead of the baked
+      Alice fixture; the manage / unlink button wiring lands when
+      the unlink HTTP route does.
 - [x] Session-cookie middleware on the axum side at
       `open4x-lobby/src/server/auth.rs`. Parses the `lobby_session`
       cookie via a hand-rolled extractor, calls
