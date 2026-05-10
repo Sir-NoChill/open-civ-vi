@@ -85,6 +85,18 @@ pub trait AccountStore: Send + Sync {
     /// Hard delete: cascades sessions + identities. Lobby Phase 6 GDPR
     /// path.
     async fn delete_account(&self, player_id: PlayerId) -> StoreResult<()>;
+
+    /// List a player's identities alongside their stable row IDs so
+    /// the wire can reference them by id (DELETE / set-primary).
+    /// Default implementation falls back to enumerating
+    /// [`AccountStore::lookup_by_identity`] which obviously can't
+    /// recover ids — concrete impls override this. The mem store
+    /// returns synthetic ids ("mem:0", "mem:1", …) so tests still
+    /// see something stable.
+    async fn list_identities_with_ids(
+        &self,
+        player_id: PlayerId,
+    ) -> StoreResult<Vec<(String, Identity)>>;
 }
 
 // ───────────────────────────── Sqlite impl ────────────────────────────────────
@@ -246,6 +258,21 @@ impl AccountStore for SqliteAccountStore {
             return Err(StoreError::NotFound);
         }
         Ok(())
+    }
+
+    async fn list_identities_with_ids(
+        &self,
+        player_id: PlayerId,
+    ) -> StoreResult<Vec<(String, Identity)>> {
+        let pid = player_id_text(&player_id);
+        let rows: Vec<IdentityRow> = sqlx::query_as::<_, IdentityRow>(
+            "SELECT id, player_id, kind, primary_key, label, is_primary, verified \
+             FROM identities WHERE player_id = ?1",
+        )
+        .bind(&pid)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows.iter().map(|r| (r.id.clone(), row_to_identity(r))).collect())
     }
 }
 
@@ -515,6 +542,20 @@ mod mem {
                 .remove(&player_id)
                 .ok_or(StoreError::NotFound)
                 .map(|_| ())
+        }
+
+        async fn list_identities_with_ids(
+            &self,
+            player_id: PlayerId,
+        ) -> StoreResult<Vec<(String, Identity)>> {
+            let map = self.accounts.lock().unwrap();
+            let acct = map.get(&player_id).ok_or(StoreError::NotFound)?;
+            Ok(acct
+                .identities
+                .iter()
+                .enumerate()
+                .map(|(i, id)| (format!("mem:{i}"), id.clone()))
+                .collect())
         }
     }
 

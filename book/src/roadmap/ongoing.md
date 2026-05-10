@@ -115,12 +115,11 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Single-binary deploy** — `rust-embed` the
-      `dist/` SPA bundle + the migrations dir into the lobby
-      binary so a self-host deploy is just `open4x-lobby` plus
-      `OPEN4X_LOBBY_DATA_DIR`. The current ServeDir +
-      `sqlx::migrate!` macro both work fine in dev but force the
-      operator to ship a separate static directory.
+- [ ] **Phase 5 ▸ Wire identity unlink in Profile** — the
+      `DELETE /api/v1/me/identities/{id}` route just landed; wire
+      the Profile screen's per-row "unlink" button to call it via
+      a new `components::api::me::unlink_identity` binding +
+      confirm popup. Refresh `/me` on success.
 
 ### Up next (Phase 6)
 

@@ -333,7 +333,7 @@ data with a real REST call.
 | PATCH  | `/api/v1/me` ✅                           | Update `preferred_name`, `pronouns`, `bio`, `prefs` |
 | POST   | `/api/v1/me/identities/email`             | Start linking-flow for a new email (magic-link)     |
 | POST   | `/api/v1/me/identities/oidc/{provider}`   | Start linking-flow for an OIDC provider             |
-| DELETE | `/api/v1/me/identities/{id}`              | Unlink — refuse if it would orphan the account      |
+| DELETE | `/api/v1/me/identities/{id}` ✅           | Unlink — refuse if it would orphan the account      |
 | POST   | `/api/v1/me/identities/{id}/primary`      | Mark email identity as primary (one per account)    |
 | POST   | `/api/v1/me/avatar`                       | Multipart upload (PNG/JPG, ≤2MB), pipeline TODO     |
 | DELETE | `/api/v1/me` ✅                           | Delete account (cascades sessions + identities)     |
@@ -677,6 +677,20 @@ These don't fit cleanly into one phase but need to be settled early.
 Running record of work performed against this plan, newest at top.
 
 ### Phase 6 — Self-host + ops (2026-05-10, in progress)
+
+- `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
+  rate limit. New `AuditStore::recent_count_by_kind_and_detail`
+  backs a 5-mints-per-5-min cap on `POST /auth/email/start`.
+  Returns 429 + `Retry-After: 60` header + structured body when
+  over. Per-IP throttle still pending.
+- `573b9b55` — feat(open4x-lobby): real /health + graceful
+  shutdown. /health pings the DB (200 ok / 503 db_unreachable);
+  axum graceful_shutdown drains in-flight requests on
+  SIGINT / SIGTERM and logs the signal received.
+- `a08a1179` — feat(open4x-{accounts,lobby}): DELETE /me/identities/{id}.
+  AccountStore gains `list_identities_with_ids` so the wire surfaces
+  stable row ids; the /me handler refuses unlinks that would
+  orphan the account; audit log records `identity_unlinked`.
 
 - `0da19288` — feat(open4x-{accounts,lobby}): append-only audit log.
   `0004_audit_events.sql` adds the table; `audit.rs` ships

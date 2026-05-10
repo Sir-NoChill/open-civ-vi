@@ -26,7 +26,18 @@ pub async fn get_me(
     RequireSession(player_id): RequireSession,
 ) -> Response {
     match state.store.get_by_player_id(player_id).await {
-        Ok(Some(acct)) => Json(MeView::from(acct)).into_response(),
+        Ok(Some(acct)) => {
+            // Pull identity ids alongside the account so the wire
+            // shape exposes them. This is the only place we need
+            // the id-augmented view; PATCH /me etc just round-trip
+            // the identities list.
+            let with_ids = state
+                .store
+                .list_identities_with_ids(player_id)
+                .await
+                .unwrap_or_default();
+            Json(MeView::from_account_and_ids(acct, with_ids)).into_response()
+        }
         Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(ErrorBody {
@@ -124,6 +135,10 @@ pub struct MeView {
 
 #[derive(Debug, Serialize)]
 pub struct IdentityView {
+    /// Stable row id — the lobby exposes this so the SPA can call
+    /// `DELETE /api/v1/me/identities/{id}` without having to round-
+    /// trip through the kind+primary_key tuple.
+    pub id: String,
     pub kind: &'static str,
     pub label: String,
     pub primary_key: String,
@@ -133,42 +148,15 @@ pub struct IdentityView {
     pub primary: Option<bool>,
 }
 
-impl From<Account> for MeView {
-    fn from(a: Account) -> Self {
-        let identities = a
-            .identities
+impl MeView {
+    /// Used by `GET /me` where the caller has already pulled
+    /// `(id, identity)` pairs alongside the account. Stable ids
+    /// land in the `identities[].id` field so the SPA can reference
+    /// them by id (DELETE / set-primary).
+    fn from_account_and_ids(a: Account, with_ids: Vec<(String, open4x_accounts::Identity)>) -> Self {
+        let identities = with_ids
             .into_iter()
-            .map(|id| match id {
-                open4x_accounts::Identity::Email {
-                    address,
-                    verified,
-                    primary,
-                } => IdentityView {
-                    kind: "email",
-                    label: address.clone(),
-                    primary_key: address,
-                    verified: Some(verified),
-                    primary: Some(primary),
-                },
-                open4x_accounts::Identity::OpenId {
-                    issuer,
-                    subject,
-                    label,
-                } => IdentityView {
-                    kind: "oidc",
-                    label,
-                    primary_key: format!("{issuer}|{subject}"),
-                    verified: None,
-                    primary: None,
-                },
-                open4x_accounts::Identity::Atproto { did, handle } => IdentityView {
-                    kind: "atproto",
-                    label: handle,
-                    primary_key: did,
-                    verified: None,
-                    primary: None,
-                },
-            })
+            .map(|(id, identity)| identity_view(id, identity))
             .collect();
         Self {
             player_id: a.player_id.display(),
@@ -178,5 +166,122 @@ impl From<Account> for MeView {
             identities,
             prefs: a.prefs,
         }
+    }
+}
+
+impl From<Account> for MeView {
+    fn from(a: Account) -> Self {
+        // Fallback: callers that don't have ids (PATCH /me) get an
+        // empty id field. PATCH responses don't drive identity
+        // mutations directly — the SPA refetches /me to pick up
+        // ids after a link/unlink.
+        let identities = a
+            .identities
+            .into_iter()
+            .map(|id| identity_view(String::new(), id))
+            .collect();
+        Self {
+            player_id: a.player_id.display(),
+            preferred_name: a.preferred_name,
+            pronouns: a.pronouns,
+            bio: a.bio,
+            identities,
+            prefs: a.prefs,
+        }
+    }
+}
+
+fn identity_view(id: String, identity: open4x_accounts::Identity) -> IdentityView {
+    match identity {
+        open4x_accounts::Identity::Email {
+            address,
+            verified,
+            primary,
+        } => IdentityView {
+            id,
+            kind: "email",
+            label: address.clone(),
+            primary_key: address,
+            verified: Some(verified),
+            primary: Some(primary),
+        },
+        open4x_accounts::Identity::OpenId {
+            issuer,
+            subject,
+            label,
+        } => IdentityView {
+            id,
+            kind: "oidc",
+            label,
+            primary_key: format!("{issuer}|{subject}"),
+            verified: None,
+            primary: None,
+        },
+        open4x_accounts::Identity::Atproto { did, handle } => IdentityView {
+            id,
+            kind: "atproto",
+            label: handle,
+            primary_key: did,
+            verified: None,
+            primary: None,
+        },
+    }
+}
+
+// ───────────────────────────── DELETE /me/identities/{id} ─────────────────────
+
+pub async fn unlink_identity(
+    State(state): State<AppState>,
+    RequireSession(player_id): RequireSession,
+    axum::extract::Path(identity_id): axum::extract::Path<String>,
+) -> Response {
+    // Refuse to orphan the account: leave at least one linked
+    // identity so the user can still sign back in.
+    let current = state
+        .store
+        .list_identities_with_ids(player_id)
+        .await
+        .unwrap_or_default();
+    if !current.iter().any(|(id, _)| id == &identity_id) {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(ErrorBody {
+                error: "identity_not_found",
+                message: None,
+            }),
+        )
+            .into_response();
+    }
+    if current.len() <= 1 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorBody {
+                error: "would_orphan_account",
+                message: Some("link another identity before unlinking the last one".into()),
+            }),
+        )
+            .into_response();
+    }
+    match state.store.unlink_identity(player_id, &identity_id).await {
+        Ok(()) => {
+            let _ = state
+                .audit
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::IdentityUnlinked,
+                    player_id: Some(player_id),
+                    ip: None,
+                    detail: identity_id,
+                })
+                .await;
+            StatusCode::NO_CONTENT.into_response()
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody {
+                error: "store_error",
+                message: Some(e.to_string()),
+            }),
+        )
+            .into_response(),
     }
 }

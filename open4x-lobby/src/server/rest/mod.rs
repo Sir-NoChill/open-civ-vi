@@ -20,6 +20,7 @@ pub fn v1_router() -> Router<AppState> {
         .route("/me", get(me::get_me))
         .route("/me", patch(me::patch_me))
         .route("/me", delete(me::delete_me))
+        .route("/me/identities/{id}", delete(me::unlink_identity))
         .route("/games", get(games::list))
         .route("/games", post(games::create))
         .route("/games/{id}", get(games::get_one))
