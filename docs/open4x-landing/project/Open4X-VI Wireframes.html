@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Open4X-VI · wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+@keyframes blink { 50% { opacity: 0; } }
+[data-screen-label] { display: contents; }
+.app[data-density="spacious"] { font-size: 14px; }
+button[disabled] { opacity: 0.4; cursor: not-allowed; }
+.row[style*="margin-left: auto"] { /* allow override */ }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="screens/landing.jsx"></script>
+<script type="text/babel" src="screens/login.jsx"></script>
+<script type="text/babel" src="screens/ongoing.jsx"></script>
+<script type="text/babel" src="screens/profile.jsx"></script>
+<script type="text/babel" src="screens/newgame.jsx"></script>
+<script type="text/babel" src="screens/shell.jsx"></script>
+
+<script type="text/babel">
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "density": "comfortable",
+  "landingVariant": "A",
+  "loginVariant": "A",
+  "shellVariant": "A"
+}/*EDITMODE-END*/;
+
+const SCREENS = [
+  { id: "landing", label: "01 Landing" },
+  { id: "login",   label: "02 Login" },
+  { id: "menu",    label: "03 Menu" },
+];
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAKS);
+  const [screen, setScreen] = React.useState("landing");
+  const [menuTab, setMenuTab] = React.useState("ongoing");
+
+  const ShellComp = window.ShellVariants[t.shellVariant] || window.ShellVariants.A;
+  const LandingComp = window.LandingVariants[t.landingVariant] || window.LandingVariants.A;
+  const LoginComp = window.LoginVariants[t.loginVariant] || window.LoginVariants.A;
+
+  // sub-screen content for the menu shell
+  let menuContent = null;
+  if (menuTab === "ongoing") menuContent = <window.OngoingGames density={t.density} onNew={() => setMenuTab("newgame")} />;
+  else if (menuTab === "newgame") menuContent = <window.NewGame />;
+  else if (menuTab === "profile") menuContent = <window.Profile />;
+  else menuContent = <div className="content-header"><div className="title">{menuTab}</div><span className="crumbs">// not in scope for this wireframe pass</span></div>;
+
+  // Variant pickers per screen
+  const variantPicker = (() => {
+    if (screen === "landing") {
+      return (
+        <div className="variant-pills">
+          <span className="label">variant</span>
+          {["A","B","C"].map(v => (
+            <button key={v} aria-current={t.landingVariant === v}
+                    onClick={() => setTweak("landingVariant", v)}>{v}</button>
+          ))}
+        </div>
+      );
+    }
+    if (screen === "login") {
+      return (
+        <div className="variant-pills">
+          <span className="label">variant</span>
+          {["A","B","C"].map(v => (
+            <button key={v} aria-current={t.loginVariant === v}
+                    onClick={() => setTweak("loginVariant", v)}>{v}</button>
+          ))}
+        </div>
+      );
+    }
+    if (screen === "menu") {
+      return (
+        <div className="variant-pills">
+          <span className="label">shell</span>
+          {["A","B","C"].map(v => (
+            <button key={v} aria-current={t.shellVariant === v}
+                    onClick={() => setTweak("shellVariant", v)}>{v}</button>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  })();
+
+  // Screen meta annotations
+  const meta = {
+    landing: ["A · centered ASCII", "B · split + terminal preview", "C · manifesto"],
+    login: ["A · stacked equal weight", "B · email primary + secondary", "C · tabbed"],
+    menu: ["A · persistent left rail", "B · collapsible icon rail", "C · top tab bar"],
+  };
+  const metaIdx = { A: 0, B: 1, C: 2 };
+  const currentVariant = screen === "landing" ? t.landingVariant
+                       : screen === "login" ? t.loginVariant
+                       : t.shellVariant;
+  const metaText = meta[screen][metaIdx[currentVariant]];
+
+  return (
+    <div className="app" data-density={t.density}>
+      <header className="app-bar">
+        <div className="brand"><span className="glyph">⌬</span> OPEN4X·VI <span className="muted" style={{fontSize:11, fontWeight: 400, letterSpacing: "0.05em"}}>// wireframes</span></div>
+        <nav className="screen-tabs">
+          {SCREENS.map(s => (
+            <button key={s.id} aria-current={screen === s.id} onClick={() => setScreen(s.id)}>{s.label}</button>
+          ))}
+        </nav>
+        {variantPicker}
+      </header>
+
+      <div className="screen">
+        <div className="screen-meta">
+          <span className="arrow">↳</span>
+          <span>{metaText}</span>
+          <span className="sub">// click variant pills · drag tweaks · all wireframes are clickable</span>
+        </div>
+
+        <div className="frame" data-screen-label={
+          screen === "landing" ? `01 Landing · ${t.landingVariant}`
+          : screen === "login" ? `02 Login · ${t.loginVariant}`
+          : `03 Menu · ${t.shellVariant} · ${menuTab}`
+        }>
+          <span className="frame-corner">{
+            screen === "landing" ? "/landing"
+            : screen === "login" ? "/auth"
+            : `/app / ${menuTab}`
+          }</span>
+
+          {screen === "landing" && <LandingComp onLogin={() => setScreen("login")} />}
+          {screen === "login" && <LoginComp onSubmit={() => setScreen("menu")} onBack={() => setScreen("landing")} />}
+          {screen === "menu" && (
+            <ShellComp tab={menuTab} setTab={setMenuTab}>
+              {menuContent}
+            </ShellComp>
+          )}
+        </div>
+      </div>
+
+      <TweaksPanel title="Wireframe tweaks">
+        <TweakSection title="Density">
+          <TweakRadio tweakKey="density" value={t.density} onChange={setTweak}
+            options={[
+              { value: "compact", label: "compact" },
+              { value: "comfortable", label: "comfy" },
+              { value: "spacious", label: "spacious" },
+            ]} />
+        </TweakSection>
+        <TweakSection title="Landing variant">
+          <TweakRadio tweakKey="landingVariant" value={t.landingVariant} onChange={setTweak}
+            options={[{value:"A",label:"A"},{value:"B",label:"B"},{value:"C",label:"C"}]} />
+        </TweakSection>
+        <TweakSection title="Login variant">
+          <TweakRadio tweakKey="loginVariant" value={t.loginVariant} onChange={setTweak}
+            options={[{value:"A",label:"A"},{value:"B",label:"B"},{value:"C",label:"C"}]} />
+        </TweakSection>
+        <TweakSection title="Menu shell">
+          <TweakRadio tweakKey="shellVariant" value={t.shellVariant} onChange={setTweak}
+            options={[{value:"A",label:"A · rail"},{value:"B",label:"B · icons"},{value:"C",label:"C · tabs"}]} />
+        </TweakSection>
+        <TweakSection title="Jump to">
+          <div style={{display:"flex", flexDirection:"column", gap:4}}>
+            <button className="sk-btn sm" onClick={() => { setScreen("menu"); setMenuTab("ongoing"); }}>→ ongoing games</button>
+            <button className="sk-btn sm" onClick={() => { setScreen("menu"); setMenuTab("newgame"); }}>→ new game wizard</button>
+            <button className="sk-btn sm" onClick={() => { setScreen("menu"); setMenuTab("profile"); }}>→ profile</button>
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
