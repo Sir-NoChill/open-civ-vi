@@ -103,5 +103,8 @@ pub async fn fetch_json<T: DeserializeOwned, B: Serialize>(
         });
     }
 
-    serde_json::from_str::<T>(&text).map_err(|e| ApiError::transport(e.to_string()))
+    // Treat empty bodies (e.g. 204 No Content) as JSON `null` so callers using
+    // `serde_json::Value` or `Option<T>` get a sensible decode.
+    let payload = if text.trim().is_empty() { "null" } else { &text };
+    serde_json::from_str::<T>(payload).map_err(|e| ApiError::transport(e.to_string()))
 }
