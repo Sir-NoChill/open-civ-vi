@@ -698,6 +698,23 @@ Running record of work performed against this plan, newest at top.
 
 ### Phase 6 — Self-host + ops (2026-05-10, in progress)
 
+- `90841e3c` — feat(open4x-lobby): X-Forwarded-For reader for trusted
+  proxies. `OPEN4X_LOBBY_TRUSTED_PROXIES` (CIDR list, ipnet);
+  `client_ip` walks XFF right-to-left, returns the first
+  untrusted hop when the peer is itself trusted. Per-IP throttle
+  + audit log now record the real client IP behind a
+  reverse-proxied deploy.
+- `375f2657` — feat(open4x-lobby): single-binary deploy via
+  rust-embed. SPA + book bundles snapshot into the binary at
+  compile time. `OPEN4X_LOBBY_STATIC_DIR` / `_BOOK_DIR` (when
+  set) keep the dev `trunk serve` flow; without them the binary
+  serves embedded assets straight off `.rodata`. ~10 → ~13 MB.
+- `d3393750` — feat(open4x-{accounts,lobby}): SMTP Mailer impl
+  with lettre. SmtpConfig::from_env reads SMTP_HOST/PORT/USER/
+  PASS/FROM; AppState prefers SMTP when configured, falls back
+  to LogMailer otherwise. Lettre AsyncSmtpTransport with rustls
+  (no native-tls dep).
+
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
   backs a 5-mints-per-5-min cap on `POST /auth/email/start`.
