@@ -258,6 +258,13 @@ pub async fn verify(
         }
     };
 
+    // Phase 5 — every successful magic-link consumption flips the
+    // matching email identity's `verified` column to true. The
+    // "Verify email" CTA in Profile mints a fresh link for an
+    // already-linked email; the click path here marks it verified.
+    // Best-effort: a store error here doesn't fail sign-in.
+    let _ = state.store.mark_email_verified(&email).await;
+
     let raw = match session::mint_session(&state.pool, account.player_id, session::DEFAULT_TTL).await {
         Ok(t) => t,
         Err(e) => {

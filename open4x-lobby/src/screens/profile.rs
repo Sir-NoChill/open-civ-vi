@@ -338,10 +338,36 @@ pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoV
                                             }.into_any()
                                         }
                                     };
+                                    // Verify-email CTA: shown on email rows that
+                                    // are not yet verified. Clicking mints + mails
+                                    // a fresh magic link via the verify-start
+                                    // route; the user clicks the email link, the
+                                    // server flips `verified=true`, the list
+                                    // refreshes and this button disappears.
+                                    let is_unverified_email = id.kind == "email"
+                                        && !id.verified.unwrap_or(false);
+                                    let verify_btn = if is_unverified_email {
+                                        let row_id = row_id.clone();
+                                        view! {
+                                            <Btn
+                                                variant="ghost"
+                                                size="sm"
+                                                on_click=Callback::new(move |_| {
+                                                    let id = row_id.clone();
+                                                    spawn_local(async move {
+                                                        let _ = me_api::start_verify_identity(&id).await;
+                                                    });
+                                                })
+                                            >"verify"</Btn>
+                                        }.into_any()
+                                    } else {
+                                        view! { <span></span> }.into_any()
+                                    };
                                     view! {
                                         <div class=row_class data-i=i>
                                             <span class="id-type">{kind_label}</span>
                                             <span class="id-val">{id.label.clone()}</span>
+                                            {verify_btn}
                                             {action_btn}
                                         </div>
                                     }

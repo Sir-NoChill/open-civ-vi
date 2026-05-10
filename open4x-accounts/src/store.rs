@@ -97,6 +97,16 @@ pub trait AccountStore: Send + Sync {
         &self,
         player_id: PlayerId,
     ) -> StoreResult<Vec<(String, Identity)>>;
+
+    /// Flip `verified=true` on the email identity matching `address`
+    /// (case-insensitive — `identity_key` already lowercases). Returns
+    /// `Ok(true)` if a row was updated, `Ok(false)` if no email
+    /// identity matches. Used by the /auth/email/verify path so
+    /// every successful magic-link consumption marks the identity
+    /// verified — including the dedicated "Verify email" CTA from
+    /// Profile, which mints a fresh link for an already-linked
+    /// identity.
+    async fn mark_email_verified(&self, address: &str) -> StoreResult<bool>;
 }
 
 // ───────────────────────────── Sqlite impl ────────────────────────────────────
@@ -297,6 +307,18 @@ impl AccountStore for SqliteAccountStore {
         .fetch_all(&self.pool)
         .await?;
         Ok(rows.iter().map(|r| (r.id.clone(), row_to_identity(r))).collect())
+    }
+
+    async fn mark_email_verified(&self, address: &str) -> StoreResult<bool> {
+        let key = address.to_lowercase();
+        let res = sqlx::query(
+            "UPDATE identities SET verified = 1 \
+             WHERE kind = 'email' AND primary_key = ?1 AND verified = 0",
+        )
+        .bind(&key)
+        .execute(&self.pool)
+        .await?;
+        Ok(res.rows_affected() > 0)
     }
 }
 
@@ -580,6 +602,22 @@ mod mem {
                 .enumerate()
                 .map(|(i, id)| (format!("mem:{i}"), id.clone()))
                 .collect())
+        }
+
+        async fn mark_email_verified(&self, address: &str) -> StoreResult<bool> {
+            let key = address.to_lowercase();
+            let mut map = self.accounts.lock().unwrap();
+            for acct in map.values_mut() {
+                for ident in acct.identities.iter_mut() {
+                    if let Identity::Email { address: a, verified, .. } = ident {
+                        if a.to_lowercase() == key && !*verified {
+                            *verified = true;
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
+            Ok(false)
         }
     }
 

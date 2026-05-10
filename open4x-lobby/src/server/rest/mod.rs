@@ -21,6 +21,10 @@ pub fn v1_router() -> Router<AppState> {
         .route("/me", patch(me::patch_me))
         .route("/me", delete(me::delete_me))
         .route("/me/identities/{id}", delete(me::unlink_identity))
+        .route(
+            "/me/identities/{id}/verify-start",
+            post(me::verify_email_identity),
+        )
         .route("/games", get(games::list))
         .route("/games", post(games::create))
         .route("/games/{id}", get(games::get_one))

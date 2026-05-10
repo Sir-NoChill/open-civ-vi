@@ -285,3 +285,114 @@ pub async fn unlink_identity(
             .into_response(),
     }
 }
+
+// ───────────────────────── POST /me/identities/{id}/verify-start ──────────────
+
+/// Mint a fresh magic-link for an unverified email identity already
+/// linked to the requester's account, and hand it to the configured
+/// mailer. The user clicks the link → /auth/email/verify consumes
+/// the nonce, signs them in (no-op if already signed in), and the
+/// shared `mark_email_verified` hook flips this row's `verified`
+/// column to true.
+pub async fn verify_email_identity(
+    State(state): State<AppState>,
+    RequireSession(player_id): RequireSession,
+    axum::extract::Path(identity_id): axum::extract::Path<String>,
+) -> Response {
+    let current = state
+        .store
+        .list_identities_with_ids(player_id)
+        .await
+        .unwrap_or_default();
+    let target = current.iter().find(|(id, _)| id == &identity_id);
+    let Some((_, ident)) = target else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(ErrorBody {
+                error: "identity_not_found",
+                message: None,
+            }),
+        )
+            .into_response();
+    };
+    let (address, already_verified) = match ident {
+        open4x_accounts::Identity::Email { address, verified, .. } => {
+            (address.clone(), *verified)
+        }
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorBody {
+                    error: "not_an_email_identity",
+                    message: Some("verify-start only applies to email identities".into()),
+                }),
+            )
+                .into_response();
+        }
+    };
+    if already_verified {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorBody {
+                error: "already_verified",
+                message: None,
+            }),
+        )
+            .into_response();
+    }
+
+    // Mint + mail. Reuses the same MagicLinkSigner the sign-in path
+    // does, so the existing /auth/email/verify endpoint consumes
+    // the nonce and runs the verified-flag flip via
+    // `mark_email_verified`.
+    let minted = match state
+        .signer
+        .mint_and_record(
+            &state.pool,
+            &address,
+            open4x_accounts::magic_link::DEFAULT_TTL,
+        )
+        .await
+    {
+        Ok(m) => m,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorBody {
+                    error: "mint_failed",
+                    message: Some(e.to_string()),
+                }),
+            )
+                .into_response();
+        }
+    };
+    let base = if state.public_base_url.is_empty() {
+        String::new()
+    } else {
+        state.public_base_url.trim_end_matches('/').to_string()
+    };
+    let link = format!("{base}/api/v1/auth/email/verify?token={token}", token = minted.token);
+    if let Err(e) = state.mailer.send_magic_link(&address, &link).await {
+        eprintln!("[verify-start] mailer error for {address}: {e}");
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody {
+                error: "mail_failed",
+                message: Some(e.to_string()),
+            }),
+        )
+            .into_response();
+    }
+
+    let _ = state
+        .audit
+        .record(NewAuditEvent {
+            kind: AuditEventKind::MagicLinkMint,
+            player_id: Some(player_id),
+            ip: None,
+            detail: format!("verify:{identity_id}"),
+        })
+        .await;
+
+    Json(serde_json::json!({"ok": true, "message": "verify_email_sent"})).into_response()
+}

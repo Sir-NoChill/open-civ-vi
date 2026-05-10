@@ -70,3 +70,13 @@ pub async fn unlink_identity(id: &str) -> Result<(), ApiError> {
         .await
         .map(|_| ())
 }
+
+/// `POST /api/v1/me/identities/{id}/verify-start`. Mints + mails a
+/// fresh magic-link for an unverified email identity. The verify
+/// route on the resulting click flips the row's `verified` column.
+pub async fn start_verify_identity(id: &str) -> Result<(), ApiError> {
+    let url = format!("/api/v1/me/identities/{id}/verify-start");
+    fetch_json::<serde_json::Value, ()>("POST", &url, None)
+        .await
+        .map(|_| ())
+}
