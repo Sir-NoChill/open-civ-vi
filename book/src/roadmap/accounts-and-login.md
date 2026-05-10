@@ -544,8 +544,16 @@ User-visible quality once the platform basics are wired.
       `OPEN4X_LOBBY_BOOK_DIR`, default `./book/book`); the screen's
       status note tells contributors to run `mdbook build book/`
       once to populate the directory.
-- [ ] **Email verification flow** — "Verify email" CTA on unverified
-      identities, second magic-link to confirm.
+- [x] **Email verification flow** — `POST /api/v1/me/identities/
+      {id}/verify-start` mints + mails a fresh magic link for an
+      unverified email row. The existing `/auth/email/verify`
+      route now calls `AccountStore::mark_email_verified(&email)`
+      after every successful sign-in, so any consumed magic link
+      flips its identity's `verified` column to true. Profile
+      screen renders a "verify" Btn on email rows where
+      `verified=false`. Audit rows for the new mint carry detail
+      `verify:<identity_id>` so ops can distinguish verify-start
+      mints from sign-in mints.
 - [ ] **Sign-in feedback states** — pending / success / failure for
       every entry point.
 - [ ] **Real game tile thumbnails** — `MiniMap` re-seeded by the game's
@@ -808,6 +816,16 @@ Running record of work performed against this plan, newest at top.
   invitee's GDPR delete. Bumps Phase 6 GDPR row from `~` to
   `✅`. New unit test covers the round-trip end-to-end against
   real Sqlite.
+- `25ea95a8` — feat(open4x-{accounts,lobby}): email-identity
+  verify flow. AccountStore::mark_email_verified flips the row
+  to verified=true; the existing /auth/email/verify endpoint
+  calls it after every successful sign-in (any consumed magic
+  link verifies the address). New
+  POST /api/v1/me/identities/{id}/verify-start mints + mails
+  a fresh link for an unverified row. Profile renders a
+  "verify" button on unverified email rows. Audit detail
+  `verify:<identity_id>` distinguishes verify-start mints
+  from sign-in mints. Smoke verified the full roundtrip.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
