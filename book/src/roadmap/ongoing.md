@@ -115,20 +115,21 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ Popup component** — Gwern-style hover preview with
-      pin-on-click, esc-close, click-outside dismiss, and smart
-      positioning. Replaces every `<Trigger>` stub call site. Source:
-      `docs/open4x-landing/project/hifi/popup.jsx` (165 LOC). Lives
-      at `open4x-lobby/src/components/popup.rs`. Single biggest
-      Phase 1 item — may need its own loop tick.
+- [ ] **Phase 1 ▸ Migrate Trigger stubs to real Popups** — sweep the
+      `<Trigger>` call sites in landing.rs / login.rs / menu.rs /
+      profile.rs / newgame.rs and replace each with a `<Popup>`
+      wrapper, lifting the `title=` text into `Popup`'s `title` prop
+      and the previous tooltip text into a `PopupBody`. Smaller
+      cleanup but high-visibility — the design's whole "hover any
+      underlined word" affordance lights up after this.
 
 ### Up next (Phase 1)
 
 - [ ] NewGame StepCiv (civ picker grid + CivSheet popups)
 - [ ] NewGame StepRules (difficulty / victory / world dynamics) —
-      depends on Slider (✅) and Popup
+      depends on Slider (✅) and Popup (✅)
 - [ ] NewGame StepPlayers (slot list + invite popup + turn-mode params)
-      — depends on Popup
+      — depends on Popup (✅)
 - [ ] Tweaks panel port (runtime density toggle)
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE

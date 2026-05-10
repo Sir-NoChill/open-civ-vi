@@ -125,10 +125,20 @@ the network. No persistence, no auth, no orchestration; just finishing
 the JSX → Leptos translation so we can iterate UX without backend
 plumbing.
 
-- [ ] **Popup component** — Gwern-style hover preview with pin-on-click
-      / esc-to-close / click-outside-to-dismiss / smart positioning.
-      Replace every `<Trigger>` stub call site. Source:
-      `docs/open4x-landing/project/hifi/popup.jsx` (165 LOC).
+- [x] **Popup component** — `open4x-lobby/src/components/popup.rs`
+      ports the Gwern-style behaviour: 180 ms hover-show, 140 ms
+      hide-grace, click-to-pin, Esc / click-outside dismiss for pinned
+      popups, viewport-aware vertical flip + horizontal clamp.
+      `PopupProvider` mounts at the app root and owns a single
+      `RwSignal<Option<PopupState>, LocalStorage>`; each `Popup`
+      wrapper captures its anchor's `DOMRect` and asks the provider
+      to show. `view_fn: Arc<dyn Fn() -> AnyView>` so `PopupState` is
+      cheap-Clone. Timers live in `Arc<SendWrapper<RefCell<Option<
+      Timeout>>>>` so the context is `Send + Sync` while keeping the
+      single-threaded gloo `Timeout` alive.
+      Trigger-stub call sites still work; migration to real popups
+      will happen as each screen wires its `<Popup>` sites in
+      subsequent commits.
 - [x] **`PopupBody`, `PopupActions`, `PopupList`** — body containers
       live at `open4x-lobby/src/components/popup_body.rs`. `PopupBody`
       / `PopupActions` are pure layout wrappers; `PopupList` takes a

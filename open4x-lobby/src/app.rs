@@ -8,6 +8,7 @@
 
 use leptos::prelude::*;
 
+use crate::components::PopupProvider;
 use crate::screens::{Landing, Login, MenuShell, MenuTab, NewGame, OngoingGames, Profile};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -43,6 +44,7 @@ pub fn App() -> impl IntoView {
     });
 
     view! {
+        <PopupProvider>
         <div class="app" data-density="comfortable">
             // ── App bar ─────────────────────────────────────────────────
             <header class="app-bar">
@@ -88,5 +90,6 @@ pub fn App() -> impl IntoView {
                 }}
             </div>
         </div>
+        </PopupProvider>
     }
 }
