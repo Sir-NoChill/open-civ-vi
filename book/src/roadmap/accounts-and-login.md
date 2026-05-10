@@ -564,8 +564,19 @@ User-visible quality once the platform basics are wired.
       mint_failed / mail_failed paths so ops can split server-
       side breakage from token-validation failures (the
       `SignInFailed` row now stays scoped to /verify).
-- [ ] **Real game tile thumbnails** — `MiniMap` re-seeded by the game's
-      world seed so you actually recognise your saves.
+- [x] **Real game tile thumbnails** — `GET /api/v1/games/{id}/
+      thumbnail` (lobby-side proxy) Bearer-authenticates against
+      `<server_url>/api/v1/world/snapshot` server-side and reduces
+      the response to a `{width, height, cells:[{q,r,terrain}]}`
+      grid the SPA can render. Browser stays cookie-authed only;
+      `server_token` never crosses the wire to the client. SPA
+      ships an in-session `ThumbnailCache` (provided once at App
+      root) keyed by `game_id`; `ensure_fetched` is idempotent so
+      filter / sort flips don't re-hit the proxy. `MiniMap` gains
+      an optional `cells` prop; when `Some` it renders per-tile
+      `<rect>`s in the 100×64 viewBox using a substring-matched
+      terrain → CSS-class mapping. Smoke verified end-to-end
+      against a real game (60×38 tiny map, 17 explored cells).
 - [ ] **Tile thumbnails reflect ownership** — show captured cities,
       explored vs unexplored, etc., when the snapshot is cheap to
       fetch.
@@ -844,6 +855,14 @@ Running record of work performed against this plan, newest at top.
   mail_failed with prefixed detail; smoke against an
   unreachable SMTP host wrote the row with
   `mail_failed:transport error: Connection refused`.
+- `ede8fb62` — feat(open4x-lobby): real game tile thumbnails.
+  `GET /api/v1/games/{id}/thumbnail` proxies the bearer'd hop
+  to `<server_url>/api/v1/world/snapshot` server-side, reducing
+  the response to `{width, height, cells:[{q,r,terrain}]}` so
+  `server_token` stays lobby-only. SPA caches per-game grids in
+  an in-session RwSignal HashMap; MiniMap renders real per-tile
+  rects when ready, falls back to the seeded blob layout while
+  pending. End-to-end smoke verified against a 60×38 game.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`

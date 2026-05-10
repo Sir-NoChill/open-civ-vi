@@ -115,14 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ Real game tile thumbnails** — `MiniMap`
-      currently renders deterministic noise seeded from the
-      game's seed string. The plan calls for a per-game
-      snapshot fetched from `server_url` (the open4x-server
-      already exposes `/api/v1/world` returning the
-      `WorldSnapshot`), reduced to a tile-color array, cached
-      under the lobby's data dir keyed by `server_token` so
-      repeated mounts don't re-hit the game server.
+- [ ] **Phase 5 ▸ Tile thumbnails reflect ownership** — the
+      thumbnail grid currently colours every cell by terrain
+      only. The plan calls for an "ownership" overlay so
+      captured cities show up distinctly, foreign-civ tiles
+      tint differently, and unexplored tiles dim. The game
+      server's `WorldSnapshot.tiles[]` already includes
+      ownership / explored info; the lobby's reducer drops it
+      today. Extend the wire shape + CSS class mapping.
 
 ### Up next (Phase 6)
 
