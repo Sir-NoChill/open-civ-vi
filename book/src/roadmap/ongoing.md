@@ -115,12 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Backup & restore CLI** — `open4x-accounts db
-      dump <out.sqlite>` and `open4x-accounts db restore
-      <in.sqlite>` so deploys can snapshot the lobby's
-      accounts/games/audit state and roll back from a known-good
-      checkpoint. Sqlite-only for v1 (matches the rest of the
-      stack); doc the recovery story.
+- [ ] **Phase 6 ▸ Reverse-proxy story** — example `nginx` and
+      `caddy` configs in `book/src/multiplayer/` that route
+      `/api/v1/games/{id}/play/*` to the right per-game backend
+      port (registered by the new process orchestrator). With
+      `OPEN4X_LOBBY_TRUSTED_PROXIES` already wired, this is a
+      docs-only deliverable plus a worked example in the book.
 
 ### Up next (Phase 6)
 

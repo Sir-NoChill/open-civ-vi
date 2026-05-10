@@ -623,8 +623,17 @@ production.
       children die within 1.5s with no orphans.
 - [ ] **Reverse-proxy story** — example nginx + caddy configs that
       route `/api/v1/games/{id}/play/*` to the right per-game backend.
-- [ ] **Backup & restore** — `lobby db dump` / `lobby db restore`
-      subcommands.
+- [x] **Backup & restore** — `open4x-accounts db-dump --out
+      <path>` runs SQLite's `VACUUM INTO` (online-safe; refuses
+      to overwrite). `db-restore --from <path> [--force]`
+      validates the source via `PRAGMA integrity_check`, renames
+      the live db to `<db>.bak.<unix-ts>` (skip with `--force`),
+      then `fs::copy`s the snapshot in place. Smoke verified the
+      full roundtrip: PATCH /me → dump → mutate → restore →
+      original value reads back. Operators are expected to stop
+      the lobby before restoring; the CLI does not enforce that
+      because there's no portable way to detect a live process
+      holding the file (sqlite locking is advisory on Linux).
 - [x] **CLI: `prune-sessions`** — `open4x-accounts prune-sessions
       --days N` (default 30) deletes any session row that is
       revoked OR has expired more than N days ago. Prints the
@@ -756,6 +765,14 @@ Running record of work performed against this plan, newest at top.
   lobby exit takes them down. Smoke verified end-to-end: two
   concurrent games landed on 4501 + 4502, kill -TERM cleaned
   both up with no orphans. Default deploy mode unchanged.
+- `fcd59217` — feat(open4x-accounts): db-dump + db-restore CLI
+  subcommands. db-dump runs `VACUUM INTO` (refuses to overwrite
+  an existing target; online-safe). db-restore validates the
+  source via `PRAGMA integrity_check`, rotates the live db to
+  `<db>.bak.<unix-ts>` (skip with --force), and `fs::copy`s the
+  snapshot in place. Smoke roundtrip verified (mutate→dump→
+  mutate→restore→original reads back) plus three validation
+  paths (existing target / garbage source / missing source).
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
