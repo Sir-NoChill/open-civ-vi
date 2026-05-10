@@ -15,6 +15,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Pool, Sqlite};
 
 use crate::server::client_ip::parse_trusted_proxies;
+use crate::server::process::{DeployMode, ProcessConfig, ProcessOrchestrator};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -39,6 +40,13 @@ pub struct AppState {
     /// out of the header instead. Empty (the default) means the
     /// header is always ignored.
     pub trusted_proxies: Vec<IpNet>,
+    /// Selected at boot via `OPEN4X_LOBBY_PER_GAME`. When
+    /// `PerGame`, [`process_orch`] is `Some` and `games::create`
+    /// spawns a fresh `open4x-server` per row.
+    pub deploy_mode: DeployMode,
+    /// Process registry — only set when [`deploy_mode`] is
+    /// `PerGame`. Cloneable; cheap to hand out to handlers.
+    pub process_orch: Option<ProcessOrchestrator>,
 }
 
 impl AppState {
@@ -98,6 +106,22 @@ impl AppState {
         let trusted_proxies =
             parse_trusted_proxies(&std::env::var("OPEN4X_LOBBY_TRUSTED_PROXIES").unwrap_or_default());
 
+        let deploy_mode = DeployMode::from_env();
+        let process_orch = match deploy_mode {
+            DeployMode::PerGame => {
+                let cfg = ProcessConfig::from_env();
+                eprintln!(
+                    "[orchestrator] per-game mode: binary={} ports={}-{} data_root={}",
+                    cfg.binary.display(),
+                    cfg.port_lo,
+                    cfg.port_hi,
+                    cfg.data_root.display()
+                );
+                Some(ProcessOrchestrator::new(cfg))
+            }
+            DeployMode::Shared => None,
+        };
+
         Ok(Self {
             pool,
             store: Arc::new(store),
@@ -108,6 +132,8 @@ impl AppState {
             public_base_url,
             game_server_url,
             trusted_proxies,
+            deploy_mode,
+            process_orch,
         })
     }
 }

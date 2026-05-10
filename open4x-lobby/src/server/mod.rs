@@ -10,6 +10,7 @@ pub mod auth;
 pub mod client_ip;
 pub mod embed;
 pub mod orchestrator;
+pub mod process;
 pub mod rest;
 pub mod state;
 

@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::auth::RequireSession;
 use crate::server::orchestrator::{self, NewGameRequest};
+use crate::server::process::DeployMode;
 use crate::server::AppState;
 
 #[derive(Debug, Serialize)]
@@ -132,29 +133,43 @@ pub async fn create(
             .into_response();
     }
 
-    // Best-effort orchestration: ask the configured open4x-server to
-    // bootstrap a GameRoom. Failure here doesn't fail the lobby write
-    // — the game row still lands with empty server_url/server_token,
-    // and Resume returns 503 until a follow-up RetryBootstrap path
-    // exists. The wizard's UX is intentionally robust to a flaky
-    // game-server.
-    let (server_url, server_token) = if state.game_server_url.is_empty() {
-        (String::new(), String::new())
-    } else {
-        let map_dims = map_size_to_dims(&body.map_size);
-        let req = NewGameRequest {
-            display_name: Some(body.name.clone()),
-            width: Some(map_dims.0),
-            height: Some(map_dims.1),
-            seed: parse_seed(&body.seed),
-            num_ai: Some(body.players_ai),
-            turn_limit: None,
-        };
-        match orchestrator::bootstrap_game(&state.game_server_url, &req).await {
-            Ok(boot) => (boot.server_url, boot.server_token),
-            Err(e) => {
-                eprintln!("[orchestrator] bootstrap failed: {e}");
+    // Best-effort orchestration: in shared mode we POST to the
+    // single configured `open4x-server`; in per-game mode we spawn
+    // a fresh server per row. Failure here doesn't fail the lobby
+    // write — the game row still lands with empty server_url /
+    // server_token, and Resume returns 503 until a follow-up
+    // RetryBootstrap path exists.
+    let map_dims = map_size_to_dims(&body.map_size);
+    let req = NewGameRequest {
+        display_name: Some(body.name.clone()),
+        width: Some(map_dims.0),
+        height: Some(map_dims.1),
+        seed: parse_seed(&body.seed),
+        num_ai: Some(body.players_ai),
+        turn_limit: None,
+    };
+    let (server_url, server_token) = match state.deploy_mode {
+        DeployMode::PerGame => match state.process_orch.as_ref() {
+            Some(orch) => match orch.bootstrap_per_game(&req).await {
+                Ok(boot) => (boot.server_url, boot.server_token),
+                Err(e) => {
+                    eprintln!("[orchestrator] per-game bootstrap failed: {e}");
+                    (String::new(), String::new())
+                }
+            },
+            None => (String::new(), String::new()),
+        },
+        DeployMode::Shared => {
+            if state.game_server_url.is_empty() {
                 (String::new(), String::new())
+            } else {
+                match orchestrator::bootstrap_game(&state.game_server_url, &req).await {
+                    Ok(boot) => (boot.server_url, boot.server_token),
+                    Err(e) => {
+                        eprintln!("[orchestrator] bootstrap failed: {e}");
+                        (String::new(), String::new())
+                    }
+                }
             }
         }
     };
