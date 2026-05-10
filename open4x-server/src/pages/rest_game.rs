@@ -84,8 +84,17 @@ pub fn RestGamePage() -> impl IntoView {
     let selected_tile = RwSignal::new(None::<(i32, i32)>);
 
     // Bootstrap once on mount.
+    //
+    // If the URL carries `?token=…` (the lobby's Resume flow drops us
+    // here with a pre-minted bearer), use it directly. Otherwise fall
+    // back to the anonymous `POST /games/new` path so guest play
+    // still works without going through the lobby.
     Effect::new(move |_| {
         if token.get_untracked().is_some() {
+            return;
+        }
+        if let Some(t) = read_token_from_query() {
+            token.set(Some(t));
             return;
         }
         spawn_local(async move {
@@ -830,4 +839,53 @@ fn render_turn_queue_drawer(turn_queue: LocalResource<Option<TurnQueue>>) -> imp
             })}
         </Suspense>
     }
+}
+
+/// Pull the `token=…` value out of the current URL's query string.
+/// Used by the Resume flow: the lobby navigates the user-agent to
+/// `<this-server>/?token=<lobby-stored-bearer>` and the SPA picks
+/// the token up here instead of bootstrapping a fresh game.
+fn read_token_from_query() -> Option<String> {
+    let win = web_sys::window()?;
+    let search = win.location().search().ok()?;
+    let q = search.strip_prefix('?').unwrap_or(&search);
+    for pair in q.split('&') {
+        if let Some(rest) = pair.strip_prefix("token=") {
+            return Some(decode_uri_component(rest));
+        }
+    }
+    None
+}
+
+/// Minimal `decodeURIComponent` shim — handles the `%XX` escapes we
+/// might see in URL-safe base64 round-tripped through cookies and
+/// the `+` → space convention. Sufficient for `lobby_<base64url>`
+/// tokens which are already URL-safe.
+fn decode_uri_component(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'%' if i + 2 < bytes.len() => {
+                let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok();
+                if let Some(h) = hex.and_then(|h| u8::from_str_radix(h, 16).ok()) {
+                    out.push(h as char);
+                    i += 3;
+                    continue;
+                }
+                out.push('%');
+                i += 1;
+            }
+            b'+' => {
+                out.push(' ');
+                i += 1;
+            }
+            other => {
+                out.push(other as char);
+                i += 1;
+            }
+        }
+    }
+    out
 }

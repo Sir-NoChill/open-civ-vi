@@ -35,7 +35,7 @@ js-sys      = { version = "0.3", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 web-sys     = { version = "0.3", features = [
     "Blob", "BlobPropertyBag", "Document",
-    "HtmlAnchorElement", "HtmlInputElement", "Url", "Window",
+    "HtmlAnchorElement", "HtmlInputElement", "Url", "Window", "Location",
     "WebSocket", "MessageEvent", "CloseEvent", "ErrorEvent",
     "Storage",
     "Response", "Headers", "RequestInit", "Request",
