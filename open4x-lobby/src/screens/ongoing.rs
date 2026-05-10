@@ -47,6 +47,48 @@ impl Sort {
             Sort::Turn => "turn ↓",
         }
     }
+
+    fn slug(self) -> &'static str {
+        match self {
+            Sort::Recent => "recent",
+            Sort::Oldest => "oldest",
+            Sort::Score => "score",
+            Sort::Turn => "turn",
+        }
+    }
+
+    fn parse(s: &str) -> Option<Self> {
+        match s {
+            "recent" => Some(Sort::Recent),
+            "oldest" => Some(Sort::Oldest),
+            "score" => Some(Sort::Score),
+            "turn" => Some(Sort::Turn),
+            _ => None,
+        }
+    }
+}
+
+impl Filter {
+    fn slug(self) -> &'static str {
+        match self {
+            Filter::All => "all",
+            Filter::YourTurn => "your_turn",
+            Filter::Waiting => "waiting",
+            Filter::Completed => "completed",
+            Filter::Multiplayer => "multiplayer",
+        }
+    }
+
+    fn parse(s: &str) -> Option<Self> {
+        match s {
+            "all" => Some(Filter::All),
+            "your_turn" => Some(Filter::YourTurn),
+            "waiting" => Some(Filter::Waiting),
+            "completed" => Some(Filter::Completed),
+            "multiplayer" => Some(Filter::Multiplayer),
+            _ => None,
+        }
+    }
 }
 
 #[component]
@@ -56,9 +98,22 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
         let _ = tick.get();
         async move { games_api::list().await.ok() }
     });
-    let filter = RwSignal::new(Filter::YourTurn);
-    let search = RwSignal::new(String::new());
-    let sort = RwSignal::new(Sort::Recent);
+
+    // Seed filter/sort/search from the URL query string so the back
+    // button + reload restore the user's view.
+    let initial = read_query_state();
+    let filter = RwSignal::new(initial.filter);
+    let search = RwSignal::new(initial.q);
+    let sort = RwSignal::new(initial.sort);
+
+    // Push state whenever any of the three change. push_state replaces
+    // the URL without a navigation, which is what we want here.
+    Effect::new(move |_| {
+        let f = filter.get();
+        let s = sort.get();
+        let q = search.get();
+        push_query_state(&QueryState { filter: f, sort: s, q });
+    });
 
     let chip_class = move |target: Filter| -> &'static str {
         if filter.get() == target { "chip active" } else { "chip" }
@@ -485,4 +540,127 @@ enum NotesSaveState {
     Saving,
     Saved,
     Error(String),
+}
+
+// ───────────────────────────── URL query state ────────────────────────────────
+
+#[derive(Clone, Debug)]
+struct QueryState {
+    filter: Filter,
+    sort: Sort,
+    q: String,
+}
+
+impl Default for QueryState {
+    fn default() -> Self {
+        Self {
+            filter: Filter::YourTurn,
+            sort: Sort::Recent,
+            q: String::new(),
+        }
+    }
+}
+
+fn read_query_state() -> QueryState {
+    let Some(win) = web_sys::window() else {
+        return QueryState::default();
+    };
+    let Ok(search) = win.location().search() else {
+        return QueryState::default();
+    };
+    let q_str = search.strip_prefix('?').unwrap_or(&search);
+    let mut state = QueryState::default();
+    for pair in q_str.split('&') {
+        let Some((k, v)) = pair.split_once('=') else { continue };
+        let v = decode_query(v);
+        match k {
+            "filter" => {
+                if let Some(f) = Filter::parse(&v) {
+                    state.filter = f;
+                }
+            }
+            "sort" => {
+                if let Some(s) = Sort::parse(&v) {
+                    state.sort = s;
+                }
+            }
+            "q" => state.q = v,
+            _ => {}
+        }
+    }
+    state
+}
+
+fn push_query_state(state: &QueryState) {
+    let Some(win) = web_sys::window() else { return };
+    let Ok(history) = win.history() else { return };
+
+    let mut parts = Vec::with_capacity(3);
+    // Only include non-default values to keep the URL short.
+    if state.filter != Filter::YourTurn {
+        parts.push(format!("filter={}", state.filter.slug()));
+    }
+    if state.sort != Sort::Recent {
+        parts.push(format!("sort={}", state.sort.slug()));
+    }
+    if !state.q.is_empty() {
+        parts.push(format!("q={}", encode_query(&state.q)));
+    }
+
+    let path = win.location().pathname().unwrap_or_else(|_| "/".into());
+    let url = if parts.is_empty() {
+        path
+    } else {
+        format!("{path}?{}", parts.join("&"))
+    };
+
+    let _ = history.replace_state_with_url(&wasm_bindgen::JsValue::NULL, "", Some(&url));
+}
+
+/// Minimal percent-encoder for the query-value half — covers the
+/// characters likely to appear in a search string without dragging in
+/// the `url` crate.
+fn encode_query(s: &str) -> String {
+    const SAFE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
+    let mut out = String::with_capacity(s.len());
+    for &b in s.as_bytes() {
+        if SAFE.contains(&b) {
+            out.push(b as char);
+        } else {
+            use std::fmt::Write as _;
+            let _ = write!(out, "%{b:02X}");
+        }
+    }
+    out
+}
+
+fn decode_query(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'%' if i + 2 < bytes.len() => {
+                if let Ok(h) = u8::from_str_radix(
+                    std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""),
+                    16,
+                ) {
+                    out.push(h as char);
+                    i += 3;
+                    continue;
+                }
+                out.push('%');
+                i += 1;
+            }
+            b'+' => {
+                out.push(' ');
+                i += 1;
+            }
+            other => {
+                out.push(other as char);
+                i += 1;
+            }
+        }
+    }
+    out
 }

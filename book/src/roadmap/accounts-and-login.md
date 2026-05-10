@@ -455,8 +455,9 @@ PRIMARY KEY (game_id, player_id)
 - [x] Filter chips functional (`your_turn` / `waiting` / `completed`
       / `multiplayer` / `all`) — RwSignal-backed; active chip flips
       class. Filtering happens client-side over the loaded list;
-      pushing the filter to query params is a small follow-up if /
-      when the list grows past 100 rows per player.
+      filter / sort / search now round-trip through the URL via
+      `history.replaceState`, so back button + reload restore the
+      user's view.
 - [x] Search box filters client-side over `name` / `leader` /
       `civ_id` (case-insensitive substring match). "Notes" is
       reserved until the per-game notes route ships.

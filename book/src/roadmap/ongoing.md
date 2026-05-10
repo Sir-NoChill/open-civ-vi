@@ -115,11 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.4 ▸ URL-backed filter + sort state** — push the
-      Filter + Sort + search query into the URL via
-      `web_sys::window().history().push_state_with_url(...)` so the
-      back button + bookmark + reload restore the user's view. On
-      mount, parse `?filter=&sort=&q=` and seed the signals.
+- [ ] **Phase 4 polish ▸ Per-tile View summary popup** — wire the
+      currently-inert "View summary" row in the tile · · · menu to
+      a Popup-in-Popup with a kv table mirroring the wizard
+      Review block (map · seed · world · civilization · difficulty
+      · victory · dynamics · players · turn mode). Pulls every
+      field straight from the loaded GameView.
 
 ### Up next (Phase 4 polish)
 
