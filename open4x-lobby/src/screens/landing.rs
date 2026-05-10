@@ -7,9 +7,11 @@
 //! `View source` is an external link to the planned repo URL — kept inert
 //! for now so we don't ship a placeholder URL into production.
 
+use std::sync::Arc;
+
 use leptos::prelude::*;
 
-use crate::components::{Btn, Trigger};
+use crate::components::{Btn, Popup, PopupBody, PopupSize};
 
 const ASCII_BANNER: &str = "┌─┐┌─┐┌─┐┌┐┌    ╦ ╦ ╦
 │ │├─┘├┤ │││    ║ ║ ║
@@ -56,17 +58,42 @@ pub fn Landing(on_signin: Callback<()>) -> impl IntoView {
                 </div>
 
                 <div class="muted" style="font-size:var(--fs-xs); letter-spacing:0.16em">
-                    <Trigger hint="Magic-link login. We mail a one-time URL valid for 15 minutes.">
-                        "EMAIL"
-                    </Trigger>
+                    <Popup
+                        title="Email"
+                        size=PopupSize::Narrow
+                        content=Arc::new(|| view! {
+                            <PopupBody>
+                                <p>"Magic-link login. We mail a one-time URL valid for 15 minutes."</p>
+                            </PopupBody>
+                        }.into_any())
+                    >
+                        <span class="trigger">"EMAIL"</span>
+                    </Popup>
                     " · "
-                    <Trigger hint="Sign in with Google, GitHub, GitLab, Microsoft, or any custom OIDC issuer URL.">
-                        "OPENID"
-                    </Trigger>
+                    <Popup
+                        title="OpenID Connect"
+                        content=Arc::new(|| view! {
+                            <PopupBody>
+                                <p>"Sign in with Google, GitHub, GitLab, Microsoft, or any custom OIDC issuer URL."</p>
+                            </PopupBody>
+                        }.into_any())
+                    >
+                        <span class="trigger">"OPENID"</span>
+                    </Popup>
                     " · "
-                    <Trigger hint="Use your atproto handle (e.g. alice.bsky.social) or a DID. OAuth flow with your PDS.">
-                        "ATPROTO"
-                    </Trigger>
+                    <Popup
+                        title="atproto"
+                        content=Arc::new(|| view! {
+                            <PopupBody>
+                                <p>"Use your atproto handle (e.g. "
+                                    <code>"alice.bsky.social"</code>
+                                    ") or a DID. OAuth flow with your PDS."
+                                </p>
+                            </PopupBody>
+                        }.into_any())
+                    >
+                        <span class="trigger">"ATPROTO"</span>
+                    </Popup>
                 </div>
             </div>
 

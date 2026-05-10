@@ -493,6 +493,38 @@ These don't fit cleanly into one phase but need to be settled early.
 
 Running record of work performed against this plan, newest at top.
 
+### Phase 1 — Visual completeness (2026-05-10, in progress)
+
+Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
+
+- `kpnxvpkm` — feat(open4x-lobby): port Slider primitive. Wraps
+  `<input type=range>` with optional `Arc<dyn Fn(i32) -> String>`
+  format callback; `RwSignal<i32>`-driven; `min` / `max` default to
+  `0` / `100`. Source:
+  `docs/open4x-landing/project/primitives.jsx`.
+- `nrostsvx` — feat(open4x-lobby): PopupBody / PopupActions /
+  PopupList. Pure layout wrappers matching the design's
+  `.popup-body` / `.popup-actions[.right]` / `.popup-list` CSS.
+  `PopupList` items modelled as a typed `PopupListItem` enum
+  (`Row { icon, label, desc? }` | `Separator`) so menu definitions
+  are checked at compile time.
+- `quzzmluo` — feat(open4x-lobby): Gwern-style Popup component.
+  `PopupProvider` mounts at the app root and owns one
+  `RwSignal<Option<PopupState>, LocalStorage>`; each `Popup`
+  wrapper captures its anchor's `DOMRect` and asks the provider to
+  show. 180 ms hover-show / 140 ms hide-grace timers
+  (`gloo-timers`). Click-trigger pins. Esc + click-outside dismiss
+  pinned popups. Smart positioning prefers below the anchor with a
+  viewport-clipping flip. `PopupState` carries an
+  `Arc<dyn Fn() -> AnyView + 'static>` view-fn (Clone-cheap;
+  `LocalStorage` signal because `AnyView: !Send`). Timers wrapped in
+  `SendWrapper` so the context is `Send + Sync` for
+  `provide_context`.
+- `wnpynloo` — feat(open4x-lobby): migrate Landing + Login Trigger
+  stubs to real Popups. Six call sites swept (3 landing footer +
+  player-ID + 3 login panel headers). Trigger stub remains for the
+  unmigrated screens (menu / newgame / profile).
+
 ### Phase 0 — Scaffolding (2026-05-10)
 
 - Workspace `[workspace.members]` updated to add `open4x-accounts` and

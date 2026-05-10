@@ -1,14 +1,16 @@
 //! Login screen — port of `docs/open4x-landing/project/hifi/login.jsx`.
 //!
-//! Three stacked auth panels (Email · OpenID · atproto). Inputs are present
-//! but no actual auth flow is wired — the buttons no-op until
-//! `open4x-accounts` and the lobby's HTTP surface land. See the design's
-//! `<Popup>` triggers — they're rendered as plain `<Trigger>` elements here
-//! pending the full popup component.
+//! Three stacked auth panels (Email · OpenID · atproto). Inputs are
+//! present but no actual auth flow is wired — the buttons no-op until
+//! `open4x-accounts` and the lobby's HTTP surface land (Phases 2-3 in
+//! `book/src/roadmap/accounts-and-login.md`). The underlined help
+//! triggers are now real `<Popup>` wrappers.
+
+use std::sync::Arc;
 
 use leptos::prelude::*;
 
-use crate::components::{Btn, Trigger};
+use crate::components::{Btn, Popup, PopupBody, PopupSize};
 
 #[component]
 pub fn Login(on_back: Callback<()>) -> impl IntoView {
@@ -28,9 +30,21 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                 <h1 class="h1" style="margin-bottom:4px">"Sign in"</h1>
                 <p class="muted small" style="margin-bottom:24px">
                     "Any method below — they all link to the same "
-                    <Trigger hint="An opaque, unique identifier (e.g. 0xA9C3·7F12·EE04) created the first time you sign in. All three login methods can be linked to the same player ID, so you can reach your games from any device.">
-                        "player ID"
-                    </Trigger>
+                    <Popup
+                        title="player ID"
+                        content=Arc::new(|| view! {
+                            <PopupBody>
+                                <p>"An opaque, unique identifier (e.g. "
+                                    <code>"0xA9C3·7F12·EE04"</code>
+                                    ") created the first time you sign in."
+                                </p>
+                                <p>"All three login methods can be linked to the same player ID, so you can reach your games from any device."</p>
+                                <p class="muted xsmall">"There are no usernames. Friends find you by your linked email, OpenID URL, or atproto handle."</p>
+                            </PopupBody>
+                        }.into_any())
+                    >
+                        <span class="trigger">"player ID"</span>
+                    </Popup>
                     "."
                 </p>
 
@@ -38,9 +52,19 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                 <div class="panel" style="margin-bottom:12px">
                     <div class="row between center-y" style="margin-bottom:10px">
                         <span class="h3">"Email"</span>
-                        <Trigger hint="1. Enter your email. 2. Receive a one-time magic link (valid 15 min). 3. Click it — you're signed in.">
-                            <span class="xsmall muted">"how it works"</span>
-                        </Trigger>
+                        <Popup
+                            title="How it works"
+                            size=PopupSize::Narrow
+                            content=Arc::new(|| view! {
+                                <PopupBody>
+                                    <p>"1. Enter your email."</p>
+                                    <p>"2. Receive a one-time magic link (valid 15 min)."</p>
+                                    <p>"3. Click it — you're signed in."</p>
+                                </PopupBody>
+                            }.into_any())
+                        >
+                            <span class="trigger xsmall muted">"how it works"</span>
+                        </Popup>
                     </div>
                     <div class="field" style="margin-bottom:10px">
                         <input class="input mono" placeholder="you@example.com" />
@@ -52,9 +76,17 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                 <div class="panel" style="margin-bottom:12px">
                     <div class="row between center-y" style="margin-bottom:10px">
                         <span class="h3">"OpenID"</span>
-                        <Trigger hint="Standard OpenID Connect flow. We support common providers and any custom issuer URL.">
-                            <span class="xsmall muted">"about OIDC"</span>
-                        </Trigger>
+                        <Popup
+                            title="OIDC"
+                            content=Arc::new(|| view! {
+                                <PopupBody>
+                                    <p>"Standard OpenID Connect flow. We support common providers and any custom issuer URL."</p>
+                                    <p class="muted xsmall">"Tokens are stored client-side; the server only sees signed claims."</p>
+                                </PopupBody>
+                            }.into_any())
+                        >
+                            <span class="trigger xsmall muted">"about OIDC"</span>
+                        </Popup>
                     </div>
                     <div class="row wrap" style="gap:6px">
                         {["Google", "GitHub", "GitLab", "Microsoft"].iter().map(|p| view! {
@@ -68,9 +100,20 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                 <div class="panel" style="margin-bottom:16px">
                     <div class="row between center-y" style="margin-bottom:10px">
                         <span class="h3">"atproto"</span>
-                        <Trigger hint="Use your handle (e.g. alice.bsky.social) or DID. We resolve your PDS and start an OAuth flow. Works with self-hosted PDSes too.">
-                            <span class="xsmall muted">"about atproto"</span>
-                        </Trigger>
+                        <Popup
+                            title="atproto"
+                            content=Arc::new(|| view! {
+                                <PopupBody>
+                                    <p>"Use your handle (e.g. "
+                                        <code>"alice.bsky.social"</code>
+                                        ") or DID. We resolve your PDS and start an OAuth flow."
+                                    </p>
+                                    <p class="muted xsmall">"Works with self-hosted PDSes too."</p>
+                                </PopupBody>
+                            }.into_any())
+                        >
+                            <span class="trigger xsmall muted">"about atproto"</span>
+                        </Popup>
                     </div>
                     <div class="field" style="margin-bottom:10px">
                         <input class="input mono"
