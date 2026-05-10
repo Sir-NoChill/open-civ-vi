@@ -14,6 +14,9 @@ pub enum MenuTab {
     Ongoing,
     NewGame,
     Profile,
+    Friends,
+    Presets,
+    Docs,
 }
 
 impl MenuTab {
@@ -22,6 +25,9 @@ impl MenuTab {
             MenuTab::Ongoing => "Ongoing games",
             MenuTab::NewGame => "New game",
             MenuTab::Profile => "Profile",
+            MenuTab::Friends => "Friends",
+            MenuTab::Presets => "Presets",
+            MenuTab::Docs => "Docs",
         }
     }
 
@@ -30,11 +36,14 @@ impl MenuTab {
             MenuTab::Ongoing => "▣",
             MenuTab::NewGame => "+",
             MenuTab::Profile => "◔",
+            MenuTab::Friends => "◎",
+            MenuTab::Presets => "≡",
+            MenuTab::Docs => "?",
         }
     }
 }
 
-const SECONDARY: &[(&str, &str)] = &[("◎", "Friends"), ("≡", "Presets"), ("?", "Docs")];
+const SECONDARY: &[MenuTab] = &[MenuTab::Friends, MenuTab::Presets, MenuTab::Docs];
 
 #[component]
 pub fn MenuShell(
@@ -75,10 +84,15 @@ pub fn MenuShell(
                 }).collect::<Vec<_>>()}
 
                 <div class="group-label">"MORE"</div>
-                {SECONDARY.iter().copied().map(|(icon, label)| view! {
-                    <button class="nav-item" style="width:100%" title="// out of scope for this hi-fi pass">
-                        <span class="icon">{icon}</span>
-                        <span>{label}</span>
+                {SECONDARY.iter().copied().map(|t| view! {
+                    <button
+                        class="nav-item"
+                        style="width:100%"
+                        aria-current=move || (tab.get() == t).to_string()
+                        on:click=move |_| tab.set(t)
+                    >
+                        <span class="icon">{t.icon()}</span>
+                        <span>{t.label()}</span>
                     </button>
                 }).collect::<Vec<_>>()}
 

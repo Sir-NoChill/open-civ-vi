@@ -520,10 +520,20 @@ User-visible quality once the platform basics are wired.
       that renders the player_id as a 220 px QR with the hex
       label below. Copy player-ID action wired to
       `navigator.clipboard.write_text` on the same row.
-- [ ] **Friends screen** — search-by-identity, friend requests, friends
-      list. Schema additions.
-- [ ] **Presets screen** — save / load / import-JSON wizard configs.
-- [ ] **Docs screen** — embeds the rendered mdBook (this very book).
+- [~] **Friends screen** — `screens/friends.rs` ports the design's
+      header + search panel + Friends + Requests panels. The
+      identity search input + Add friend button are visible-but-
+      inert pending the friends schema + routes (deferred Phase 5
+      task).
+- [~] **Presets screen** — `screens/presets.rs` renders the page
+      with three built-in presets (Standard prince / Deity duel /
+      Slow marathon) and a "My presets" empty-state. Load /
+      Save / Import JSON buttons inert pending the
+      preset-persistence column.
+- [~] **Docs screen** — `screens/docs.rs` ships a quick-links
+      panel pointing at `/book/`, the accounts-and-login roadmap,
+      and the web-client REST reference. Static-mdbook router
+      lands as a separate task; the links 404 in dev today.
 - [ ] **Email verification flow** — "Verify email" CTA on unverified
       identities, second magic-link to confirm.
 - [ ] **Sign-in feedback states** — pending / success / failure for

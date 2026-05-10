@@ -11,7 +11,9 @@ use wasm_bindgen_futures::spawn_local;
 
 use crate::components::api::me as me_api;
 use crate::components::{PopupProvider, TweaksPanel};
-use crate::screens::{Landing, Login, MenuShell, MenuTab, NewGame, OngoingGames, Profile};
+use crate::screens::{
+    Docs, Friends, Landing, Login, MenuShell, MenuTab, NewGame, OngoingGames, Presets, Profile,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Screen {
@@ -117,6 +119,9 @@ pub fn App() -> impl IntoView {
                                     MenuTab::Profile => view! {
                                         <Profile on_signout=on_signout />
                                     }.into_any(),
+                                    MenuTab::Friends => view! { <Friends /> }.into_any(),
+                                    MenuTab::Presets => view! { <Presets /> }.into_any(),
+                                    MenuTab::Docs => view! { <Docs /> }.into_any(),
                                 }}
                             </MenuShell>
                         }.into_any()
