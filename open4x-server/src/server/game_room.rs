@@ -299,6 +299,14 @@ impl GameRoom {
                 civ.research_queue.pop_front();
                 Ok(())
             }
+            GameAction::CancelCivic => {
+                let civ = self.state.civilizations.iter_mut()
+                    .find(|c| c.id == civ_id)
+                    .ok_or("civ not found")?;
+                // Clear the active civic. Idempotent: no-op when None.
+                civ.civic_in_progress = None;
+                Ok(())
+            }
             GameAction::QueueCivic { civic } => {
                 let civic_id = to_libciv_civic_id(*civic);
                 let civ = self.state.civilizations.iter_mut()

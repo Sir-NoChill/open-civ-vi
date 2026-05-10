@@ -339,6 +339,52 @@ async fn units_actions_are_engine_derived_and_role_specific() {
 }
 
 #[tokio::test]
+async fn cancel_civic_clears_active_and_is_idempotent() {
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    // Pick an available civic and start it.
+    let (_, ct) = get_with(&app, "/api/v1/civics", &token).await;
+    let civic_id = ct["civics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["status"] == "available")
+        .and_then(|c| c["id"].as_str())
+        .expect("at least one available civic")
+        .to_string();
+    let (status, _) = post_with(
+        &app,
+        "/api/v1/civics/research",
+        Some(&token),
+        serde_json::json!({"civic_id": civic_id}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // civic_queue should now have one entry.
+    let (_, ct) = get_with(&app, "/api/v1/civics", &token).await;
+    assert_eq!(
+        ct["civic_queue"].as_array().unwrap().len(),
+        1,
+        "expected civic_queue to have one entry, got {ct:?}"
+    );
+
+    // DELETE — clears the slot.
+    let (status, body) = delete_with(&app, "/api/v1/civics/research", &token).await;
+    assert_eq!(status, StatusCode::OK, "cancel: {body:?}");
+    assert_eq!(body["ok"], true);
+    assert!(
+        body["view"]["civic_queue"].as_array().unwrap().is_empty(),
+        "expected empty civic_queue after cancel, got {body:?}"
+    );
+
+    // Idempotent: a second DELETE on an empty slot still 200s.
+    let (status, _) = delete_with(&app, "/api/v1/civics/research", &token).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
 async fn cancel_research_drops_active_tech_and_is_idempotent() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;

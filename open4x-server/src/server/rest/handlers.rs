@@ -869,6 +869,28 @@ pub async fn civic_research(
     ))
 }
 
+/// `DELETE /api/v1/civics/research` — clear the civ's `civic_in_progress`
+/// slot. Idempotent. Returns the updated civics tree.
+pub async fn cancel_civic(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let action = crate::types::messages::GameAction::CancelCivic;
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+    let view = view_only(&state, game_id, civ_id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view: web_projection::build_civics_tree(&view),
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
 // ── /government ──────────────────────────────────────────────────────────────
 
 pub async fn government(

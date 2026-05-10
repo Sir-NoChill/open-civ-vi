@@ -97,6 +97,9 @@ pub enum GameAction {
     /// the dropped tech is discarded (matches Civ VI's switch-research
     /// semantics).
     CancelResearch,
+    /// Clear the civ's `civic_in_progress` slot. Idempotent — a no-op
+    /// when no civic is being studied. Partial progress is discarded.
+    CancelCivic,
     QueueCivic {
         civic: CivicId,
     },

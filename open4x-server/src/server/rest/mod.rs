@@ -53,6 +53,6 @@ pub fn v1_router() -> Router<Arc<AppState>> {
         .route("/cities/{id}/rename", post(handlers::rename_city))
         .route("/units/{id}/action", post(handlers::unit_action))
         .route("/tech/research", post(handlers::tech_research).delete(handlers::cancel_research))
-        .route("/civics/research", post(handlers::civic_research))
+        .route("/civics/research", post(handlers::civic_research).delete(handlers::cancel_civic))
         .route("/turn/end", post(handlers::end_turn))
 }

@@ -283,6 +283,9 @@ pub enum ActionKind {
     },
     /// Cancel the active (front) tech in the player's research queue
     CancelResearch,
+    /// Cancel the player's currently-studied civic (clears
+    /// `civic_in_progress`)
+    CancelCivic,
     /// Set the current civic to research
     StudyCivic {
         #[arg(long)]
