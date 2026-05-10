@@ -20,7 +20,75 @@ enum EmailFlow {
     Idle,
     Pending,
     Sent(String),
-    Error(String),
+    Error(EmailFlowError),
+}
+
+/// Discriminated transient errors so the UI can pick the right copy
+/// + decide whether a Retry affordance makes sense (Retry doesn't
+/// help an empty-input validation, but it does help a 5xx).
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum EmailFlowError {
+    /// Local validation — empty input. No retry button; user just
+    /// fills the field and clicks Send.
+    EmptyEmail,
+    /// 429 rate-limited (per-email or per-IP throttle). Includes
+    /// the server's hint message so "Retry-After" copy is honest.
+    RateLimited { message: Option<String> },
+    /// 5xx — mint or mailer failed. Worth retrying after a moment.
+    ServerBusy { code: String, message: Option<String> },
+    /// Network / transport failure — couldn't reach the server.
+    /// `ApiError::status == 0` from the binding.
+    Network { detail: String },
+    /// Anything else (4xx that isn't 429, unrecognised codes).
+    Other { code: String, message: Option<String> },
+}
+
+impl EmailFlowError {
+    fn from_api(e: &crate::components::api::ApiError) -> Self {
+        let msg = e.message.clone();
+        match e.status {
+            0 => EmailFlowError::Network {
+                detail: msg.clone().unwrap_or_else(|| "couldn't reach the server".into()),
+            },
+            429 => EmailFlowError::RateLimited { message: msg },
+            500..=599 => EmailFlowError::ServerBusy {
+                code: e.code.clone(),
+                message: msg,
+            },
+            _ => EmailFlowError::Other {
+                code: e.code.clone(),
+                message: msg,
+            },
+        }
+    }
+
+    fn is_retryable(&self) -> bool {
+        // EmptyEmail isn't retryable (the user has to act); everything
+        // else benefits from a Retry button.
+        !matches!(self, EmailFlowError::EmptyEmail)
+    }
+
+    /// Human copy for the inline error line. Optimistic where the
+    /// transient kinds are concerned.
+    fn copy(&self) -> String {
+        match self {
+            EmailFlowError::EmptyEmail => "Enter an email address first.".into(),
+            EmailFlowError::RateLimited { message } => message.clone().unwrap_or_else(|| {
+                "Too many recent sends. Try again in a minute.".into()
+            }),
+            EmailFlowError::ServerBusy { code, message } => match message {
+                Some(m) => format!("Server's having trouble ({code}): {m}"),
+                None => format!("Server's having trouble ({code}). Try again in a moment."),
+            },
+            EmailFlowError::Network { detail } => {
+                format!("Couldn't reach the server. Check your connection.\n{detail}")
+            }
+            EmailFlowError::Other { code, message } => match message {
+                Some(m) => format!("{code}: {m}"),
+                None => code.clone(),
+            },
+        }
+    }
 }
 
 #[component]
@@ -28,20 +96,22 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
     let email = RwSignal::new(String::new());
     let flow = RwSignal::new(EmailFlow::Idle);
 
-    let on_send = move |_| {
+    let do_send = move || {
         let addr = email.get_untracked().trim().to_string();
         if addr.is_empty() {
-            flow.set(EmailFlow::Error("enter an email address first".into()));
+            flow.set(EmailFlow::Error(EmailFlowError::EmptyEmail));
             return;
         }
         flow.set(EmailFlow::Pending);
         spawn_local(async move {
             match auth_api::email_start(addr.clone()).await {
                 Ok(_) => flow.set(EmailFlow::Sent(addr)),
-                Err(e) => flow.set(EmailFlow::Error(e.to_string())),
+                Err(e) => flow.set(EmailFlow::Error(EmailFlowError::from_api(&e))),
             }
         });
     };
+    let on_send = move |_| do_send();
+    let on_retry = move |_| do_send();
 
     let pending = Signal::derive(move || matches!(flow.get(), EmailFlow::Pending));
     view! {
@@ -126,11 +196,24 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                                 {format!("Magic link sent to {to}. Check your inbox.")}
                             </p>
                         }.into_any(),
-                        EmailFlow::Error(msg) => view! {
-                            <p class="xsmall" style="color:var(--accent); margin-top:8px">
-                                {msg}
-                            </p>
-                        }.into_any(),
+                        EmailFlow::Error(err) => {
+                            let copy = err.copy();
+                            let retryable = err.is_retryable();
+                            view! {
+                                <div style="margin-top:8px">
+                                    <p class="xsmall" style="color:var(--accent); white-space:pre-line">
+                                        {copy}
+                                    </p>
+                                    {retryable.then(|| view! {
+                                        <Btn
+                                            variant="ghost"
+                                            size="sm"
+                                            on_click=Callback::new(on_retry)
+                                        >"↻ Try again"</Btn>
+                                    })}
+                                </div>
+                            }.into_any()
+                        }
                         _ => view! { <span /> }.into_any(),
                     }}
                 </div>

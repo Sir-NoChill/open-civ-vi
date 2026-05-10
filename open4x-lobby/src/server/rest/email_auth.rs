@@ -134,6 +134,15 @@ pub async fn start(
     {
         Ok(m) => m,
         Err(e) => {
+            let _ = state
+                .audit
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::AuthEmailStartFailed,
+                    player_id: None,
+                    ip: Some(ip_str.clone()),
+                    detail: format!("mint_failed:{e}"),
+                })
+                .await;
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorBody {
@@ -147,6 +156,15 @@ pub async fn start(
 
     let link = build_verify_link(&state.public_base_url, &minted.token);
     if let Err(e) = state.mailer.send_magic_link(&email, &link).await {
+        let _ = state
+            .audit
+            .record(NewAuditEvent {
+                kind: AuditEventKind::AuthEmailStartFailed,
+                player_id: None,
+                ip: Some(ip_str.clone()),
+                detail: format!("mail_failed:{e}"),
+            })
+            .await;
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorBody {

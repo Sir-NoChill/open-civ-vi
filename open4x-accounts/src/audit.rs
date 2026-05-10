@@ -32,6 +32,12 @@ pub enum AuditEventKind {
     IdentityUnlinked,
     AccountDeleted,
     NewGameCreated,
+    /// `POST /auth/email/start` failed BEFORE a mint could happen
+    /// (mint_failed, mail_failed, etc). `detail` carries a short
+    /// category tag (`mint_failed`, `mail_failed`, …) so ops can
+    /// split server-side breakage from token-validation failures
+    /// (which keep using `SignInFailed`).
+    AuthEmailStartFailed,
 }
 
 impl AuditEventKind {
@@ -45,6 +51,7 @@ impl AuditEventKind {
             AuditEventKind::IdentityUnlinked => "identity_unlinked",
             AuditEventKind::AccountDeleted => "account_deleted",
             AuditEventKind::NewGameCreated => "new_game_created",
+            AuditEventKind::AuthEmailStartFailed => "auth_email_start_failed",
         }
     }
 }
@@ -203,6 +210,7 @@ fn parse_kind(s: &str) -> AuditEventKind {
         "identity_unlinked" => AuditEventKind::IdentityUnlinked,
         "account_deleted" => AuditEventKind::AccountDeleted,
         "new_game_created" => AuditEventKind::NewGameCreated,
+        "auth_email_start_failed" => AuditEventKind::AuthEmailStartFailed,
         // Tolerate unknown kinds — schema can grow without breaking
         // historical reads.
         _ => AuditEventKind::SignInFailed,
