@@ -115,23 +115,23 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 3 ▸ Login screen wiring** — wire the email panel's
-      "Send magic link →" button on `screens/login.rs` to
-      `POST /api/v1/auth/email/start`. Add a small client API
-      module `components/api/auth.rs` that uses
-      `web_sys::Fetch` (mirror `open4x-server`'s
-      `components/api/http.rs` shape). Show a "magic link sent —
-      check your inbox" success panel on 202; expose error text on
-      400/500. Accept that the lobby today doesn't carry any
-      `wasm-bindgen` fetch helper — bring one in alongside this
-      change.
+- [ ] **Phase 3 ▸ Profile screen wiring** — fetch `/api/v1/me` on
+      mount via `components::api::me::get`, populate the form
+      fields from the response, push field changes back through
+      `me::patch` debounced on input. Linked-identities list reads
+      from `me.identities` instead of the baked Alice fixture.
+      Sign-out button in the user-card menu calls `auth::signout`
+      and switches the route back to Landing. Profile preferences
+      Segmenteds + Toggles round-trip via
+      `PATCH /me {prefs: {...}}`.
 
 ### Up next (Phase 3)
 
-- [ ] Profile screen fetches `/api/v1/me` on mount and patches
-      changes back through `PATCH /api/v1/me`.
 - [ ] OIDC provider buttons in Login wire to
       `GET /auth/oidc/{provider}/start` (depends on Phase 2.3 part 2).
+- [ ] Menu sidebar sign-out menu item wires to `auth::signout`.
+- [ ] Bootstrap-on-mount: App fetches `/me` once, redirects Landing
+      → Menu when authenticated.
 
 ### Up next (deferred Phase 2 items)
 

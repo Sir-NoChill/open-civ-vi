@@ -5,6 +5,7 @@
 //! `.btn`, `.tag`, `.toggle`, `.seg`, `.panel`, …) so visual styling lives
 //! in `styles.css` alone. Behaviour is reactive via Leptos signals.
 
+pub mod api;
 pub mod btn;
 pub mod minimap;
 pub mod panel;

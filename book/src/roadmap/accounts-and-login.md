@@ -340,12 +340,21 @@ data with a real REST call.
 
 #### 3.3 SPA wiring
 
-- [ ] `components/api/{auth,me,identities}.rs` bindings.
-- [ ] `Login` screen: email panel POSTs to `/auth/email/start`, OIDC
-      buttons trigger `/auth/oidc/{provider}/start` redirects, custom
-      OIDC popup posts to `/auth/oidc/custom/start`, atproto panel
-      POSTs to `/auth/atproto/start`. Show "Magic link sent — check your
-      inbox" feedback.
+- [x] `components/api/{auth,me}.rs` bindings — `auth::email_start`
+      / `auth::signout`, `me::get` / `me::patch` / `me::delete_me`.
+      Single transport helper at `components/api/http.rs` (mirrors
+      `open4x-server`'s shape) using `web_sys::Fetch` with
+      `RequestCredentials::SameOrigin` so the browser-managed
+      `lobby_session` cookie auto-attaches. `identities` bindings
+      land alongside their server routes (Phase 2.3 / 2.4
+      follow-up).
+- [~] `Login` screen: email panel POSTs to `/auth/email/start` ✅
+      (with EmailFlow state machine — Idle / Pending / Sent /
+      Error — surfacing live "Magic link sent to <addr>. Check
+      your inbox." or error text under the button; button
+      disables to "Sending…" while the request is in flight).
+      OIDC + atproto buttons still inert pending Phase 2.3 part 2
+      and Phase 2.4.
 - [ ] Magic-link landing page (`/auth/email/verify`) — server-rendered
       redirect to `/menu` (or to the SPA's Menu route via hash).
 - [ ] `Profile` screen: fetch `/me` on mount, populate fields, push

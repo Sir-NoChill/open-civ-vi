@@ -9,11 +9,41 @@
 use std::sync::Arc;
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
+use crate::components::api::auth as auth_api;
 use crate::components::{Btn, Popup, PopupBody, PopupSize};
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+enum EmailFlow {
+    #[default]
+    Idle,
+    Pending,
+    Sent(String),
+    Error(String),
+}
 
 #[component]
 pub fn Login(on_back: Callback<()>) -> impl IntoView {
+    let email = RwSignal::new(String::new());
+    let flow = RwSignal::new(EmailFlow::Idle);
+
+    let on_send = move |_| {
+        let addr = email.get_untracked().trim().to_string();
+        if addr.is_empty() {
+            flow.set(EmailFlow::Error("enter an email address first".into()));
+            return;
+        }
+        flow.set(EmailFlow::Pending);
+        spawn_local(async move {
+            match auth_api::email_start(addr.clone()).await {
+                Ok(_) => flow.set(EmailFlow::Sent(addr)),
+                Err(e) => flow.set(EmailFlow::Error(e.to_string())),
+            }
+        });
+    };
+
+    let pending = Signal::derive(move || matches!(flow.get(), EmailFlow::Pending));
     view! {
         <div style="flex:1; display:flex; flex-direction:column">
             <div class="row between center-y" style="padding:10px 20px; border-bottom:1px solid var(--hairline)">
@@ -67,9 +97,42 @@ pub fn Login(on_back: Callback<()>) -> impl IntoView {
                         </Popup>
                     </div>
                     <div class="field" style="margin-bottom:10px">
-                        <input class="input mono" placeholder="you@example.com" />
+                        <input
+                            class="input mono"
+                            placeholder="you@example.com"
+                            prop:value=move || email.get()
+                            on:input=move |ev| {
+                                use wasm_bindgen::JsCast as _;
+                                if let Some(el) = ev
+                                    .target()
+                                    .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                                {
+                                    email.set(el.value());
+                                }
+                            }
+                        />
                     </div>
-                    <Btn variant="primary" class="block">"Send magic link →"</Btn>
+                    <Btn
+                        variant="primary"
+                        class="block"
+                        disabled=pending
+                        on_click=Callback::new(on_send)
+                    >
+                        {move || if pending.get() { "Sending…" } else { "Send magic link →" }}
+                    </Btn>
+                    {move || match flow.get() {
+                        EmailFlow::Sent(to) => view! {
+                            <p class="xsmall" style="color:var(--good); margin-top:8px">
+                                {format!("Magic link sent to {to}. Check your inbox.")}
+                            </p>
+                        }.into_any(),
+                        EmailFlow::Error(msg) => view! {
+                            <p class="xsmall" style="color:var(--accent); margin-top:8px">
+                                {msg}
+                            </p>
+                        }.into_any(),
+                        _ => view! { <span /> }.into_any(),
+                    }}
                 </div>
 
                 // ─── OpenID ─────────────────────────────────────────
