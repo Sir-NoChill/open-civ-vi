@@ -534,11 +534,15 @@ User-visible quality once the platform basics are wired.
       that renders the player_id as a 220 px QR with the hex
       label below. Copy player-ID action wired to
       `navigator.clipboard.write_text` on the same row.
-- [~] **Friends screen** — `screens/friends.rs` ports the design's
-      header + search panel + Friends + Requests panels. The
-      identity search input + Add friend button are visible-but-
-      inert pending the friends schema + routes (deferred Phase 5
-      task).
+- [x] **Friends screen** — `screens/friends.rs` now wires the
+      design's chrome to live `/api/v1/friends` data: list,
+      Friends / incoming-requests / outgoing-requests sections,
+      Add-friend by 16-hex PlayerId, accept / decline / cancel /
+      unfriend buttons. New schema in `0006_friends.sql` (single
+      directed row, status ∈ pending|accepted|blocked, FK
+      CASCADE on both sides) + `FriendsStore` in
+      `open4x-accounts`. Identity-search route (resolve
+      email/handle/OpenID → PlayerId) is still deferred.
 - [~] **Presets screen** — `screens/presets.rs` renders the page
       with three built-in presets (Standard prince / Deity duel /
       Slow marathon) and a "My presets" empty-state. Load /
@@ -910,6 +914,16 @@ Running record of work performed against this plan, newest at top.
   variants. New `book/src/multiplayer/i18n.md` documents the
   add-a-locale recipe. No runtime library — wasm budget +
   compile-time guarantees both win.
+- `8c7f1fcd` — feat(open4x-{accounts,lobby}): friends schema
+  + routes + screen. New `0006_friends.sql` (single directed
+  row, status pending|accepted|blocked, FK CASCADE), new
+  `FriendsStore` in open4x-accounts with a unit test covering
+  the request → accept → unfriend round-trip + rejection paths
+  (self-friend, duplicate). Lobby gains GET /friends, POST
+  /friends/request, POST /friends/{id}/accept, DELETE
+  /friends/{id}; Friends screen wires Add-friend, accept,
+  decline, cancel, unfriend. Smoke verified the full flow
+  end-to-end against two real signed-in accounts.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`

@@ -115,15 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Friends screen ▸ schema + routes** — `screens/friends.rs`
-      currently renders the design's chrome with an
-      empty-state. The plan calls for the underlying data:
-      a `friends(player_id, friend_id, status, created_at)`
-      table with `status ∈ {pending_outgoing, pending_incoming,
-      accepted, blocked}`, an identity-search route that
-      resolves email/handle/PlayerId → PlayerId, and the four
-      mutation routes (request, accept, block, unfriend). SPA
-      input + Add-friend Btn wires through.
+- [ ] **Friends ▸ identity search route** — `POST /api/v1/
+      friends/search` body `{query}` resolves an email /
+      atproto handle / OpenID URL / 16-hex PlayerId to one or
+      more PlayerIds, gating against `Preferences
+      .discoverable_by_id`. Returns `{matches:[{player_id,
+      kind, label}]}` so the SPA can disambiguate. The Friends
+      screen's search input then drives Add-friend without
+      requiring users to paste raw PlayerIds.
 
 ### Up next (Phase 6)
 
