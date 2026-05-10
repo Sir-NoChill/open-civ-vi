@@ -253,18 +253,27 @@ minting behind those types.
 
 #### 2.3 OIDC client
 
-- [ ] `OidcProvider` config (issuer URL, client_id, client_secret,
-      redirect_uri, scopes). Built-in pre-configs for Google · GitHub ·
-      GitLab · Microsoft.
+- [x] `OidcProvider` enum (Google · GitLab · Microsoft · Custom) +
+      `OidcConfig` (provider, client_id, client_secret, redirect_uri,
+      scopes) at `open4x-accounts/src/oidc.rs`. Factory constructors
+      seed the standard `openid email profile` scope set per
+      provider.
+- [x] PKCE + state + nonce generation (`Pkce::new` →
+      `verifier` 32-bytes-base64url, `challenge` =
+      base64url(sha256(verifier))).
+- [x] `build_authorization_request(config)` returns the redirect
+      URL + ephemeral state for the lobby to stash. Uses each
+      provider's authorize endpoint directly today; the
+      discovery-driven version lands alongside the exchange flow.
 - [ ] OIDC discovery (`/.well-known/openid-configuration`) cached per
-      issuer.
-- [ ] Authorization-code flow with PKCE.
-- [ ] ID-token verification (signature, iss, aud, exp, nonce).
-- [ ] Claims → `Identity::OpenId{issuer, subject, label}` mapping.
-      `label` derived from `preferred_username` or `email` claims when
-      available.
-- [ ] Custom-issuer flow — accept arbitrary issuer URL, run discovery
-      live (cache aggressively after first success).
+      issuer (deferred — needs the network half).
+- [ ] Authorization-code exchange + ID-token verification (deferred
+      — picks up `openidconnect` crate behind a separate feature).
+- [ ] Claims → `Identity::OpenId{issuer, subject, label}` mapping
+      (deferred).
+- [ ] Custom-issuer discovery on first sign-in (deferred).
+- [ ] **GitHub** is OAuth2-only (no ID token) and gets its own
+      module under a follow-up Phase 2.3 task.
 
 #### 2.4 atproto
 

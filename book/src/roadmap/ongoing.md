@@ -115,15 +115,21 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 2.3 ▸ OIDC client** — implement the OIDC code-flow
-      against the four pre-configured providers (Google · GitHub ·
-      GitLab · Microsoft) plus a custom-issuer escape hatch. Lives
-      at `open4x-accounts/src/oidc.rs`. Uses `openidconnect` crate
-      (or `oauth2` + manual ID-token verify) — pick whichever has
-      lighter deps when the work starts. PKCE state stashed in a
-      short-lived signed cookie; ID-token claims verified
-      (signature / iss / aud / exp / nonce) and mapped into
-      `Identity::OpenId{issuer, subject, label}`.
+- [ ] **Phase 2.3 ▸ OIDC code exchange + ID-token verify** — picks
+      up where `oidc.rs` left off. Adds an `oidc-flow` cargo feature
+      that depends on `openidconnect` + `reqwest`; implements
+      `OidcClient::discover()` (caches `CoreProviderMetadata` per
+      issuer URL), `OidcClient::exchange_code(code, pkce_verifier,
+      expected_nonce) -> Identity` with full ID-token verification
+      (signature / iss / aud / exp / nonce match), and the
+      `Identity::OpenId{issuer, subject, label}` claims mapping
+      (label from `preferred_username` / `name` / `email` in that
+      order). Mocked-discovery integration test.
+- [ ] **Phase 2.3.x ▸ GitHub OAuth2 helper** — separate module
+      since GitHub doesn't speak OIDC. `github::exchange_code`
+      hits `/login/oauth/access_token` then `/user` and constructs
+      an `Identity::OpenId{issuer="github.com", subject=user.id,
+      label="github.com/" + user.login}`.
 
 ### Up next (Phase 2)
 
@@ -132,9 +138,9 @@ from this list when complete)_
 ### Phase 2 summary
 
 Phase 2.1 ✅ persistence · 2.2 ✅ magic-link + mailer · 2.5 ✅ sessions
-· 2.3 OIDC client (next) · 2.4 atproto. Phase 3 (lobby HTTP +
-session-cookie middleware) unblocks once 2.3 lands; 2.4 can ship
-under Phase 5 polish if atproto OAuth is still moving.
+· 2.3 partial (config + auth-URL builder ✅; exchange + verify next)
+· 2.4 atproto. Phase 3 (lobby HTTP + session-cookie middleware) can
+start in parallel — the session validator already exists.
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 

@@ -26,6 +26,9 @@ pub mod magic_link;
 pub mod mailer;
 
 #[cfg(feature = "persistence")]
+pub mod oidc;
+
+#[cfg(feature = "persistence")]
 pub mod session;
 
 #[cfg(feature = "persistence")]
