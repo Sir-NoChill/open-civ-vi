@@ -6,11 +6,15 @@
 //! (Resume / Notes / ⋯) are still inert beyond the Resume CTA, which
 //! requires the Phase 4.3 orchestrator to populate `server_url`.
 
+use std::sync::Arc;
+
 use leptos::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::components::api::games as games_api;
-use crate::components::{Btn, MiniMap, Tag};
+use crate::components::{
+    Btn, MiniMap, Popup, PopupList, PopupListItem, PopupSize, PopupTrigger, Tag,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Filter {
@@ -23,7 +27,11 @@ enum Filter {
 
 #[component]
 pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
-    let games = LocalResource::new(|| async { games_api::list().await.ok() });
+    let tick = RwSignal::new(0u32);
+    let games = LocalResource::new(move || {
+        let _ = tick.get();
+        async move { games_api::list().await.ok() }
+    });
     let filter = RwSignal::new(Filter::YourTurn);
     let search = RwSignal::new(String::new());
 
@@ -203,7 +211,7 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                             disabled=disabled_signal
                                             on_click=on_resume
                                         >{resume_label}</Btn>
-                                        <Btn variant="ghost" size="sm">"···"</Btn>
+                                        {tile_menu_popup(g.game_id.clone(), g.name.clone(), tick)}
                                     </div>
                                 </div>
                             }
@@ -213,5 +221,105 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                 </Suspense>
             </div>
         </div>
+    }
+}
+
+/// Click-trigger popup wrapping a tile's "···" button.
+///
+/// Items: View summary (TODO popup-in-popup) / Copy game ID
+/// (writes to navigator.clipboard) / Share invite link (TODO) /
+/// Archive (TODO — needs a status mutation route) / Resign
+/// (DELETE /games/{id} + bump tick).
+///
+/// Resign and Copy game ID are wired today; Archive / View summary
+/// / Share invite are visible-but-inert pending their underlying
+/// routes / popups.
+fn tile_menu_popup(
+    game_id: String,
+    game_name: String,
+    tick: RwSignal<u32>,
+) -> impl IntoView {
+    let id_for_resign = game_id.clone();
+    let id_for_clipboard = game_id.clone();
+    let _ = game_name;
+
+    // Build the menu items inside an Arc'd renderer because the
+    // PopupList items embed click closures that capture game_id.
+    let content = Arc::new(move || {
+        let id_resign = id_for_resign.clone();
+        let id_copy = id_for_clipboard.clone();
+
+        // PopupList today renders inert <button class="item"> rows
+        // (no on_click plumbing — that lands when the menu rows
+        // gain an interactive callback). For now we fan out to
+        // bespoke <button> rows for the two interactive items, and
+        // use PopupList for the inert ones.
+        view! {
+            <div class="popup-list">
+                <button
+                    class="item"
+                    type="button"
+                    on:click=move |_| {
+                        let id = id_copy.clone();
+                        if let Some(win) = web_sys::window() {
+                            let nav = win.navigator();
+                            let _ = nav.clipboard().write_text(&id);
+                        }
+                    }
+                >
+                    <span class="icon">"⎘"</span>
+                    <span>"Copy game ID"</span>
+                </button>
+                <button class="item" type="button">
+                    <span class="icon">"◑"</span>
+                    <span>"View summary"</span>
+                    <span class="desc">"(TODO)"</span>
+                </button>
+                <button class="item" type="button">
+                    <span class="icon">"↗"</span>
+                    <span>"Share invite link"</span>
+                    <span class="desc">"(TODO)"</span>
+                </button>
+                <div class="sep"></div>
+                <button class="item" type="button">
+                    <span class="icon">"⊟"</span>
+                    <span>"Archive"</span>
+                    <span class="desc">"(TODO)"</span>
+                </button>
+                <button
+                    class="item"
+                    type="button"
+                    on:click=move |_| {
+                        let id = id_resign.clone();
+                        spawn_local(async move {
+                            let _ = games_api::delete_game(&id).await;
+                            tick.update(|t| *t += 1);
+                        });
+                    }
+                >
+                    <span class="icon">"⊗"</span>
+                    <span>"Resign / delete"</span>
+                </button>
+            </div>
+        }
+        .into_any()
+    });
+
+    // Suppress dead_code on PopupList — it's still used elsewhere
+    // (StepPlayers slot menu).
+    let _ = (
+        PopupListItem::sep,
+        PopupList,
+    );
+
+    view! {
+        <Popup
+            title="Game"
+            size=PopupSize::Narrow
+            trigger=PopupTrigger::Click
+            content=content
+        >
+            <Btn variant="ghost" size="sm">"···"</Btn>
+        </Popup>
     }
 }

@@ -480,8 +480,13 @@ PRIMARY KEY (game_id, player_id)
       button unchanged.
 - [ ] Notes popup: markdown textarea, persisted via
       `POST /api/v1/games/{id}/notes`.
-- [ ] Per-tile `···` menu: View summary / Copy game ID / Share invite
-      link / Archive / Resign.
+- [~] Per-tile `···` menu: shipped as a click-trigger Popup with
+      Copy game ID (writes to `navigator.clipboard`, wired) and
+      Resign / delete (`DELETE /games/{id}` + bumps the list's
+      tick to refresh, wired). View summary / Share invite link /
+      Archive are visible-but-inert pending their underlying
+      surfaces (summary popup, invite-link minting, archive
+      column).
 
 **Done when**: a logged-in user can run the wizard end-to-end and find
 themselves in a freshly-created `open4x-server` `GameRoom` they own,

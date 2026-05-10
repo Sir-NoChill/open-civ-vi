@@ -115,13 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4 polish ▸ Per-tile ⋯ menu** — wire the OngoingGames
-      tile's "⋯" button to a click-trigger `Popup` containing a
-      `PopupList` (View summary / Copy game ID / Share invite link
-      / sep / Archive / Resign). View summary opens a Popup with
-      a kv table of the same fields as the wizard Review block.
-      Resign calls `DELETE /api/v1/games/{id}` (already wired) and
-      refreshes the list.
+- [ ] **Phase 4 polish ▸ Sort dropdown + URL-backed filters** — add
+      a popup-list sort menu (recent ↓ / oldest / by score / by
+      turn) bound to a Sort enum, applied client-side on the
+      filtered list. Push the active Filter + Sort into the URL
+      query so the back button + reload restore the user's view.
+      Use `web_sys::window().history()` for pushState.
 
 ### Up next (Phase 4 polish)
 
