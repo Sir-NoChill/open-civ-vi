@@ -7,3 +7,20 @@ edition = "2024"
 serde      = { workspace = true }
 serde_json = { workspace = true }
 ulid       = { workspace = true }
+
+# Persistence (sqlite by default, postgres optional). Gated behind
+# `persistence` so the type-only consumers (open4x-lobby's csr build,
+# tests) don't have to drag the sqlx graph in.
+sqlx       = { version = "0.8", optional = true, features = [
+    "runtime-tokio", "tls-rustls", "macros", "sqlite", "chrono",
+    "migrate",
+] }
+tokio      = { workspace = true, optional = true }
+chrono     = { version = "0.4", default-features = false, features = ["clock", "serde"], optional = true }
+thiserror  = { version = "1", optional = true }
+async-trait = { version = "0.1", optional = true }
+
+[features]
+default     = []
+persistence = ["dep:sqlx", "dep:tokio", "dep:chrono", "dep:thiserror", "dep:async-trait"]
+postgres    = ["persistence", "sqlx/postgres"]

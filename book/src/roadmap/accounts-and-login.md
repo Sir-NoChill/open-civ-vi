@@ -204,23 +204,29 @@ minting behind those types.
 
 #### 2.1 Persistence
 
-- [ ] Pick storage: **sqlx + sqlite by default**, postgres opt-in.
-      Migrations live in `open4x-accounts/migrations/`.
-- [ ] Schema:
-  ```
-  accounts(player_id PRIMARY KEY, preferred_name, pronouns, bio,
-           prefs_json, created_at, updated_at)
-  identities(id PRIMARY KEY, player_id FK, kind, primary_key,
-             label, verified, created_at)
-            -- primary_key: address (email) | issuer+sub (oidc) | did (atproto)
-            -- UNIQUE(kind, primary_key)
-  sessions(token_hash PRIMARY KEY, player_id FK, created_at,
-           expires_at, revoked_at)
-  ```
-- [ ] `AccountStore` trait + sqlite impl + in-memory test impl.
-      Methods: `lookup_by_identity`, `link_identity`, `unlink_identity`,
-      `find_or_create_account_for_identity`, `update_profile`,
-      `delete_account` (cascades).
+- [x] Pick storage: **sqlx + sqlite by default**, postgres opt-in.
+      Migrations live in `open4x-accounts/migrations/0001_initial.sql`.
+      Cargo features: `persistence` (default off — pulls sqlx +
+      tokio + chrono + thiserror + async-trait); `postgres` opts in
+      `sqlx/postgres` on top.
+- [x] Schema (lives in `migrations/0001_initial.sql`): four tables —
+      `accounts` (player_id text PK, preferred_name, pronouns, bio,
+      prefs_json, created_at, updated_at), `identities` (id ULID
+      text PK, player_id FK CASCADE, kind, primary_key text,
+      label, is_primary, verified, created_at; `UNIQUE(kind,
+      primary_key)`), `sessions` (token_hash hex PK, player_id FK,
+      created_at, expires_at, revoked_at), and a separate
+      `magic_link_nonces` table for the Phase 2.2 single-use nonce
+      pool.
+- [x] `AccountStore` trait + sqlite impl + in-memory test impl. The
+      trait is `async_trait`, lives at
+      `open4x-accounts/src/store.rs`, and ships every method named
+      in the plan (`lookup_by_identity`, `link_identity`,
+      `unlink_identity`, `find_or_create_account_for_identity`,
+      `update_profile`, `delete_account`). Sqlite impl runs the
+      embedded migrations on `connect()`. Mem impl + 2 mem tests
+      cover idempotent find-or-create and cross-account-dup
+      rejection.
 
 #### 2.2 Magic-link tokens
 

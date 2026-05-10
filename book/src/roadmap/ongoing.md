@@ -115,18 +115,17 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 2.1 ▸ Persistence layer** — pick `sqlx + sqlite by
-      default`, add migrations dir at `open4x-accounts/migrations/`,
-      schema for `accounts` / `identities` / `sessions` per
-      §4 Phase 2.1 of the plan, `AccountStore` trait with sqlite
-      and in-memory test impls. Heavy lift — split into a sub-tick
-      per concern (schema migrations, AccountStore trait, sqlite
-      impl, in-memory impl, smoke tests).
+- [ ] **Phase 2.2 ▸ Magic-link mint / verify** — implement
+      `MagicLinkToken` shape behind `persistence` feature: HMAC-SHA256
+      over `(email, expires_at, nonce)`, signed with a per-deployment
+      key (env `OPEN4X_LOBBY_HMAC_KEY` or generated fresh on first
+      boot under `data/lobby.key`). 15-minute expiry; nonce stored in
+      `magic_link_nonces` table and consumed exactly once on verify.
+      Refuses re-use, expired, or signature-mismatch tokens with
+      typed `MagicLinkError`.
 
 ### Up next (Phase 2)
 
-- [ ] Magic-link mint / verify (HMAC over (email, expires_at, nonce),
-      single-use nonce table, 15-minute expiry)
 - [ ] Pluggable Mailer trait + LogMailer default + `mailer-smtp` feature
 - [ ] OIDC client (discovery + PKCE + ID-token verification +
       claims → `Identity::OpenId` mapping)

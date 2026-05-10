@@ -19,6 +19,9 @@
 
 #![allow(dead_code)]
 
+#[cfg(feature = "persistence")]
+pub mod store;
+
 use serde::{Deserialize, Serialize};
 
 // ─────────────────────────── Player identity ──────────────────────────────────
