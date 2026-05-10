@@ -17,6 +17,7 @@ use open4x_accounts::games::{GameRecord, GameStatus, GameStore, GameStoreError, 
 use serde::{Deserialize, Serialize};
 
 use crate::server::auth::RequireSession;
+use crate::server::orchestrator::{self, NewGameRequest};
 use crate::server::AppState;
 
 #[derive(Debug, Serialize)]
@@ -127,6 +128,34 @@ pub async fn create(
         )
             .into_response();
     }
+
+    // Best-effort orchestration: ask the configured open4x-server to
+    // bootstrap a GameRoom. Failure here doesn't fail the lobby write
+    // — the game row still lands with empty server_url/server_token,
+    // and Resume returns 503 until a follow-up RetryBootstrap path
+    // exists. The wizard's UX is intentionally robust to a flaky
+    // game-server.
+    let (server_url, server_token) = if state.game_server_url.is_empty() {
+        (String::new(), String::new())
+    } else {
+        let map_dims = map_size_to_dims(&body.map_size);
+        let req = NewGameRequest {
+            display_name: Some(body.name.clone()),
+            width: Some(map_dims.0),
+            height: Some(map_dims.1),
+            seed: parse_seed(&body.seed),
+            num_ai: Some(body.players_ai),
+            turn_limit: None,
+        };
+        match orchestrator::bootstrap_game(&state.game_server_url, &req).await {
+            Ok(boot) => (boot.server_url, boot.server_token),
+            Err(e) => {
+                eprintln!("[orchestrator] bootstrap failed: {e}");
+                (String::new(), String::new())
+            }
+        }
+    };
+
     let new = NewGame {
         owner_player_id: player_id,
         name: body.name,
@@ -138,15 +167,42 @@ pub async fn create(
         map_type: body.map_type,
         map_size: body.map_size,
         seed: body.seed,
-        // Orchestrator (Phase 4.3) populates these. The lobby-only
-        // record exists immediately so the wizard's UX completes
-        // even before a runtime is bootstrapped.
-        server_url: String::new(),
-        server_token: String::new(),
+        server_url,
+        server_token,
     };
     match state.games.create_game(new).await {
         Ok(g) => (StatusCode::CREATED, Json(GameView::from(g))).into_response(),
         Err(e) => store_error_response(e),
+    }
+}
+
+/// Map the wire's coarse `map_size` enum into width/height tile counts
+/// matching the JSX wizard's `map size` Popup ("duel 44×26 · tiny
+/// 60×38 · small 74×46 · std 84×54 · large 96×60 · huge 106×66").
+fn map_size_to_dims(size: &str) -> (u32, u32) {
+    match size {
+        "duel"  => (44, 26),
+        "tiny"  => (60, 38),
+        "small" => (74, 46),
+        "large" => (96, 60),
+        "huge"  => (106, 66),
+        _       => (84, 54), // std default
+    }
+}
+
+/// Parse the wizard's seed string (e.g. `"0xCAFE·B33F·1A77"`) into a
+/// u64 by ignoring non-hex characters. Returns `None` if no hex
+/// digits remain — open4x-server will pick its own seed.
+fn parse_seed(s: &str) -> Option<u64> {
+    let hex: String = s
+        .chars()
+        .filter(|c| c.is_ascii_hexdigit())
+        .take(16) // 64-bit ceiling
+        .collect();
+    if hex.is_empty() {
+        None
+    } else {
+        u64::from_str_radix(&hex, 16).ok()
     }
 }
 

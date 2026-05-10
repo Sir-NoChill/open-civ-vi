@@ -422,21 +422,29 @@ PRIMARY KEY (game_id, player_id)
 
 #### 4.3 Orchestrator
 
-- [ ] Pick a model: **shared-server-multi-room** as v1 (the existing
-      `open4x-server` already keys `GameRoom` by id; just teach it to
-      validate accounts-issued tokens). Process-per-game is a Phase 6
+- [x] Pick a model: **shared-server-multi-room** v1 (single
+      configured `open4x-server` instance, `GameRoom`-per-id —
+      already keyed that way). Process-per-game is a Phase 6
       enhancement.
-- [ ] Server-side change: `open4x-server` accepts a session token
-      issued by `open4x-accounts` (shared HMAC key in the simple
-      single-machine setup; HTTP introspection later). The anonymous
-      `POST /games/new` becomes opt-in via env var so guest play
-      stays available in dev.
-- [ ] Lobby `POST /api/v1/games` translates the wizard's params into a
-      call to the in-game server's `POST /api/v1/games/new`,
-      records the returned `game_id` in the lobby DB.
-- [ ] `GET /api/v1/games/{id}/resume` mints a per-game scoped token,
-      302s to the in-game server URL with the token in a query param
-      (or short-lived session-bridge cookie).
+- [~] Server-side change: cross-crate auth-key handshake is **v2**;
+      v1 leans on `open4x-server`'s anonymous `/games/new` bearer
+      tokens (the lobby remembers them per game and hands them
+      back at Resume). Tracked as a follow-up Phase 4.3 task.
+- [x] Lobby `POST /api/v1/games` translates the wizard's params
+      into a call to `open4x-server`'s `POST /api/v1/games/new` via
+      the new `server::orchestrator::bootstrap_game`. Stores the
+      returned URL + token in `games.server_url` /
+      `games.server_token`. Best-effort: orchestrator failure does
+      not fail the lobby write; the row is created with empty
+      fields and `Resume` returns 503 until a retry path lands.
+- [x] `POST /api/v1/games/{id}/resume` returns `{url, token}` once
+      both are populated; the browser uses them to authenticate
+      against the in-game server. Smoke-tested end-to-end:
+      orchestrator created `Rome Capital` in `open4x-server`,
+      lobby Resume handed the token back, browser-side `GET
+      /api/v1/cities` against the game server returned the city.
+      The 302-with-session-bridge-cookie variant from the original
+      plan is reserved for a Phase 5 polish pass.
 
 #### 4.4 SPA wiring
 

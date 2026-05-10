@@ -23,6 +23,11 @@ pub struct AppState {
     /// Empty string means "use the current request's Host header" — fine
     /// for dev / single-machine.
     pub public_base_url: String,
+    /// URL of the open4x-server instance the lobby orchestrates new
+    /// games against. Defaults to `http://localhost:3001`. Empty
+    /// disables the orchestrator (game rows ship with empty
+    /// `server_url` / `server_token` and Resume returns 503).
+    pub game_server_url: String,
 }
 
 impl AppState {
@@ -62,6 +67,8 @@ impl AppState {
         let mailer: Arc<dyn Mailer> = Arc::new(LogMailer);
         let public_base_url =
             std::env::var("OPEN4X_LOBBY_PUBLIC_URL").unwrap_or_default();
+        let game_server_url = std::env::var("OPEN4X_GAME_SERVER_URL")
+            .unwrap_or_else(|_| "http://localhost:3001".to_string());
 
         Ok(Self {
             pool,
@@ -70,6 +77,7 @@ impl AppState {
             signer,
             mailer,
             public_base_url,
+            game_server_url,
         })
     }
 }

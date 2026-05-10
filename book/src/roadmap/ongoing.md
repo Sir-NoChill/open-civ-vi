@@ -115,14 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.3 ▸ Orchestrator + open4x-server token validation** —
-      teach `open4x-server` to accept a session token issued by
-      `open4x-accounts` (shared HMAC key in dev, HTTP introspection
-      later). The lobby's `POST /api/v1/games` translates the wizard
-      params into a `POST /api/v1/games/new` against `open4x-server`,
-      records the returned `server_url` + `server_token` in the
-      games row. `POST /api/v1/games/{id}/resume` switches from 503
-      to 200 once both are populated.
+- [ ] **Phase 4.4 ▸ Resume CTA wiring** — the OngoingGames tile's
+      "→ Resume" button currently lands but does nothing. Make it
+      `POST /api/v1/games/{id}/resume`; on 200, navigate the
+      browser to `<url>` with `?token=<token>` so the in-game SPA
+      hosted by `open4x-server` picks up the bearer. (The in-game
+      `RestGamePage` already mints its own token via
+      `POST /games/new` for guest play; this gives it the
+      lobby-issued one instead.) Add `components::api::games::resume`.
 
 ### Up next (Phase 4)
 - [ ] Phase 4.3 orchestrator — shared-server-multi-room v1 (teach
