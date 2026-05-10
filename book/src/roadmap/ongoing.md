@@ -68,7 +68,10 @@ into the server projector.
       Faith) on `City`; engine stores the value (auto-assignment
       heuristic not yet driven by it). Wire round-trip via
       `city_data::CityRow.focus`. CLI: `action assign-city-focus`.
-- [ ] `GameAction::RenameCity` + `POST /cities/{id}/rename`
+- [x] `GameAction::RenameCity` + `POST /cities/{id}/rename` —
+      writes `City.name` after trim + 1..=64 char validation +
+      ownership check; structured 400 on empty / oversize. CLI:
+      `action rename-city`.
 - [ ] `GameAction::CancelResearch` + `DELETE /tech/research`
 - [ ] `GameAction::CancelCivic` + `DELETE /civics/research`
 - [ ] `GameAction::ChangeGovernment` + `POST /government/change`
@@ -98,6 +101,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `lynqxskw` — feat(open4x-server): GameAction::RenameCity + POST
+  /cities/{id}/rename.
 - `pkmywxno` — feat(libciv,open4x-server): GameAction::AssignCityFocus
   + POST /cities/{id}/focus.
 - `szyyxqnn` — feat(libciv): RulesEngine::policy_catalogue + populate
