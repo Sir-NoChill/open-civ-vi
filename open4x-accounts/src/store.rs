@@ -45,6 +45,10 @@ pub type StoreResult<T> = Result<T, StoreError>;
 /// double.
 #[async_trait]
 pub trait AccountStore: Send + Sync {
+    /// Look up an account by its `PlayerId`. `None` if the player has
+    /// been deleted. Used by `GET /api/v1/me`.
+    async fn get_by_player_id(&self, player_id: PlayerId) -> StoreResult<Option<Account>>;
+
     /// Resolve the account that owns this identity, if any. Used at
     /// the tail of every sign-in flow.
     async fn lookup_by_identity(&self, identity: &Identity) -> StoreResult<Option<Account>>;
@@ -116,6 +120,15 @@ impl SqliteAccountStore {
 
 #[async_trait]
 impl AccountStore for SqliteAccountStore {
+    async fn get_by_player_id(&self, player_id: PlayerId) -> StoreResult<Option<Account>> {
+        let player_id_text = player_id_text(&player_id);
+        match load_account(&self.pool, &player_id_text).await {
+            Ok(a) => Ok(Some(a)),
+            Err(StoreError::NotFound) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
     async fn lookup_by_identity(&self, identity: &Identity) -> StoreResult<Option<Account>> {
         let (kind, primary_key) = identity_key(identity);
         let row: Option<IdentityRow> = sqlx::query_as::<_, IdentityRow>(
@@ -410,6 +423,10 @@ mod mem {
 
     #[async_trait]
     impl AccountStore for MemAccountStore {
+        async fn get_by_player_id(&self, player_id: PlayerId) -> StoreResult<Option<Account>> {
+            Ok(self.accounts.lock().unwrap().get(&player_id).cloned())
+        }
+
         async fn lookup_by_identity(&self, identity: &Identity) -> StoreResult<Option<Account>> {
             let key = identity_key(identity);
             let map = self.accounts.lock().unwrap();

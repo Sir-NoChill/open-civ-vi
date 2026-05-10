@@ -4,9 +4,10 @@
 #![cfg(feature = "ssr")]
 
 pub mod email_auth;
+pub mod me;
 
 use axum::Router;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, patch, post};
 
 use super::AppState;
 
@@ -15,4 +16,7 @@ pub fn v1_router() -> Router<AppState> {
         .route("/auth/email/start", post(email_auth::start))
         .route("/auth/email/verify", get(email_auth::verify))
         .route("/auth/signout", post(email_auth::signout))
+        .route("/me", get(me::get_me))
+        .route("/me", patch(me::patch_me))
+        .route("/me", delete(me::delete_me))
 }

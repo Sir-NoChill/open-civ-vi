@@ -115,20 +115,23 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 3 ▸ /api/v1/me reads + writes** —
-      `GET /api/v1/me` returns the authenticated `Account` JSON.
-      `PATCH /api/v1/me` accepts `{preferred_name?, pronouns?, bio?,
-      prefs?}` and forwards through `AccountStore::update_profile`.
-      `DELETE /api/v1/me` cascades the GDPR account-delete path.
-      All three require the session cookie (extractor: `RequireSession`).
+- [ ] **Phase 3 ▸ Login screen wiring** — wire the email panel's
+      "Send magic link →" button on `screens/login.rs` to
+      `POST /api/v1/auth/email/start`. Add a small client API
+      module `components/api/auth.rs` that uses
+      `web_sys::Fetch` (mirror `open4x-server`'s
+      `components/api/http.rs` shape). Show a "magic link sent —
+      check your inbox" success panel on 202; expose error text on
+      400/500. Accept that the lobby today doesn't carry any
+      `wasm-bindgen` fetch helper — bring one in alongside this
+      change.
 
 ### Up next (Phase 3)
 
-- [ ] `components/api/{auth,me}.rs` Leptos bindings.
-- [ ] Login screen wires email-panel "Send magic link →" button to
-      `POST /auth/email/start` and shows a "magic link sent" panel.
 - [ ] Profile screen fetches `/api/v1/me` on mount and patches
       changes back through `PATCH /api/v1/me`.
+- [ ] OIDC provider buttons in Login wire to
+      `GET /auth/oidc/{provider}/start` (depends on Phase 2.3 part 2).
 
 ### Up next (deferred Phase 2 items)
 

@@ -329,14 +329,14 @@ data with a real REST call.
 
 | Method | Path                                      | Returns / Effect                                    |
 |--------|-------------------------------------------|-----------------------------------------------------|
-| GET    | `/api/v1/me`                              | `Account` for the authenticated session             |
-| PATCH  | `/api/v1/me`                              | Update `preferred_name`, `pronouns`, `bio`, `prefs` |
+| GET    | `/api/v1/me` ✅                           | `MeView` for the authenticated session              |
+| PATCH  | `/api/v1/me` ✅                           | Update `preferred_name`, `pronouns`, `bio`, `prefs` |
 | POST   | `/api/v1/me/identities/email`             | Start linking-flow for a new email (magic-link)     |
 | POST   | `/api/v1/me/identities/oidc/{provider}`   | Start linking-flow for an OIDC provider             |
 | DELETE | `/api/v1/me/identities/{id}`              | Unlink — refuse if it would orphan the account      |
 | POST   | `/api/v1/me/identities/{id}/primary`      | Mark email identity as primary (one per account)    |
 | POST   | `/api/v1/me/avatar`                       | Multipart upload (PNG/JPG, ≤2MB), pipeline TODO     |
-| DELETE | `/api/v1/me`                              | Delete account (cascades; see §6)                   |
+| DELETE | `/api/v1/me` ✅                           | Delete account (cascades sessions + identities)     |
 
 #### 3.3 SPA wiring
 
