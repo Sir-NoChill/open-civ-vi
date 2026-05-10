@@ -115,16 +115,18 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ Real game tile thumbnails** — `OngoingGames`
-      currently seeds the `MiniMap` from a hash of the seed
-      string. Switch to fetching `GET /api/v1/world/snapshot` from
-      the open4x-server bound to the row (using the stored
-      `server_token`), turn the resulting tile list into an
-      ownership map, and render a real thumbnail per tile. Cache
-      results so each tile renders once per session. Phase 5
-      polish item.
+- [ ] **Phase 6 ▸ Static mdBook serve route** — the Docs screen
+      links to `/book/...` URLs that 404 today. Add a
+      `tower_http::ServeDir` mount at `/book/` pointed at
+      `OPEN4X_LOBBY_BOOK_DIR` (default `./book/book`) so an
+      mdbook-built site is served alongside the SPA. Document the
+      build step in the Docs screen's status note.
 
 ### Up next (Phase 5 polish)
+
+- [ ] Real game tile thumbnails (snapshot per server_token, cached).
+- [ ] Email verification flow ("Verify email" CTA on unverified
+      identities → second magic-link confirm).
 
 - [ ] Per-tile `···` menu: View summary / Copy game ID / Share
       invite link / Archive / Resign.

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use leptos::prelude::*;
 
-use crate::components::{Popup, PopupBody, PopupSize};
+use crate::components::{Popup, PopupBody, PopupSize, PopupTrigger};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MenuTab {
@@ -51,21 +51,64 @@ pub fn MenuShell(
     #[prop(optional)] on_signout: Option<Callback<()>>,
     children: Children,
 ) -> impl IntoView {
-    let _ = on_signout; // TODO: wire into the user-card popup once the
-                        // user-card menu is interactive. The Profile
-                        // screen's "Sign out" quick-action is the
-                        // primary path today.
+    let user_card_content = {
+        let signout = on_signout;
+        Arc::new(move || {
+            view! {
+                <div class="popup-list">
+                    <button
+                        class="item"
+                        type="button"
+                        on:click=move |_| tab.set(MenuTab::Profile)
+                    >
+                        <span class="icon">"◔"</span>
+                        <span>"Profile & settings"</span>
+                    </button>
+                    <button class="item" type="button">
+                        <span class="icon">"⎘"</span>
+                        <span>"Copy player ID"</span>
+                        <span class="desc">"(via Profile)"</span>
+                    </button>
+                    <div class="sep"></div>
+                    <button
+                        class="item"
+                        type="button"
+                        on:click=move |_| {
+                            if let Some(cb) = signout {
+                                cb.run(());
+                            }
+                        }
+                    >
+                        <span class="icon">"→"</span>
+                        <span>"Sign out"</span>
+                    </button>
+                </div>
+            }
+            .into_any()
+        })
+    };
+
     view! {
         <div class="menu-shell">
             <aside class="sidebar">
-                <div class="user-card">
-                    <div class="avatar-sm">"A"</div>
-                    <div style="min-width:0">
-                        <div class="name">"Alice"</div>
-                        <div class="uid">"0xA9C3·7F12"</div>
+                <Popup
+                    title="Account"
+                    size=PopupSize::Narrow
+                    trigger=PopupTrigger::Click
+                    content=user_card_content
+                >
+                    <div
+                        class="user-card"
+                        style="cursor:pointer; user-select:none"
+                    >
+                        <div class="avatar-sm">"A"</div>
+                        <div style="min-width:0">
+                            <div class="name">"Alice"</div>
+                            <div class="uid">"0xA9C3·7F12"</div>
+                        </div>
+                        <span class="chev">"▾"</span>
                     </div>
-                    <span class="chev">"▾"</span>
-                </div>
+                </Popup>
 
                 <div class="group-label">"PLAY"</div>
                 {[MenuTab::Ongoing, MenuTab::NewGame, MenuTab::Profile].iter().copied().map(|t| {

@@ -650,6 +650,26 @@ These don't fit cleanly into one phase but need to be settled early.
 
 Running record of work performed against this plan, newest at top.
 
+### Phase 5 — Polish (2026-05-10, in progress)
+
+- `4628be93` — feat(open4x-lobby): Show invite QR popup. New
+  `components/qr.rs::qr_svg` builds a self-contained SVG (single
+  rect per dark module + 1-module quiet zone) using the qrcode
+  crate (no default features). Profile's "▦ Show invite QR"
+  button is now a click-trigger Popup; "⎘ Copy player ID"
+  wires `navigator.clipboard`.
+- `91c1acd1` — feat(open4x-lobby): wire MenuTab Friends / Presets /
+  Docs. The MORE-group sidebar items now actually navigate; three
+  new screen modules (`friends.rs` / `presets.rs` / `docs.rs`)
+  render the design's chrome with empty-state copy. Real
+  persistence + identity-search + mdbook-static-serve are deferred.
+- `58d653ef` — feat(open4x-lobby): user-card popup with sign-out.
+  The sidebar's user-card is now a click-trigger Popup with three
+  rows: Profile & settings (jumps tabs), Copy player ID (via
+  Profile), Sign out (fires the on_signout callback). The
+  Profile-quick-actions sign-out path stays as the alternate
+  surface.
+
 ### Phase 4 — Games index polish (2026-05-10, in progress)
 
 - `bf726b35` — feat(open4x-{accounts,lobby}): per-game notes column +
