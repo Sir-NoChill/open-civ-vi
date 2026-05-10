@@ -3,10 +3,16 @@ name = "open4x-accounts"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "open4x-accounts"
+path = "src/bin/cli.rs"
+required-features = ["persistence"]
+
 [dependencies]
 serde      = { workspace = true }
 serde_json = { workspace = true }
 ulid       = { workspace = true }
+clap       = { workspace = true, optional = true }
 
 # Persistence (sqlite by default, postgres optional). Gated behind
 # `persistence` so the type-only consumers (open4x-lobby's csr build,
@@ -34,6 +40,7 @@ default     = []
 persistence = [
     "dep:sqlx", "dep:tokio", "dep:chrono", "dep:thiserror", "dep:async-trait",
     "dep:hmac", "dep:sha2", "dep:subtle", "dep:base64", "dep:rand",
+    "dep:clap",
 ]
 postgres    = ["persistence", "sqlx/postgres"]
 # SMTP transport for the magic-link Mailer. Stub today; real lettre

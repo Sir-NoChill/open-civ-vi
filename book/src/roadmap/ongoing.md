@@ -123,9 +123,12 @@ from this list when complete)_
 
 ### Up next (Phase 6)
 
-- [ ] **CLI: `open4x-accounts dump-audit`** — surface the audit
-      log without sqlite3 (binary takes `--db <path>` and
-      `--limit <n>`, prints tab-separated rows).
+- [x] **CLI: `open4x-accounts dump-audit`** — `[[bin]]
+      open4x-accounts` (gated on `persistence`) ships a clap-driven
+      ops binary. `--db <path>` (default `./data/lobby/accounts.sqlite`)
+      and `--limit <n>` (default 100). Prints TSV with the hex
+      PlayerId display format, never wraps long detail strings,
+      escapes embedded tabs/newlines for grep-ability.
 - [ ] **Single-binary deploy** — embed migrations + serve dist/
       from the binary's bundled assets (rust-embed) so a deploy is
       just `open4x-lobby` + an `OPEN4X_LOBBY_DATA_DIR`.
