@@ -10,5 +10,6 @@ pub mod friends;
 pub mod games;
 pub mod http;
 pub mod me;
+pub mod presets;
 
 pub use http::{ApiError, fetch_json};

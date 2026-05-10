@@ -7,6 +7,7 @@ pub mod email_auth;
 pub mod friends;
 pub mod games;
 pub mod me;
+pub mod presets;
 
 use axum::Router;
 use axum::routing::{delete, get, patch, post};
@@ -39,4 +40,7 @@ pub fn v1_router() -> Router<AppState> {
         .route("/friends/search", post(friends::search))
         .route("/friends/{id}/accept", post(friends::accept))
         .route("/friends/{id}", delete(friends::unfriend))
+        .route("/presets", get(presets::list))
+        .route("/presets", post(presets::create))
+        .route("/presets/{id}", delete(presets::delete_one))
 }

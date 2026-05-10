@@ -1,24 +1,129 @@
-//! Presets screen — Phase 5 polish placeholder.
+//! Presets screen — Phase 5 polish.
 //!
-//! Save / load / import-JSON wizard configurations. The UI shape
-//! lives here; persistence + the JSON-import handler are pending.
+//! Wires the design's Presets tab to `/api/v1/presets`:
+//! - "Built-in" panel keeps a static list (load is inert v1).
+//! - "My presets" lists the user's saved rows, each with a Delete.
+//! - "↑ import JSON…" toggles a textarea where the user can paste
+//!   a name + a JSON body, then Save persists it.
+//!
+//! The wizard-state save flow ("+ Save current") is not wired
+//! here because this screen is on a different tab from the
+//! wizard — adding that ergonomic shortcut lives in NewGame's
+//! Review step as a follow-up.
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
+use crate::components::api::presets as presets_api;
 use crate::components::{Btn, Panel};
 
 #[component]
 pub fn Presets() -> impl IntoView {
+    let tick = RwSignal::new(0u32);
+    let rows: LocalResource<Vec<presets_api::PresetView>> = LocalResource::new(move || {
+        let _ = tick.get();
+        async move { presets_api::list().await.unwrap_or_default() }
+    });
+
+    let show_import = RwSignal::new(false);
+    let name = RwSignal::new(String::new());
+    let body = RwSignal::new(String::new());
+    let pending = RwSignal::new(false);
+    let err = RwSignal::new(String::new());
+
+    let on_save = move |_| {
+        let n = name.get_untracked().trim().to_string();
+        let b = body.get_untracked();
+        if n.is_empty() {
+            err.set("name required".into());
+            return;
+        }
+        if b.trim().is_empty() {
+            err.set("paste a JSON body".into());
+            return;
+        }
+        err.set(String::new());
+        pending.set(true);
+        spawn_local(async move {
+            match presets_api::create(n, b).await {
+                Ok(_) => {
+                    name.set(String::new());
+                    body.set(String::new());
+                    show_import.set(false);
+                    tick.update(|t| *t += 1);
+                }
+                Err(e) => err.set(e.to_string()),
+            }
+            pending.set(false);
+        });
+    };
+
     view! {
         <div style="flex:1; overflow:auto">
             <div class="content-header">
                 <div class="title">"Presets"</div>
                 <span class="crumbs">"// save / load / import wizard configs"</span>
                 <div class="actions">
-                    <Btn variant="ghost" size="sm">"↑ import JSON…"</Btn>
-                    <Btn variant="accent">"+ Save current"</Btn>
+                    <Btn
+                        variant="ghost"
+                        size="sm"
+                        on_click=Callback::new(move |_| {
+                            show_import.update(|v| *v = !*v);
+                        })
+                    >
+                        {move || if show_import.get() { "× cancel import" } else { "↑ import JSON…" }}
+                    </Btn>
                 </div>
             </div>
+
+            {move || show_import.get().then(|| view! {
+                <Panel>
+                    <div class="h3" style="margin-bottom:10px">"Import preset"</div>
+                    <div class="field" style="margin-bottom:8px">
+                        <label class="muted xsmall">"Name"</label>
+                        <input
+                            class="input"
+                            placeholder="e.g. Standard prince"
+                            prop:value=move || name.get()
+                            on:input=move |ev| {
+                                use wasm_bindgen::JsCast as _;
+                                if let Some(el) = ev.target()
+                                    .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+                                {
+                                    name.set(el.value());
+                                }
+                            }
+                        />
+                    </div>
+                    <div class="field" style="margin-bottom:8px">
+                        <label class="muted xsmall">"JSON body"</label>
+                        <textarea
+                            class="input mono"
+                            rows="6"
+                            placeholder=r#"{"map":"continents","size":"std","difficulty":"prince",…}"#
+                            prop:value=move || body.get()
+                            on:input=move |ev| {
+                                use wasm_bindgen::JsCast as _;
+                                if let Some(el) = ev.target()
+                                    .and_then(|t| t.dyn_into::<web_sys::HtmlTextAreaElement>().ok())
+                                {
+                                    body.set(el.value());
+                                }
+                            }
+                        ></textarea>
+                    </div>
+                    {move || (!err.get().is_empty()).then(|| view! {
+                        <p class="xsmall" style="color:var(--accent); margin:0 0 8px">{err.get()}</p>
+                    })}
+                    <Btn
+                        variant="accent"
+                        disabled=Signal::derive(move || pending.get())
+                        on_click=Callback::new(on_save)
+                    >
+                        {move || if pending.get() { "Saving…" } else { "Save preset" }}
+                    </Btn>
+                </Panel>
+            })}
 
             <Panel>
                 <div class="h3" style="margin-bottom:10px">"Built-in"</div>
@@ -47,16 +152,63 @@ pub fn Presets() -> impl IntoView {
                 </div>
             </Panel>
 
-            <Panel>
-                <div class="h3" style="margin-bottom:10px">"My presets"</div>
-                <p class="muted small">
-                    "No saved presets yet. Click " <strong>"+ Save current"</strong>
-                    " from the New game wizard."
-                </p>
-            </Panel>
+            <Suspense fallback=move || view! {
+                <Panel>
+                    <div class="h3" style="margin-bottom:10px">"My presets"</div>
+                    <p class="muted xsmall">"Loading…"</p>
+                </Panel>
+            }>
+                {move || rows.get().map(|wrap| {
+                    let mine: Vec<presets_api::PresetView> = (*wrap).clone();
+                    view! {
+                        <Panel>
+                            <div class="h3" style="margin-bottom:10px">
+                                {format!("My presets ({})", mine.len())}
+                            </div>
+                            {if mine.is_empty() {
+                                view! {
+                                    <p class="muted small">
+                                        "No saved presets yet. Click " <strong>"↑ import JSON…"</strong>
+                                        " to paste a configuration."
+                                    </p>
+                                }.into_any()
+                            } else {
+                                view! {
+                                    <div class="col" style="gap:6px">
+                                        {mine.into_iter().map(|p| {
+                                            let id_for_del = p.id.clone();
+                                            view! {
+                                                <div class="row between center-y" style="border-bottom:1px solid var(--hairline-2); padding:6px 0">
+                                                    <div>
+                                                        <div style="font-weight:600">{p.name.clone()}</div>
+                                                        <div class="muted xsmall" style="font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:520px">
+                                                            {p.body_json.clone()}
+                                                        </div>
+                                                    </div>
+                                                    <Btn
+                                                        variant="bare"
+                                                        size="sm"
+                                                        on_click=Callback::new(move |_| {
+                                                            let id = id_for_del.clone();
+                                                            spawn_local(async move {
+                                                                let _ = presets_api::delete_preset(&id).await;
+                                                                tick.update(|t| *t += 1);
+                                                            });
+                                                        })
+                                                    >"delete"</Btn>
+                                                </div>
+                                            }
+                                        }).collect::<Vec<_>>()}
+                                    </div>
+                                }.into_any()
+                            }}
+                        </Panel>
+                    }
+                })}
+            </Suspense>
 
             <p class="muted xsmall" style="margin-top:14px; text-align:center">
-                "// preset persistence pending — Phase 5 polish"
+                "// '+ Save current' on the wizard tab is the follow-up — for now, paste JSON here."
             </p>
         </div>
     }

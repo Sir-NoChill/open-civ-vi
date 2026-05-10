@@ -38,6 +38,9 @@ pub mod mailer;
 pub mod oidc;
 
 #[cfg(feature = "persistence")]
+pub mod presets;
+
+#[cfg(feature = "persistence")]
 pub mod session;
 
 #[cfg(feature = "persistence")]
