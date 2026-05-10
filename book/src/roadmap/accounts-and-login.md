@@ -517,9 +517,16 @@ device after signing in there.
 
 User-visible quality once the platform basics are wired.
 
-- [ ] **Avatar pipeline** — multipart upload, image-rs decode, downscale
-      to 256×256 PNG, store under `accounts.avatars/`. Profile shows
-      the uploaded image instead of the initial.
+- [x] **Avatar pipeline** — `POST /api/v1/me/avatar` (multipart).
+      4 MiB cap on the upload, image-rs decode (PNG/JPEG only),
+      `thumbnail_exact(256, 256)`, atomic write to
+      `<data_dir>/avatars/<player_id_hex>.png`. `MeView` gains
+      `avatar_url`; main.rs `ServeDir`s `/avatars/` so the SPA's
+      `<img src=avatar_url>` reads back without auth. Profile
+      gains a hidden file input + the existing "change" Btn now
+      triggers it; cache-busted `?t=<now>` query forces refresh
+      after a re-upload. Audit row carries `avatar:<bytes>`
+      detail.
 - [x] **Show invite QR popup** — `components/qr.rs::qr_svg` builds
       a self-contained SVG (one `<rect>` per dark module + a 1-
       module quiet zone) using the `qrcode` crate. Profile's
@@ -877,6 +884,15 @@ Running record of work performed against this plan, newest at top.
   built on the existing design vars. Smoke against a fresh
   game showed 1 capital + 7 foreign-owned + 10 unowned cells
   on a 17-cell explored ring.
+- `60838da1` — feat(open4x-lobby): avatar upload pipeline.
+  Multipart POST /api/v1/me/avatar with image-rs PNG/JPEG
+  decode, `thumbnail_exact(256, 256)`, atomic write to
+  `<data_dir>/avatars/<player_id_hex>.png`. ServeDir at
+  `/avatars/` exposes the read path. MeView gains
+  `avatar_url`; Profile renders `<img>` when present, falls
+  back to the initial-letter circle. Cache-busted SPA-side
+  with `?t=<Date.now()>`. Smoke verified the round-trip:
+  uploaded PNG → 256x256 downscale → readback via /avatars/.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`

@@ -115,13 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ Avatar pipeline** — multipart upload on
-      Profile, image-rs decode, downscale to 256×256 PNG,
-      store under `accounts.avatars/<player_id>.png`. Profile
-      shows the uploaded image instead of the initial-letter
-      avatar. New `POST /api/v1/me/avatar` route + an
-      `avatar_url` field on the MeView wire shape so the SPA
-      can read it back.
+- [ ] **Phase 5 ▸ i18n hooks** — pulled from the in-game
+      roadmap. The lobby's user-facing strings are all
+      hard-coded English literals today. Add a thin `t!`
+      shim (no library — small enum + lookup table), wire
+      one screen (Login) as a worked example, and document
+      the convention in `book/src/multiplayer/`. Real
+      translation tables stay deferred to whoever wants to
+      add a language.
 
 ### Up next (Phase 6)
 
