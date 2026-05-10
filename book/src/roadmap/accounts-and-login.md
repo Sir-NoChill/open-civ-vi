@@ -316,14 +316,14 @@ data with a real REST call.
 
 | Method | Path                                       | Body / Query                          | Effect                                                |
 |--------|--------------------------------------------|---------------------------------------|-------------------------------------------------------|
-| POST   | `/api/v1/auth/email/start`                 | `{email}`                             | Mint magic-link, hand to `Mailer`                     |
-| GET    | `/api/v1/auth/email/verify`                | `?token=…`                            | Validate, find-or-create account, set session cookie  |
+| POST   | `/api/v1/auth/email/start` ✅              | `{email}`                             | Mint magic-link, hand to `Mailer`                     |
+| GET    | `/api/v1/auth/email/verify` ✅             | `?token=…`                            | Validate, find-or-create account, set session cookie  |
 | GET    | `/api/v1/auth/oidc/{provider}/start`       | —                                     | 302 to provider authorize URL (PKCE state in cookie)  |
 | GET    | `/api/v1/auth/oidc/{provider}/callback`    | `?code&state`                         | Code exchange, verify ID token, link identity         |
 | POST   | `/api/v1/auth/oidc/custom/start`           | `{issuer_url}`                        | Discovery + 302 like above                            |
 | POST   | `/api/v1/auth/atproto/start`               | `{handle_or_did}`                     | Resolve PDS, 302 to PDS authorize                     |
 | GET    | `/api/v1/auth/atproto/callback`            | `?code&state`                         | DPoP code exchange, link identity                     |
-| POST   | `/api/v1/auth/signout`                     | —                                     | Revoke current session                                |
+| POST   | `/api/v1/auth/signout` ✅                  | —                                     | Revoke current session                                |
 
 #### 3.2 Account routes
 

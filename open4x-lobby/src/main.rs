@@ -26,7 +26,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
-        // Future: nest("/api/v1", v1_router(state.clone()))
+        .nest("/api/v1", server::rest::v1_router())
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             server::auth::session_layer,

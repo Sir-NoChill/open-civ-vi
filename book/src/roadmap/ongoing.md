@@ -115,26 +115,20 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 3 ▸ Email auth route pair** —
-      `POST /api/v1/auth/email/start` (body `{email}`,
-      MagicLinkSigner mints a token + persists the nonce, LogMailer
-      writes the link to stderr, returns 202) and
-      `GET /api/v1/auth/email/verify?token=…` (consumes the nonce,
-      finds-or-creates the account via AccountStore, mints a
-      session via `session::mint_session`, sets `Set-Cookie:
-      lobby_session=…; HttpOnly; SameSite=Lax; Path=/`, redirects
-      to `/`). End-to-end magic-link login against the existing
-      substrate.
+- [ ] **Phase 3 ▸ /api/v1/me reads + writes** —
+      `GET /api/v1/me` returns the authenticated `Account` JSON.
+      `PATCH /api/v1/me` accepts `{preferred_name?, pronouns?, bio?,
+      prefs?}` and forwards through `AccountStore::update_profile`.
+      `DELETE /api/v1/me` cascades the GDPR account-delete path.
+      All three require the session cookie (extractor: `RequireSession`).
 
 ### Up next (Phase 3)
 
-- [ ] `GET /api/v1/me` + `PATCH /api/v1/me` (reads the player from
-      the cookie, hits AccountStore)
-- [ ] `POST /api/v1/auth/signout` (revokes the session, clears
-      cookie)
-- [ ] `components/api/{auth,me,identities}.rs` Leptos bindings.
+- [ ] `components/api/{auth,me}.rs` Leptos bindings.
 - [ ] Login screen wires email-panel "Send magic link →" button to
       `POST /auth/email/start` and shows a "magic link sent" panel.
+- [ ] Profile screen fetches `/api/v1/me` on mount and patches
+      changes back through `PATCH /api/v1/me`.
 
 ### Up next (deferred Phase 2 items)
 

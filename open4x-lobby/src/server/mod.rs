@@ -7,6 +7,7 @@
 #![cfg(feature = "ssr")]
 
 pub mod auth;
+pub mod rest;
 pub mod state;
 
 pub use auth::{AuthCookie, RequireSession, session_layer, SESSION_COOKIE_NAME};
