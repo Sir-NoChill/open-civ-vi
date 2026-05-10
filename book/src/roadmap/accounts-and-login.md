@@ -278,13 +278,20 @@ minting behind those types.
 
 #### 2.5 Session tokens
 
-- [ ] Bearer-token shape: `lobby_<base64url(48 bytes)>`. Stored as
-      SHA-256 hash in `sessions.token_hash` (so the DB compromise can't
-      mint logins).
-- [ ] `mint_session(player_id, ttl) -> RawToken`.
-- [ ] `validate_session(raw) -> Option<PlayerId>` — constant-time
-      compare against the hash table.
-- [ ] `revoke_session(raw)`.
+- [x] Bearer-token shape: `lobby_<base64url(48 bytes of OS
+      randomness)>`. Stored as SHA-256 hex in `sessions.token_hash`
+      (DB compromise → no log-in mint).
+- [x] `mint_session(pool, player_id, ttl) -> RawToken` — 30-day
+      default TTL via `DEFAULT_TTL`. Lives in
+      `open4x-accounts/src/session.rs`.
+- [x] `validate_session(pool, raw) -> Option<PlayerId>` — single
+      indexed SELECT keyed on the SHA-256 hash; rejects revoked or
+      expired rows; rejects tokens missing the `lobby_` prefix
+      without consulting the DB.
+- [x] `revoke_session(pool, raw)` (idempotent) plus a
+      `revoke_all_for_player(pool, player_id) -> u64` for the
+      sign-out-everywhere path. 5 tests cover round-trip /
+      revocation / expiry / unknown-token / revoke-all.
 
 **Done when**: `cargo test -p open4x-accounts` covers the magic-link,
 OIDC-claims-mapping, and session-token flows with a fake mailer + a

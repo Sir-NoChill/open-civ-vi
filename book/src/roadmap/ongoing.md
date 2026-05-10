@@ -115,23 +115,26 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 2.5 ▸ Session tokens** — bearer shape
-      `lobby_<base64url(48 bytes)>`, stored as SHA-256 hex in the
-      `sessions.token_hash` PK so a DB compromise can't mint logins.
-      `mint_session(player_id, ttl) -> RawToken`,
-      `validate_session(raw) -> Option<PlayerId>` with a
-      constant-time compare against the hash table,
-      `revoke_session(raw)`. Lives in
-      `open4x-accounts/src/session.rs`. Sessions Phase 2.5 is
-      logically next-up before Phase 2.3 (OIDC) so the session-cookie
-      middleware on the lobby has a target type to mint into.
+- [ ] **Phase 2.3 ▸ OIDC client** — implement the OIDC code-flow
+      against the four pre-configured providers (Google · GitHub ·
+      GitLab · Microsoft) plus a custom-issuer escape hatch. Lives
+      at `open4x-accounts/src/oidc.rs`. Uses `openidconnect` crate
+      (or `oauth2` + manual ID-token verify) — pick whichever has
+      lighter deps when the work starts. PKCE state stashed in a
+      short-lived signed cookie; ID-token claims verified
+      (signature / iss / aud / exp / nonce) and mapped into
+      `Identity::OpenId{issuer, subject, label}`.
 
 ### Up next (Phase 2)
 
-- [ ] OIDC client (discovery + PKCE + ID-token verification +
-      claims → `Identity::OpenId` mapping)
-- [ ] OIDC custom-issuer support
 - [ ] atproto handle/DID resolver + OAuth/DPoP flow
+
+### Phase 2 summary
+
+Phase 2.1 ✅ persistence · 2.2 ✅ magic-link + mailer · 2.5 ✅ sessions
+· 2.3 OIDC client (next) · 2.4 atproto. Phase 3 (lobby HTTP +
+session-cookie middleware) unblocks once 2.3 lands; 2.4 can ship
+under Phase 5 polish if atproto OAuth is still moving.
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
