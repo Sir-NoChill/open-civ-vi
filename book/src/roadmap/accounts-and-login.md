@@ -598,9 +598,14 @@ production.
       dump subcommand still pending. Smoke-tested:
       `magic_link_mint` → `sign_in` → `sign_out` → `sign_in_failed`
       land in order with the right `player_id` / `detail`.
-- [ ] **Account deletion (GDPR)** — purge identities + sessions,
-      anonymize game records (replace `owner_player_id` with a
-      tombstone), document retention policy.
+- [~] **Account deletion (GDPR)** — `DELETE /api/v1/me` and the
+      `open4x-accounts delete-account` CLI both invoke the
+      schema cascade: sessions + identities + games (via the
+      `owner_player_id ON DELETE CASCADE` from `0002_games.sql`)
+      all disappear with the account row. Pending: anonymise
+      game-membership rows for *foreign* players (e.g. a deleted
+      user's invitations to other people's games), retention
+      policy doc.
 - [ ] **Process-per-game orchestrator** — for deployments that want
       isolation. `Command::spawn` an `open4x-server` per game, track
       pid + port + health.
@@ -608,6 +613,16 @@ production.
       route `/api/v1/games/{id}/play/*` to the right per-game backend.
 - [ ] **Backup & restore** — `lobby db dump` / `lobby db restore`
       subcommands.
+- [x] **CLI: `prune-sessions`** — `open4x-accounts prune-sessions
+      --days N` (default 30) deletes any session row that is
+      revoked OR has expired more than N days ago. Prints the
+      affected-row count for cron / scheduled-task wiring.
+- [x] **CLI: `delete-account`** — GDPR cascade for a single
+      player. Accepts the canonical hex display
+      (`0xAAAA·BBBB·CCCC·DDDD`) or a bare 16-char hex string;
+      writes an `account_deleted` audit row BEFORE the cascade
+      so it survives. Verified: cascades sessions + identities to
+      0 in one shot.
 - [x] **Health endpoint pings the DB** — `GET /health` runs
       `SELECT 1` against the sqlite pool. Returns 200 `ok` on
       success, 503 `db_unreachable` otherwise so a load balancer
