@@ -6,6 +6,9 @@
 //! - `prune-sessions` — drop revoked + expired sessions older than
 //!   N days (default 30) so the table doesn't grow unbounded.
 //! - `delete-account` — GDPR cascade for a single player.
+//! - `db-dump` — VACUUM INTO an out-file. Online-safe.
+//! - `db-restore` — validate + copy a snapshot back over the
+//!   live db file (after saving the live one as `.bak.<ts>`).
 
 use std::path::PathBuf;
 
@@ -57,6 +60,31 @@ enum Command {
         /// dot-grouped form *or* a 16-char raw hex string.
         #[arg(long)]
         player_id: String,
+    },
+
+    /// Online consistent snapshot via SQLite's `VACUUM INTO`.
+    /// Refuses to overwrite an existing file.
+    DbDump {
+        /// Where to write the snapshot. Parent dir is created.
+        #[arg(long)]
+        out: PathBuf,
+    },
+
+    /// Replace the live db with a previously-dumped snapshot.
+    /// Validates the source via `PRAGMA integrity_check` first;
+    /// renames the live file to `<db>.bak.<unix-ts>` before
+    /// copying (skip with `--force`). The lobby should be stopped
+    /// before running this — running lobbies hold a connection,
+    /// see stale rows until restart, and may corrupt new writes
+    /// against the replaced WAL.
+    DbRestore {
+        /// Source snapshot to restore from.
+        #[arg(long)]
+        from: PathBuf,
+        /// Skip the rename-as-backup step. Live db is overwritten
+        /// directly. Caller-of-last-resort.
+        #[arg(long, default_value_t = false)]
+        force: bool,
     },
 }
 
@@ -117,6 +145,103 @@ async fn main() {
                 res.rows_affected(),
                 cutoff,
             );
+        }
+
+        Command::DbDump { out } => {
+            if out.exists() {
+                eprintln!("dump target already exists: {}", out.display());
+                std::process::exit(2);
+            }
+            if let Some(parent) = out.parent() {
+                if !parent.as_os_str().is_empty() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+            }
+            let path_str = out.to_string_lossy().into_owned();
+            // VACUUM INTO is the right primitive: it's online-safe,
+            // takes a consistent snapshot of every page, and
+            // refuses to overwrite — we already pre-checked above
+            // for a clearer error message.
+            if let Err(e) = sqlx::query(&format!("VACUUM INTO '{}'", path_str.replace('\'', "''")))
+                .execute(&pool)
+                .await
+            {
+                eprintln!("dump: {e}");
+                std::process::exit(1);
+            }
+            let bytes = std::fs::metadata(&out).map(|m| m.len()).unwrap_or(0);
+            println!("dumped {} bytes -> {}", bytes, out.display());
+        }
+
+        Command::DbRestore { from, force } => {
+            if !from.is_file() {
+                eprintln!("restore source not a file: {}", from.display());
+                std::process::exit(2);
+            }
+            // 1. Validate the source: open RO + integrity_check.
+            //    Catches truncated copies and malformed databases
+            //    before we replace anything live.
+            let src_opts = SqliteConnectOptions::new()
+                .filename(&from)
+                .read_only(true);
+            let src_pool = SqlitePoolOptions::new()
+                .max_connections(1)
+                .connect_with(src_opts)
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!("open source: {e}");
+                    std::process::exit(2);
+                });
+            let check: (String,) = sqlx::query_as("PRAGMA integrity_check")
+                .fetch_one(&src_pool)
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!("source integrity check: {e}");
+                    std::process::exit(1);
+                });
+            if check.0 != "ok" {
+                eprintln!("source integrity check failed: {}", check.0);
+                std::process::exit(1);
+            }
+            src_pool.close().await;
+
+            // 2. Release our live handle so the file is not held
+            //    open during the copy. (Linux lets us copy over an
+            //    open file, but releasing first matches operator
+            //    intuition.)
+            pool.close().await;
+
+            // 3. Optional .bak rotation.
+            if cli.db.exists() && !force {
+                let ts = Utc::now().timestamp();
+                let bak = {
+                    let mut p = cli.db.clone();
+                    let stem = p
+                        .file_name()
+                        .map(|s| s.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| "accounts.sqlite".into());
+                    p.set_file_name(format!("{stem}.bak.{ts}"));
+                    p
+                };
+                if let Err(e) = std::fs::rename(&cli.db, &bak) {
+                    eprintln!("backup target: {e}");
+                    std::process::exit(2);
+                }
+                eprintln!("[backup] saved old db -> {}", bak.display());
+            }
+
+            // 4. Copy the snapshot in place.
+            if let Some(parent) = cli.db.parent() {
+                if !parent.as_os_str().is_empty() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+            }
+            if let Err(e) = std::fs::copy(&from, &cli.db) {
+                eprintln!("copy: {e}");
+                std::process::exit(1);
+            }
+            let bytes = std::fs::metadata(&cli.db).map(|m| m.len()).unwrap_or(0);
+            println!("restored {} -> {} ({} bytes)", from.display(), cli.db.display(), bytes);
         }
 
         Command::DeleteAccount { player_id } => {
