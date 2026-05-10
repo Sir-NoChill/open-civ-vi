@@ -79,7 +79,11 @@ into the server projector.
 - [x] `GameAction::CancelCivic` + `DELETE /civics/research` —
       idempotent clear of `civic_in_progress` Option; partial progress
       discarded. CLI: `action cancel-civic`.
-- [ ] `GameAction::ChangeGovernment` + `POST /government/change`
+- [x] `GameAction::ChangeGovernment` + `POST /government/change` —
+      switches `current_government` after unlock check; mirrors
+      `OneShotEffect::AdoptGovernment`'s policy-eviction logic.
+      Structured 400 on unknown / locked / empty. CLI: existing
+      `action adopt-government` covers the arena case.
 
 ### Client (Leptos)
 
@@ -106,6 +110,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `ownpwskt` — feat(open4x-server): GameAction::ChangeGovernment +
+  POST /government/change.
 - `nttqzwzx` — feat(open4x-server): GameAction::CancelCivic + DELETE
   /civics/research.
 - `oumzyopv` — feat(open4x-server): GameAction::CancelResearch +
