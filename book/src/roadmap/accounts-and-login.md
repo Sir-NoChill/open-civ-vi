@@ -606,9 +606,21 @@ production.
       game-membership rows for *foreign* players (e.g. a deleted
       user's invitations to other people's games), retention
       policy doc.
-- [ ] **Process-per-game orchestrator** — for deployments that want
-      isolation. `Command::spawn` an `open4x-server` per game, track
-      pid + port + health.
+- [x] **Process-per-game orchestrator** — `OPEN4X_LOBBY_PER_GAME=1`
+      flips `AppState.deploy_mode` to PerGame. New
+      `server::process::ProcessOrchestrator` allocates a free port
+      from `OPEN4X_LOBBY_PORT_RANGE` (default 4001-4100),
+      `Command::spawn`s the binary set by
+      `OPEN4X_LOBBY_GAME_BINARY` with `PORT` + `OPEN4X_DATA_DIR`
+      env, polls `/health` with exponential backoff up to
+      `OPEN4X_LOBBY_HEALTH_TIMEOUT_S`, then delegates to the
+      existing `bootstrap_game` on the new URL. Children are held
+      in an Arc registry keyed by `remote_game_id` and use
+      tokio's `kill_on_drop(true)` so a lobby kill takes them
+      down with it. Smoke verified: 2 games → 2 distinct ports
+      4501/4502, both children visible as ppid=lobby; resume
+      returns the spawned URL+token; SIGTERM the lobby and both
+      children die within 1.5s with no orphans.
 - [ ] **Reverse-proxy story** — example nginx + caddy configs that
       route `/api/v1/games/{id}/play/*` to the right per-game backend.
 - [ ] **Backup & restore** — `lobby db dump` / `lobby db restore`
@@ -736,6 +748,14 @@ Running record of work performed against this plan, newest at top.
   (accepts dot-grouped or bare 16-char hex), writes the
   audit row BEFORE the delete so it survives. Smoke
   cascades sessions + identities to 0.
+- `2e63034e` — feat(open4x-lobby): process-per-game
+  orchestrator. `OPEN4X_LOBBY_PER_GAME=1` flips boot into a
+  mode that `Command::spawn`s a fresh `open4x-server` per game
+  on a port allocated from `OPEN4X_LOBBY_PORT_RANGE`. Children
+  are held in an Arc registry with `kill_on_drop(true)` so a
+  lobby exit takes them down. Smoke verified end-to-end: two
+  concurrent games landed on 4501 + 4502, kill -TERM cleaned
+  both up with no orphans. Default deploy mode unchanged.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`

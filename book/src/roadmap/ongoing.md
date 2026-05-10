@@ -115,13 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Process-per-game orchestrator** — current model
-      is shared-server-multi-room (one open4x-server, many
-      GameRooms by id). Add a deploy mode that `Command::spawn`s
-      a fresh `open4x-server` per game on a free port from a
-      configured range, tracks pid + port + health, and registers
-      the dynamically-allocated URL on the games row. Deploy
-      story: per-game OOM doesn't kill the whole lobby's roster.
+- [ ] **Phase 6 ▸ Backup & restore CLI** — `open4x-accounts db
+      dump <out.sqlite>` and `open4x-accounts db restore
+      <in.sqlite>` so deploys can snapshot the lobby's
+      accounts/games/audit state and roll back from a known-good
+      checkpoint. Sqlite-only for v1 (matches the rest of the
+      stack); doc the recovery story.
 
 ### Up next (Phase 6)
 
