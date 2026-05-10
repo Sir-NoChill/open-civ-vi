@@ -67,20 +67,118 @@ impl Mailer for LogMailer {
     }
 }
 
-// ───────────────────────────── SmtpMailer (stub) ──────────────────────────────
+// ───────────────────────────── SmtpMailer (real) ──────────────────────────────
 
-/// SMTP-backed mailer. Behind the `mailer-smtp` feature; today this is
-/// a stub that always returns `MailerError::NotConfigured`. The real
-/// `lettre`-backed implementation lands when self-host deploys need
-/// it (Phase 6 of the roadmap).
+/// Static config for an SMTP-backed [`Mailer`]. Built from the
+/// `SMTP_*` env vars at lobby boot; pass directly via `SmtpMailer::new`
+/// when wiring from a CLI.
 #[cfg(feature = "mailer-smtp")]
-pub struct SmtpMailer;
+#[derive(Debug, Clone)]
+pub struct SmtpConfig {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub from: String,
+}
+
+#[cfg(feature = "mailer-smtp")]
+impl SmtpConfig {
+    /// Pull config from the canonical `SMTP_HOST` / `SMTP_PORT` /
+    /// `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` env vars. Returns
+    /// `None` when any required field is missing or empty so the
+    /// caller can fall back to [`LogMailer`].
+    pub fn from_env() -> Option<Self> {
+        let host = std::env::var("SMTP_HOST").ok().filter(|s| !s.is_empty())?;
+        let username = std::env::var("SMTP_USER").ok().filter(|s| !s.is_empty())?;
+        let password = std::env::var("SMTP_PASS").ok().filter(|s| !s.is_empty())?;
+        let from = std::env::var("SMTP_FROM").ok().filter(|s| !s.is_empty())?;
+        let port = std::env::var("SMTP_PORT")
+            .ok()
+            .and_then(|s| s.parse::<u16>().ok())
+            .unwrap_or(465);
+        Some(Self { host, port, username, password, from })
+    }
+}
+
+/// SMTP-backed mailer using [`lettre`]'s async tokio + rustls
+/// transport. Lazily builds the transport once at construction; each
+/// `send_*` call reuses the connection pool lettre maintains
+/// internally.
+#[cfg(feature = "mailer-smtp")]
+pub struct SmtpMailer {
+    transport: lettre::AsyncSmtpTransport<lettre::Tokio1Executor>,
+    from: lettre::message::Mailbox,
+}
+
+#[cfg(feature = "mailer-smtp")]
+impl SmtpMailer {
+    pub fn new(cfg: SmtpConfig) -> Result<Self, MailerError> {
+        let creds = lettre::transport::smtp::authentication::Credentials::new(
+            cfg.username,
+            cfg.password,
+        );
+        let transport =
+            lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::relay(&cfg.host)
+                .map_err(|e| MailerError::Transport(e.to_string()))?
+                .credentials(creds)
+                .port(cfg.port)
+                .build();
+        let from: lettre::message::Mailbox = cfg
+            .from
+            .parse()
+            .map_err(|e: lettre::address::AddressError| {
+                MailerError::Recipient(format!("SMTP_FROM: {e}"))
+            })?;
+        Ok(Self { transport, from })
+    }
+}
 
 #[cfg(feature = "mailer-smtp")]
 #[async_trait]
 impl Mailer for SmtpMailer {
-    async fn send_magic_link(&self, _email: &str, _link: &str) -> Result<(), MailerError> {
-        Err(MailerError::NotConfigured)
+    async fn send_magic_link(&self, email: &str, link: &str) -> Result<(), MailerError> {
+        let to: lettre::message::Mailbox = email
+            .parse()
+            .map_err(|e: lettre::address::AddressError| {
+                MailerError::Recipient(format!("{email}: {e}"))
+            })?;
+        let body = format!(
+            "Hi,\n\n\
+             Click the link below to sign in to Open4X (valid for 15 minutes):\n\n\
+             {link}\n\n\
+             If you didn't request this, ignore this email.\n",
+        );
+        let msg = lettre::Message::builder()
+            .from(self.from.clone())
+            .to(to)
+            .subject("Sign in to Open4X")
+            .body(body)
+            .map_err(|e| MailerError::Transport(e.to_string()))?;
+        use lettre::AsyncTransport as _;
+        self.transport
+            .send(msg)
+            .await
+            .map_err(|e| MailerError::Transport(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn send_raw(&self, to: &str, subject: &str, body: &str) -> Result<(), MailerError> {
+        let to: lettre::message::Mailbox = to
+            .parse()
+            .map_err(|e: lettre::address::AddressError| MailerError::Recipient(e.to_string()))?;
+        let msg = lettre::Message::builder()
+            .from(self.from.clone())
+            .to(to)
+            .subject(subject.to_string())
+            .body(body.to_string())
+            .map_err(|e| MailerError::Transport(e.to_string()))?;
+        use lettre::AsyncTransport as _;
+        self.transport
+            .send(msg)
+            .await
+            .map_err(|e| MailerError::Transport(e.to_string()))?;
+        Ok(())
     }
 }
 

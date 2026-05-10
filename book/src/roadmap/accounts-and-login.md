@@ -248,8 +248,13 @@ minting behind those types.
       escape hatch (default-impl errors `NotConfigured`).
       `LogMailer` impl writes the magic link to stderr in a
       grep-friendly `[magic-link] to=… link=…` shape. `SmtpMailer`
-      stub is gated on a new `mailer-smtp` cargo feature; the
-      `lettre` wiring lands in Phase 6 self-host work.
+      lives behind the `mailer-smtp` cargo feature and uses
+      lettre's `AsyncSmtpTransport<Tokio1Executor>` with rustls.
+      `SmtpConfig::from_env` reads `SMTP_HOST` / `SMTP_PORT`
+      (default 465) / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM`.
+      AppState picks SMTP when all required env vars are set;
+      otherwise falls back to LogMailer with a stderr note so
+      operators see the choice on boot.
 
 #### 2.3 OIDC client
 
@@ -565,8 +570,10 @@ production.
       `OPEN4X_LOBBY_DATA_DIR`.
 - [ ] **Postgres opt-in** — connection string via env, sqlx feature
       flag.
-- [ ] **SMTP config** — env-driven (`SMTP_HOST`, `SMTP_PORT`,
-      `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). Default no-op in dev.
+- [x] **SMTP config** — env-driven (`SMTP_HOST`, `SMTP_PORT`,
+      `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). LogMailer remains
+      the default in dev; SmtpMailer engages when the four
+      required vars are all set. See Phase 2.2 mailer entry above.
 - [x] **Rate limiting** — per-email (5 mints / 5 min) and per-IP
       (20 mints / 5 min) throttles on
       `POST /api/v1/auth/email/start`, both backed by the audit

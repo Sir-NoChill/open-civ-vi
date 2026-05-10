@@ -115,13 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ SMTP `Mailer` impl** — `mailer-smtp` cargo
-      feature already exists as a stub; flesh it out with `lettre`
-      so production deploys can actually send mail. Env config:
-      `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` /
-      `SMTP_FROM`. AppState picks SMTP over LogMailer when all
-      five are populated. Still falls back to LogMailer in dev
-      so the magic-link flow stays printable to stderr.
+- [ ] **Phase 6 ▸ Postgres opt-in plumbing** — `postgres` cargo
+      feature already exists on open4x-accounts. Wire it through
+      so `OPEN4X_LOBBY_DATABASE_URL` (when starting with
+      `postgres://`) opens a `Pool<Postgres>` and runs the
+      migrations. Sqlite stays the default. The schema is
+      sqlite-leaning (TEXT for ULIDs/timestamps); audit any
+      type that doesn't survive postgres' stricter type system
+      and adapt the migration if needed.
 
 ### Up next (Phase 6)
 

@@ -56,7 +56,7 @@ ssr = [
     "dep:axum", "dep:tokio", "dep:tower-http",
     "dep:sqlx", "dep:chrono", "dep:reqwest", "dep:thiserror", "dep:ipnet",
     "dep:rust-embed", "dep:mime_guess",
-    "open4x-accounts/persistence",
+    "open4x-accounts/persistence", "open4x-accounts/mailer-smtp",
 ]
 csr = [
     "dep:leptos", "dep:wasm-bindgen", "dep:console_error_panic_hook",

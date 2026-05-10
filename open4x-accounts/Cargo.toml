@@ -35,6 +35,12 @@ subtle     = { version = "2", optional = true }
 base64     = { version = "0.22", optional = true }
 rand       = { workspace = true, optional = true }
 
+# SMTP transport — gated behind `mailer-smtp`. Default-features off
+# keeps the dependency graph lean (no native-tls).
+lettre     = { version = "0.11", default-features = false, optional = true, features = [
+    "smtp-transport", "tokio1", "tokio1-rustls-tls", "builder",
+] }
+
 [features]
 default     = []
 persistence = [
@@ -43,6 +49,6 @@ persistence = [
     "dep:clap",
 ]
 postgres    = ["persistence", "sqlx/postgres"]
-# SMTP transport for the magic-link Mailer. Stub today; real lettre
-# wiring lands in Phase 6 (self-host).
-mailer-smtp = ["persistence"]
+# SMTP transport for the magic-link Mailer. Pulls in `lettre` for
+# AsyncSmtpTransport (rustls + tokio).
+mailer-smtp = ["persistence", "dep:lettre"]

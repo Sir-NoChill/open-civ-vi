@@ -9,7 +9,7 @@ use ipnet::IpNet;
 use open4x_accounts::audit::SqliteAuditStore;
 use open4x_accounts::games::SqliteGameStore;
 use open4x_accounts::magic_link::MagicLinkSigner;
-use open4x_accounts::mailer::{LogMailer, Mailer};
+use open4x_accounts::mailer::{LogMailer, Mailer, SmtpConfig, SmtpMailer};
 use open4x_accounts::store::SqliteAccountStore;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Pool, Sqlite};
@@ -76,7 +76,21 @@ impl AppState {
         let signer = MagicLinkSigner::from_env_or_path(data_dir.join("lobby.key"))
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
-        let mailer: Arc<dyn Mailer> = Arc::new(LogMailer);
+        // Prefer SMTP when fully configured; fall back to LogMailer
+        // so dev / CI keep printing the magic link to stderr.
+        let mailer: Arc<dyn Mailer> = match SmtpConfig::from_env() {
+            Some(cfg) => match SmtpMailer::new(cfg) {
+                Ok(m) => {
+                    eprintln!("[mailer] SMTP configured — magic links go via lettre");
+                    Arc::new(m)
+                }
+                Err(e) => {
+                    eprintln!("[mailer] SMTP config rejected ({e}); falling back to LogMailer");
+                    Arc::new(LogMailer)
+                }
+            },
+            None => Arc::new(LogMailer),
+        };
         let public_base_url =
             std::env::var("OPEN4X_LOBBY_PUBLIC_URL").unwrap_or_default();
         let game_server_url = std::env::var("OPEN4X_GAME_SERVER_URL")
