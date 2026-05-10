@@ -470,11 +470,14 @@ PRIMARY KEY (game_id, player_id)
       to read the `?token=` query param instead of bootstrapping
       its own anonymous bearer — tracked as the next commit.
 - [x] `+ New game` wizard's "⌬ Generate world" → `POST /api/v1/games`
-      → on success, switches MenuTab back to Ongoing so the new tile
-      appears immediately. Wizard step state isn't yet hoisted into
-      the parent so the body uses the Review-summary defaults; per-step
-      RwSignal threading is a follow-up. Pending / error states surface
-      under the button.
+      with the **user's actual selections**. Phase 4.4 hoist:
+      every per-step `RwSignal` lives on a `WizardState` struct
+      provided through context. `WizardState::to_create_body()`
+      builds the request from current values; the Review summary
+      panel renders live from the same struct (`map · seed ·
+      world · civilization · difficulty · victory · dynamics ·
+      players · turn mode`). Pending / error feedback under the
+      button unchanged.
 - [ ] Notes popup: markdown textarea, persisted via
       `POST /api/v1/games/{id}/notes`.
 - [ ] Per-tile `···` menu: View summary / Copy game ID / Share invite

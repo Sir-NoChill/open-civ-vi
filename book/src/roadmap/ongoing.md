@@ -115,14 +115,13 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.4 ▸ Wizard state hoisting** — currently the New-Game
-      wizard's StepMap / StepCiv / StepRules / StepPlayers each own
-      a screen-local `RwSignal` for their fields, so the Review
-      Generate world POST sends the static review-summary defaults
-      instead of the user's actual selections. Hoist every step's
-      RwSignals up to the parent `NewGame` component (or use
-      `provide_context` for a `WizardState` struct) so the body
-      reads from the live values.
+- [ ] **Phase 4 polish ▸ Per-tile ⋯ menu** — wire the OngoingGames
+      tile's "⋯" button to a click-trigger `Popup` containing a
+      `PopupList` (View summary / Copy game ID / Share invite link
+      / sep / Archive / Resign). View summary opens a Popup with
+      a kv table of the same fields as the wizard Review block.
+      Resign calls `DELETE /api/v1/games/{id}` (already wired) and
+      refreshes the list.
 
 ### Up next (Phase 4 polish)
 

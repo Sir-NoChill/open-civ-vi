@@ -1,7 +1,8 @@
-//! New-game wizard — scaffold port of `hifi/newgame.jsx`. Implements the
-//! full 5-step strip (Map / Civilization / Rules / Players / Review) with
-//! Map and Review having content; the middle three steps render an empty
-//! panel for now (TODO: port StepCiv / StepRules / StepPlayers).
+//! New-game wizard — port of `hifi/newgame.jsx`. Five steps
+//! (Map / Civilization / Rules / Players / Review). All step state
+//! lives on a single `WizardState` provided through context, so the
+//! Review step's "⌬ Generate world" CTA posts the user's actual
+//! selections to `POST /api/v1/games`.
 
 use std::sync::Arc;
 
@@ -50,9 +51,103 @@ impl Step {
     }
 }
 
+/// Hoisted wizard form state. Every step reads + writes to the same
+/// signals so the Review step can post the user's actual selections
+/// to `POST /api/v1/games` instead of static defaults.
+///
+/// All fields are `RwSignal`, which is `Copy` in Leptos 0.7 — so
+/// `WizardState` itself is `Copy`/`Clone` and threads cheaply
+/// through context.
+#[derive(Copy, Clone)]
+struct WizardState {
+    // Map step.
+    map_type: RwSignal<String>,
+    map_size: RwSignal<String>,
+    advanced: RwSignal<bool>,
+    // Civ step.
+    selected_leader: RwSignal<String>,
+    selected_civ: RwSignal<String>,
+    // Rules step — difficulty / pace / world dynamics.
+    difficulty: RwSignal<String>,
+    starting_era: RwSignal<String>,
+    game_speed: RwSignal<String>,
+    ai_personality: RwSignal<String>,
+    disasters: RwSignal<i32>,
+    barbarians: RwSignal<i32>,
+    city_states: RwSignal<i32>,
+    ai_aggression: RwSignal<i32>,
+    /// One Toggle signal per row in `VICTORY_CONDITIONS` (defined
+    /// further down). Hoisted here so StepReview can summarise them.
+    victory: [RwSignal<bool>; 6],
+    // Players step.
+    timer: RwSignal<String>,
+    simultaneous: RwSignal<bool>,
+    private_game: RwSignal<bool>,
+    cross_play: RwSignal<bool>,
+}
+
+impl WizardState {
+    fn new() -> Self {
+        Self {
+            map_type: RwSignal::new("continents".into()),
+            map_size: RwSignal::new("std".into()),
+            advanced: RwSignal::new(false),
+            selected_leader: RwSignal::new("Saladin".into()),
+            selected_civ: RwSignal::new("Arabia".into()),
+            difficulty: RwSignal::new("prince".into()),
+            starting_era: RwSignal::new("ancient".into()),
+            game_speed: RwSignal::new("std".into()),
+            ai_personality: RwSignal::new("historic".into()),
+            disasters: RwSignal::new(2),
+            barbarians: RwSignal::new(2),
+            city_states: RwSignal::new(12),
+            ai_aggression: RwSignal::new(50),
+            victory: [
+                RwSignal::new(true),  // Science
+                RwSignal::new(true),  // Culture
+                RwSignal::new(true),  // Domination
+                RwSignal::new(true),  // Religion
+                RwSignal::new(false), // Diplomacy (off by default per JSX)
+                RwSignal::new(true),  // Score
+            ],
+            timer: RwSignal::new("off".into()),
+            simultaneous: RwSignal::new(false),
+            private_game: RwSignal::new(true),
+            cross_play: RwSignal::new(true),
+        }
+    }
+
+    /// Build the `CreateGameBody` the lobby's `POST /api/v1/games`
+    /// expects. Reads every signal current.
+    fn to_create_body(&self) -> games_api::CreateGameBody {
+        let leader = self.selected_leader.get();
+        let civ = self.selected_civ.get();
+        // Players-human is fixed at 1 today (the design's open invite
+        // slot doesn't promote to a real human yet); AI count is the
+        // remaining slots in PLAYERS minus the human + open slot.
+        let players_ai = (PLAYERS.len() as u32).saturating_sub(2);
+        // Seed: deterministic per (leader, civ, map_size) so the same
+        // wizard config produces the same world. Real seed-input UX
+        // belongs in the StepMap advanced panel — pending.
+        let seed = format!("0x{leader:0>4}·{civ:0>4}·{}", self.map_size.get());
+        games_api::CreateGameBody {
+            name: format!("{leader}'s {civ}"),
+            leader: leader.clone(),
+            civ_id: civ.to_lowercase(),
+            difficulty: self.difficulty.get(),
+            players_human: 1,
+            players_ai,
+            map_type: self.map_type.get(),
+            map_size: self.map_size.get(),
+            seed,
+        }
+    }
+}
+
 #[component]
 pub fn NewGame(#[prop(optional)] on_generated: Option<Callback<String>>) -> impl IntoView {
     let step = RwSignal::new(Step::Map);
+    provide_context(WizardState::new());
 
     // Make the on_generated callback available to StepReview via context
     // so the deeply-nested CTA can fire it without a prop chain.
@@ -151,9 +246,10 @@ struct GeneratedCb(Callback<String>);
 
 #[component]
 fn StepMap() -> impl IntoView {
-    let map_type = RwSignal::new("continents".to_string());
-    let map_size = RwSignal::new("std".to_string());
-    let advanced = RwSignal::new(false);
+    let state = expect_context::<WizardState>();
+    let map_type = state.map_type;
+    let map_size = state.map_size;
+    let advanced = state.advanced;
 
     let map_type_opts = Signal::derive(|| {
         ["continents", "pangaea", "archipelago", "fractal", "custom"]
@@ -269,17 +365,28 @@ fn StepMap() -> impl IntoView {
 
 // ────────────────────────────── Step: review ──────────────────────────────────
 
-const REVIEW_ROWS: &[(&str, &str)] = &[
-    ("map", "continents · standard · 84×54"),
-    ("seed", "0xCAFE·B33F·1A77"),
-    ("world", "4 bn yrs · sea 50% · temperate · normal rainfall"),
-    ("civilization", "Saladin / Arabia"),
-    ("difficulty", "prince · standard speed · ancient era"),
-    ("victory", "science · culture · domination · religion · score"),
-    ("dynamics", "disasters std · barbs std · 12 city-states · AI balanced"),
-    ("players", "1 human + 1 invite pending + 6 AI"),
-    ("turn mode", "play-by-turn · invite-only · cross-play"),
-];
+fn map_size_dims(size: &str) -> &'static str {
+    match size {
+        "duel" => "44×26",
+        "tiny" => "60×38",
+        "small" => "74×46",
+        "large" => "96×60",
+        "huge" => "106×66",
+        _ => "84×54",
+    }
+}
+
+fn slider_label_disasters(v: i32) -> &'static str {
+    ["off", "light", "std", "heavy", "apocalyptic"][v.clamp(0, 4) as usize]
+}
+
+fn slider_label_barbs(v: i32) -> &'static str {
+    ["off", "rare", "std", "raging", "horde"][v.clamp(0, 4) as usize]
+}
+
+fn slider_label_aggr(v: i32) -> &'static str {
+    if v < 34 { "passive" } else if v > 66 { "warlike" } else { "balanced" }
+}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 enum GenerateState {
@@ -293,27 +400,14 @@ enum GenerateState {
 fn StepReview() -> impl IntoView {
     let gen_state = RwSignal::new(GenerateState::Idle);
     let gen_cb = use_context::<GeneratedCb>();
+    let state = expect_context::<WizardState>();
 
     let on_generate = move |_| {
         if matches!(gen_state.get_untracked(), GenerateState::Pending) {
             return;
         }
         gen_state.set(GenerateState::Pending);
-        // Wizard state isn't yet hoisted to NewGame — for the
-        // first end-to-end pass we post the same defaults the
-        // Review summary shows. Threading per-step RwSignals up to
-        // NewGame is a follow-up.
-        let body = games_api::CreateGameBody {
-            name: "New game".into(),
-            leader: "Saladin".into(),
-            civ_id: "arabia".into(),
-            difficulty: "prince".into(),
-            players_human: 1,
-            players_ai: 7,
-            map_type: "continents".into(),
-            map_size: "std".into(),
-            seed: "0xCAFE·B33F·1A77".into(),
-        };
+        let body = state.to_create_body();
         let cb = gen_cb.clone();
         spawn_local(async move {
             match games_api::create(body).await {
@@ -330,6 +424,66 @@ fn StepReview() -> impl IntoView {
     };
     let pending = Signal::derive(move || matches!(gen_state.get(), GenerateState::Pending));
 
+    // Build the summary rows live from WizardState. Replaces the
+    // static REVIEW_ROWS table.
+    let summary_rows = move || -> Vec<(String, String)> {
+        let leader = state.selected_leader.get();
+        let civ = state.selected_civ.get();
+        let map = format!(
+            "{} · {} · {}",
+            state.map_type.get(),
+            state.map_size.get(),
+            map_size_dims(&state.map_size.get()),
+        );
+        let world = if state.advanced.get() {
+            "advanced overrides applied".to_string()
+        } else {
+            "default world params".to_string()
+        };
+        let civilization = format!("{leader} / {civ}");
+        let difficulty_line = format!(
+            "{} · {} speed · {} era",
+            state.difficulty.get(),
+            state.game_speed.get(),
+            state.starting_era.get(),
+        );
+        let victory: String = VICTORY_CONDITIONS
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| state.victory[*i].get())
+            .map(|(_, (n, _, _))| n.to_lowercase())
+            .collect::<Vec<_>>()
+            .join(" · ");
+        let dynamics = format!(
+            "disasters {} · barbs {} · {} city-states · AI {}",
+            slider_label_disasters(state.disasters.get()),
+            slider_label_barbs(state.barbarians.get()),
+            state.city_states.get(),
+            slider_label_aggr(state.ai_aggression.get()),
+        );
+        let players_count = (PLAYERS.len() as u32).saturating_sub(2);
+        let players = format!("1 human + 1 invite pending + {players_count} AI");
+        let turn_mode = format!(
+            "{} · {} · {}",
+            if state.simultaneous.get() { "simultaneous" } else { "play-by-turn" },
+            if state.private_game.get() { "invite-only" } else { "public" },
+            if state.cross_play.get() { "web · API" } else { "web only" },
+        );
+        let timer_label = state.timer.get();
+        let seed = format!("0x{leader:0>4}·{civ:0>4}·{}", state.map_size.get());
+        vec![
+            ("map".into(), map),
+            ("seed".into(), seed),
+            ("world".into(), world),
+            ("civilization".into(), civilization),
+            ("difficulty".into(), difficulty_line),
+            ("victory".into(), if victory.is_empty() { "none — disable all and you lose forever".into() } else { victory }),
+            ("dynamics".into(), dynamics),
+            ("players".into(), players),
+            ("turn mode".into(), format!("{turn_mode} · timer {timer_label}")),
+        ]
+    };
+
     view! {
         <div class="wizard-body">
             <Panel flush=true>
@@ -338,10 +492,10 @@ fn StepReview() -> impl IntoView {
                     sub="// last chance to tweak"
                 />
                 <div class="panel-body">
-                    {REVIEW_ROWS.iter().map(|(k, v)| view! {
+                    {move || summary_rows().into_iter().map(|(k, v)| view! {
                         <div class="param-row">
-                            <div class="label">{*k}</div>
-                            <div class="control" style="font-size:var(--fs-sm)">{*v}</div>
+                            <div class="label">{k}</div>
+                            <div class="control" style="font-size:var(--fs-sm)">{v}</div>
                             <div class="value">
                                 <Btn variant="bare" size="xs">"edit"</Btn>
                             </div>
@@ -420,7 +574,8 @@ const CIVS: &[CivPick] = &[
 
 #[component]
 fn StepCiv() -> impl IntoView {
-    let selected = RwSignal::new("Saladin".to_string());
+    let state = expect_context::<WizardState>();
+    let selected = state.selected_leader;
 
     view! {
         <div class="wizard-body single">
@@ -437,7 +592,8 @@ fn StepCiv() -> impl IntoView {
                             let trait_ = c.trait_;
                             let leader_initial = leader.chars().next().unwrap_or('?').to_string();
 
-                            let pick_for_click = leader.to_string();
+                            let pick_leader = leader.to_string();
+                            let pick_civ = civ.to_string();
                             let pick_for_class = leader.to_string();
 
                             let card_panel_style = move || {
@@ -478,7 +634,10 @@ fn StepCiv() -> impl IntoView {
                                     <div
                                         class="panel"
                                         style=card_panel_style
-                                        on:click=move |_| selected.set(pick_for_click.clone())
+                                        on:click=move |_| {
+                                            selected.set(pick_leader.clone());
+                                            state.selected_civ.set(pick_civ.clone());
+                                        }
                                     >
                                         <div class="row gap-sm">
                                             <div style="width:40px; height:40px; \
@@ -517,22 +676,16 @@ const VICTORY_CONDITIONS: &[(&str, &str, bool)] = &[
 
 #[component]
 fn StepRules() -> impl IntoView {
-    let difficulty = RwSignal::new("prince".to_string());
-    let starting_era = RwSignal::new("ancient".to_string());
-    let game_speed = RwSignal::new("std".to_string());
-    let ai_personality = RwSignal::new("historic".to_string());
-
-    // World-dynamics sliders.
-    let disasters = RwSignal::new(2_i32);
-    let barbarians = RwSignal::new(2_i32);
-    let city_states = RwSignal::new(12_i32);
-    let ai_aggression = RwSignal::new(50_i32);
-
-    // Victory toggles — one RwSignal per condition, seeded from the table.
-    let victory_signals: Vec<RwSignal<bool>> = VICTORY_CONDITIONS
-        .iter()
-        .map(|(_, _, default)| RwSignal::new(*default))
-        .collect();
+    let state = expect_context::<WizardState>();
+    let difficulty = state.difficulty;
+    let starting_era = state.starting_era;
+    let game_speed = state.game_speed;
+    let ai_personality = state.ai_personality;
+    let disasters = state.disasters;
+    let barbarians = state.barbarians;
+    let city_states = state.city_states;
+    let ai_aggression = state.ai_aggression;
+    let victory_signals: Vec<RwSignal<bool>> = state.victory.to_vec();
 
     let difficulty_opts = Signal::derive(|| {
         ["settler", "chieftain", "warlord", "prince", "king", "emperor", "deity"]
@@ -805,10 +958,11 @@ fn slot_menu_content() -> AnyView {
 
 #[component]
 fn StepPlayers() -> impl IntoView {
-    let timer = RwSignal::new("off".to_string());
-    let simultaneous = RwSignal::new(false);
-    let private_game = RwSignal::new(true);
-    let cross_play = RwSignal::new(true);
+    let state = expect_context::<WizardState>();
+    let timer = state.timer;
+    let simultaneous = state.simultaneous;
+    let private_game = state.private_game;
+    let cross_play = state.cross_play;
 
     let timer_opts = Signal::derive(|| {
         ["off", "5min", "10min", "30min", "24hr"].iter().map(|s| Segment::from_str(s)).collect()
