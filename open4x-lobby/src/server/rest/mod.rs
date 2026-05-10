@@ -4,6 +4,7 @@
 #![cfg(feature = "ssr")]
 
 pub mod email_auth;
+pub mod games;
 pub mod me;
 
 use axum::Router;
@@ -19,4 +20,9 @@ pub fn v1_router() -> Router<AppState> {
         .route("/me", get(me::get_me))
         .route("/me", patch(me::patch_me))
         .route("/me", delete(me::delete_me))
+        .route("/games", get(games::list))
+        .route("/games", post(games::create))
+        .route("/games/{id}", get(games::get_one))
+        .route("/games/{id}", delete(games::delete_one))
+        .route("/games/{id}/resume", post(games::resume))
 }

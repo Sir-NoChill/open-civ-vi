@@ -115,15 +115,15 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4.2 ▸ Games HTTP routes** — wire the GameStore from
-      kwtktvux/this-tick into the lobby's REST surface:
-      `GET /api/v1/games` (RequireSession + list_for_player),
-      `POST /api/v1/games` (body = wizard params; creates a stub
-      record without orchestration yet — server_url + server_token
-      empty for now, populated when Phase 4.3 lands),
-      `GET /api/v1/games/{id}` (auth + ownership check),
-      `DELETE /api/v1/games/{id}` (soft-delete; 403 on
-      cross-account). All under `RequireSession`.
+- [ ] **Phase 4.4 ▸ OngoingGames + NewGame SPA wiring** —
+      `screens/ongoing.rs` reads `/api/v1/games` via
+      `components::api::games::list` (new binding), drops the baked
+      sample data, renders one tile per row with the MiniMap seeded
+      from `game.seed.parse()`. `screens/newgame.rs` "⌬ Generate
+      world" CTA on the Review step posts the wizard params to
+      `POST /api/v1/games`; on 201 routes the user back to the
+      Ongoing tab with the new tile visible. Resume button on a
+      tile is inert until Phase 4.3 fills `server_url`.
 
 ### Up next (Phase 4)
 - [ ] Phase 4.3 orchestrator — shared-server-multi-room v1 (teach

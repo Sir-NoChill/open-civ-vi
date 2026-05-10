@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use open4x_accounts::games::SqliteGameStore;
 use open4x_accounts::magic_link::MagicLinkSigner;
 use open4x_accounts::mailer::{LogMailer, Mailer};
 use open4x_accounts::store::SqliteAccountStore;
@@ -15,6 +16,7 @@ use sqlx::{Pool, Sqlite};
 pub struct AppState {
     pub pool: Pool<Sqlite>,
     pub store: Arc<SqliteAccountStore>,
+    pub games: Arc<SqliteGameStore>,
     pub signer: MagicLinkSigner,
     pub mailer: Arc<dyn Mailer>,
     /// Base URL for outgoing magic-link URLs (e.g. `https://lobby.example`).
@@ -52,6 +54,7 @@ impl AppState {
         let store = SqliteAccountStore::connect(&db_path)
             .await
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let games = SqliteGameStore::from_pool(pool.clone());
 
         let signer = MagicLinkSigner::from_env_or_path(data_dir.join("lobby.key"))
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -63,6 +66,7 @@ impl AppState {
         Ok(Self {
             pool,
             store: Arc::new(store),
+            games: Arc::new(games),
             signer,
             mailer,
             public_base_url,

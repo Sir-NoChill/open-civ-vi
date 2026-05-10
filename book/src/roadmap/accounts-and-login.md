@@ -412,13 +412,13 @@ PRIMARY KEY (game_id, player_id)
 
 | Method | Path                              | Effect                                                 |
 |--------|-----------------------------------|--------------------------------------------------------|
-| GET    | `/api/v1/games`                   | List games visible to the user (own + invited)         |
-| POST   | `/api/v1/games`                   | New-game wizard submit — bootstrap & return `game_id`  |
-| GET    | `/api/v1/games/{id}`              | Single-game preview                                    |
+| GET    | `/api/v1/games` ✅                | List games visible to the user (own + invited)         |
+| POST   | `/api/v1/games` ✅                | New-game wizard submit — bootstrap & return `game_id`  |
+| GET    | `/api/v1/games/{id}` ✅           | Single-game preview                                    |
 | POST   | `/api/v1/games/{id}/notes`        | Update markdown notes                                  |
 | POST   | `/api/v1/games/{id}/invite`       | Invite by email / OpenID / atproto / `PlayerId`        |
-| DELETE | `/api/v1/games/{id}`              | Resign / archive / delete                              |
-| POST   | `/api/v1/games/{id}/resume`       | Returns 302 to the in-game server URL with a token     |
+| DELETE | `/api/v1/games/{id}` ✅           | Resign / archive / delete                              |
+| POST   | `/api/v1/games/{id}/resume` (~)   | Returns server_url + token; 503 until orchestrator     |
 
 #### 4.3 Orchestrator
 
