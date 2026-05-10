@@ -582,9 +582,9 @@ These don't fit cleanly into one phase but need to be settled early.
 |-------|------------------------------------|-----------------------------------------------------------------------------|------------------------------|
 | 0     | Scaffolding ✅                     | Workspace split + paper SPA renders all screens (some w/ placeholder data)  | —                            |
 | 1     | Visual completeness ✅             | Pixel-perfect against design; popups + slider work; remaining wizard steps  | none — pure UI               |
-| 2     | `open4x-accounts` substrate        | Magic-link, OIDC client, atproto resolver, session tokens, sqlite store     | Phase 3                      |
-| 3     | Lobby HTTP + auth wiring           | Sign in via 3 methods, link identities, profile round-trip via `/me`        | Phase 4                      |
-| 4     | Games index + orchestration        | New-game wizard creates a real `GameRoom`, ongoing list reflects reality    | Phase 5                      |
+| 2     | `open4x-accounts` substrate ◐      | Magic-link, OIDC client, atproto resolver, session tokens, sqlite store     | Phase 3                      |
+| 3     | Lobby HTTP + auth wiring ✅        | Sign in via 3 methods, link identities, profile round-trip via `/me`        | Phase 4                      |
+| 4     | Games index + orchestration ◐      | New-game wizard creates a real `GameRoom`, ongoing list reflects reality    | Phase 5                      |
 | 5     | Polish                             | Avatar, QR, friends, presets, real thumbnails, email verify                 | Phase 6                      |
 | 6     | Self-host + ops                    | Single-binary deploy, SMTP, rate limit, audit log, process-per-game         | —                            |
 
@@ -594,7 +594,30 @@ These don't fit cleanly into one phase but need to be settled early.
 
 Running record of work performed against this plan, newest at top.
 
-### Phase 3 — Lobby HTTP (2026-05-10, in progress)
+### Phase 4 — Games index + SPA wiring (2026-05-10, in progress)
+
+- `dfd30b85` — feat(open4x-accounts): games index schema + GameStore
+  (Phase 4.1). `0002_games.sql` adds `games` + `game_members`. New
+  `GameStore` async trait + `SqliteGameStore` impl over a shared
+  pool. `GameStatus` enum + `NewGame` input type + soft-delete
+  semantics (`Forbidden` if the row exists but isn't yours,
+  `NotFound` otherwise). 3 tests cover create→list, soft-delete,
+  runtime-view round-trip.
+- `b4172e78` — feat(open4x-lobby): games HTTP routes (Phase 4.2).
+  `AppState.games: Arc<SqliteGameStore>` shares the existing pool.
+  `GET /api/v1/games`, `POST /api/v1/games`, `GET /games/{id}`,
+  `DELETE /games/{id}`, `POST /games/{id}/resume` (returns 503
+  `orchestrator_not_ready` until Phase 4.3 fills `server_url` +
+  `server_token`). `GameView` wire shape strips `server_token`.
+- `4b4c1d82` — feat(open4x-lobby): wire OngoingGames + NewGame SPA
+  to `/api/v1/games` (Phase 4.4 partial). `components::api::games`
+  bindings; `screens/ongoing.rs` renders live rows with MiniMap
+  seeded from `g.seed`; wizard "⌬ Generate world" CTA POSTs to
+  `/api/v1/games` and routes back to Ongoing on success. Filter
+  chips / search / sort / notes / per-tile menu and Resume CTA
+  remain unwired pending Phase 4.3 + further wizard hoisting.
+
+### Phase 3 — Lobby HTTP (2026-05-10, complete)
 
 Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
 
@@ -623,6 +646,22 @@ Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
   `MeView` wire shape exposes the hex `PlayerId` (never the raw
   u64) plus the linked-identity list. `DELETE /me` cascades
   sessions + identities via the FK. Smoke-tested.
+- `826e27c4` — feat(open4x-lobby): client API bindings + wire Login
+  email panel. New `components/api/{http,auth,me}.rs` modules using
+  `web_sys::Fetch` with `RequestCredentials::SameOrigin`. Login's
+  `Send magic link →` button now posts to `/auth/email/start` with
+  EmailFlow {Idle, Pending, Sent(addr), Error(msg)} feedback under
+  the button.
+- `f1f3b637` — feat(open4x-lobby): wire Profile screen to
+  `GET / PATCH /me`. LocalResource on mount seeds eight RwSignals;
+  Save button posts a full PatchMeBody with all fields + Preferences;
+  identities list is data-driven; SaveState shows pending/saved/
+  error feedback.
+- `1b827809` — feat(open4x-lobby): bootstrap-on-mount + sign-out
+  plumbing. App fires `me::get` once on mount and skips Landing
+  when the session cookie is fresh. `on_signout: Callback<()>`
+  wired through Profile + MenuShell calls `auth::signout` and
+  resets to Landing.
 
 ### Phase 2 — `open4x-accounts` substrate (2026-05-10, partial)
 
