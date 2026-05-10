@@ -115,14 +115,13 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Friends ▸ identity search route** — `POST /api/v1/
-      friends/search` body `{query}` resolves an email /
-      atproto handle / OpenID URL / 16-hex PlayerId to one or
-      more PlayerIds, gating against `Preferences
-      .discoverable_by_id`. Returns `{matches:[{player_id,
-      kind, label}]}` so the SPA can disambiguate. The Friends
-      screen's search input then drives Add-friend without
-      requiring users to paste raw PlayerIds.
+- [ ] **Presets screen ▸ schema + persist** — `screens/presets.rs`
+      renders three built-in presets + a "My presets" empty
+      state. Wire the data layer: new `presets` table
+      (player_id FK, name, body_json, created_at, updated_at)
+      + GET /api/v1/presets, POST /api/v1/presets (save current
+      wizard state), DELETE /api/v1/presets/{id}. SPA's
+      Save preset / Import JSON buttons wire through.
 
 ### Up next (Phase 6)
 

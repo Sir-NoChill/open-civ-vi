@@ -537,12 +537,15 @@ User-visible quality once the platform basics are wired.
 - [x] **Friends screen** — `screens/friends.rs` now wires the
       design's chrome to live `/api/v1/friends` data: list,
       Friends / incoming-requests / outgoing-requests sections,
-      Add-friend by 16-hex PlayerId, accept / decline / cancel /
-      unfriend buttons. New schema in `0006_friends.sql` (single
+      Add-friend by email / atproto handle / OpenID URL /
+      16-hex PlayerId, accept / decline / cancel / unfriend
+      buttons. New schema in `0006_friends.sql` (single
       directed row, status ∈ pending|accepted|blocked, FK
       CASCADE on both sides) + `FriendsStore` in
-      `open4x-accounts`. Identity-search route (resolve
-      email/handle/OpenID → PlayerId) is still deferred.
+      `open4x-accounts`. Identity-search via `POST /api/v1/
+      friends/search` resolves the broader query shapes server-
+      side, gated by the target's `discoverable_by_id`
+      preference.
 - [~] **Presets screen** — `screens/presets.rs` renders the page
       with three built-in presets (Standard prince / Deity duel /
       Slow marathon) and a "My presets" empty-state. Load /
@@ -924,6 +927,15 @@ Running record of work performed against this plan, newest at top.
   /friends/{id}; Friends screen wires Add-friend, accept,
   decline, cancel, unfriend. Smoke verified the full flow
   end-to-end against two real signed-in accounts.
+- `1b2623c3` — feat(open4x-{accounts,lobby}): friends
+  identity-search route. `SqliteAccountStore::search_for_friend`
+  resolves either a 16-hex PlayerId or an identity primary_key
+  (email/handle/OpenID URL) to one or more `SearchHit`s,
+  gated by `Preferences.discoverable_by_id` for ALL paths.
+  Lobby exposes `POST /api/v1/friends/search`; Friends screen
+  resolves non-hex inputs through it before posting
+  /friends/request. Smoke verified email + hex resolution and
+  the opt-out gating both paths.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
