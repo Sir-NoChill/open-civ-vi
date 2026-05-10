@@ -588,6 +588,14 @@ production.
       route `/api/v1/games/{id}/play/*` to the right per-game backend.
 - [ ] **Backup & restore** — `lobby db dump` / `lobby db restore`
       subcommands.
+- [x] **Health endpoint pings the DB** — `GET /health` runs
+      `SELECT 1` against the sqlite pool. Returns 200 `ok` on
+      success, 503 `db_unreachable` otherwise so a load balancer
+      can pull the instance out of rotation.
+- [x] **Graceful shutdown** — `axum::serve(...).with_graceful_
+      shutdown(shutdown_signal)` waits for in-flight requests to
+      drain on SIGINT / SIGTERM. Logs the signal it received +
+      a final 'exited cleanly' line for systemd / podman supervisors.
 
 ---
 

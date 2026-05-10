@@ -7,6 +7,9 @@
 //! Phase 3 progresses.
 
 use axum::Router;
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::routing::get;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
@@ -27,7 +30,7 @@ async fn main() {
         .expect("AppState::boot failed — check db / key file permissions");
 
     let app = Router::new()
-        .route("/health", get(|| async { "ok" }))
+        .route("/health", get(health_handler))
         .nest("/api/v1", server::rest::v1_router())
         .nest_service("/book", ServeDir::new(&book_dir))
         .layer(axum::middleware::from_fn_with_state(
@@ -47,5 +50,52 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("failed to bind");
-    axum::serve(listener, app).await.expect("server error");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .expect("server error");
+    println!("open4x-lobby exited cleanly");
+}
+
+/// `GET /health` — returns 200 `ok` when the sqlite pool answers a
+/// trivial SELECT. Returns 503 `db_unreachable` otherwise so a load
+/// balancer / supervisor can pull the instance out of rotation.
+async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
+    match sqlx::query_scalar::<_, i64>("SELECT 1")
+        .fetch_one(&state.pool)
+        .await
+    {
+        Ok(_) => (StatusCode::OK, "ok").into_response(),
+        Err(e) => {
+            eprintln!("[health] db ping failed: {e}");
+            (StatusCode::SERVICE_UNAVAILABLE, "db_unreachable").into_response()
+        }
+    }
+}
+
+/// Wait for SIGINT (Ctrl-C) or SIGTERM. Triggers
+/// axum::serve(...).with_graceful_shutdown to drain in-flight
+/// requests before closing the listening socket.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl-C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        use tokio::signal::unix::{SignalKind, signal};
+        signal(SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => println!("\n[shutdown] received SIGINT, draining…"),
+        _ = terminate => println!("\n[shutdown] received SIGTERM, draining…"),
+    }
 }
