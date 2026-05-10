@@ -115,14 +115,15 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ i18n hooks** — pulled from the in-game
-      roadmap. The lobby's user-facing strings are all
-      hard-coded English literals today. Add a thin `t!`
-      shim (no library — small enum + lookup table), wire
-      one screen (Login) as a worked example, and document
-      the convention in `book/src/multiplayer/`. Real
-      translation tables stay deferred to whoever wants to
-      add a language.
+- [ ] **Friends screen ▸ schema + routes** — `screens/friends.rs`
+      currently renders the design's chrome with an
+      empty-state. The plan calls for the underlying data:
+      a `friends(player_id, friend_id, status, created_at)`
+      table with `status ∈ {pending_outgoing, pending_incoming,
+      accepted, blocked}`, an identity-search route that
+      resolves email/handle/PlayerId → PlayerId, and the four
+      mutation routes (request, accept, block, unfriend). SPA
+      input + Add-friend Btn wires through.
 
 ### Up next (Phase 6)
 

@@ -593,7 +593,15 @@ User-visible quality once the platform basics are wired.
       accordingly. Captured cities show as accent-filled dots,
       foreign territory dims, fog-of-war tiles render at 0.35
       opacity.
-- [ ] **i18n hooks** — gettext-style; pulled from the in-game roadmap.
+- [x] **i18n hooks** — `components/i18n.rs` ships a `tr(Key)` /
+      `tr_in(locale, key)` shim. Match-on-enum keeps the
+      compiler-enforced exhaustiveness; no library (wasm size,
+      bundle-vs-fetch tradeoffs documented in
+      `book/src/multiplayer/i18n.md`). `Locale::En` is the only
+      wired locale today; Login is the worked example for call
+      sites. Adding a second language is a documented 4-step
+      recipe (Locale variant → context provider → `tr_in` arm →
+      sibling `de(key)` fn).
 
 ### Phase 6 — Self-host + ops
 
@@ -893,6 +901,15 @@ Running record of work performed against this plan, newest at top.
   back to the initial-letter circle. Cache-busted SPA-side
   with `?t=<Date.now()>`. Smoke verified the round-trip:
   uploaded PNG → 256x256 downscale → readback via /avatars/.
+- `e71de7f1` — feat(open4x-lobby): i18n shim + Login as
+  worked example. `tr(Key)` / `tr_in(locale, key)` routes
+  every English literal through a match-on-enum lookup.
+  `Locale::En` only today; `Key` enum's compile-time
+  exhaustiveness flags missing arms when a second language
+  ships. Login screen ports its 17+ literals to `Key::Login*`
+  variants. New `book/src/multiplayer/i18n.md` documents the
+  add-a-locale recipe. No runtime library — wasm budget +
+  compile-time guarantees both win.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
