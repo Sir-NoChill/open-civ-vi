@@ -729,6 +729,13 @@ Running record of work performed against this plan, newest at top.
   PASS/FROM; AppState prefers SMTP when configured, falls back
   to LogMailer otherwise. Lettre AsyncSmtpTransport with rustls
   (no native-tls dep).
+- `988578f8` — feat(open4x-accounts): CLI prune-sessions +
+  delete-account subcommands. prune-sessions --days N kills
+  revoked or expired-N+ days session rows for cron wiring.
+  delete-account --player-id <hex> runs the GDPR cascade
+  (accepts dot-grouped or bare 16-char hex), writes the
+  audit row BEFORE the delete so it survives. Smoke
+  cascades sessions + identities to 0.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
