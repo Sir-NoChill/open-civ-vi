@@ -115,18 +115,16 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ NewGame StepPlayers** — port
-      `hifi/newgame.jsx::StepPlayers`. Player-slot list (8 rows by
-      default, mix of human / open / AI), `Tag` per type, invite
-      popup with email/OpenID/atproto/PlayerID input + recent-recipients
-      chips, slot ⋯ menu (Change civ / AI personality / Swap with… /
-      Remove). Plus a "Turn mode" panel: turn-timer Segmented
-      (off/5min/10min/30min/24hr), simultaneous Toggle, private-game
-      Toggle, cross-play Toggle.
+- [ ] **Phase 1 ▸ Tweaks panel port** — runtime density toggle.
+      Mounts a fixed-position `.tweaks` panel at bottom-right that
+      flips `data-density` on the root `.app` between `compact` /
+      `comfortable` / `spacious`. Source:
+      `docs/open4x-landing/project/tweaks-panel.jsx`. Make App's
+      `data-density` reactive on a top-level `RwSignal<&'static
+      str>` instead of the current hard-coded literal.
 
 ### Up next (Phase 1)
 
-- [ ] Tweaks panel port (runtime density toggle)
 - [ ] Sweep remaining `<span class="trigger">` sites in
       newgame.rs StepMap, menu.rs, profile.rs into real Popups
 

@@ -8,8 +8,9 @@ use std::sync::Arc;
 use leptos::prelude::*;
 
 use crate::components::{
-    Btn, MiniMap, Panel, PanelHead, Popup, PopupActions, PopupBody, Segmented,
-    Slider, Toggle, segmented::Segment, slider::FormatFn,
+    Btn, MiniMap, Panel, PanelHead, Popup, PopupActions, PopupBody, PopupList,
+    PopupListItem, PopupSize, PopupTrigger, Segmented, Slider, Tag, Toggle,
+    segmented::Segment, slider::FormatFn,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -68,8 +69,8 @@ pub fn NewGame() -> impl IntoView {
                     Step::Map => view! { <StepMap /> }.into_any(),
                     Step::Civ => view! { <StepCiv /> }.into_any(),
                     Step::Rules => view! { <StepRules /> }.into_any(),
+                    Step::Players => view! { <StepPlayers /> }.into_any(),
                     Step::Review => view! { <StepReview /> }.into_any(),
-                    other => view! { <StepPlaceholder name=other.label() /> }.into_any(),
                 }}
             </div>
 
@@ -130,23 +131,7 @@ fn StepStrip(step: RwSignal<Step>) -> impl IntoView {
     }
 }
 
-#[component]
-fn StepPlaceholder(name: &'static str) -> impl IntoView {
-    view! {
-        <div class="wizard-body">
-            <Panel flush=true>
-                <PanelHead title=name.to_string() sub="// not yet ported" />
-                <div class="panel-body">
-                    <p class="muted small">
-                        "Port pending — see "
-                        <code>"docs/open4x-landing/project/hifi/newgame.jsx"</code>
-                        " for the JSX shape this screen needs to match."
-                    </p>
-                </div>
-            </Panel>
-        </div>
-    }
-}
+// (StepPlaceholder removed — every wizard step now has a real port.)
 
 // ─────────────────────────────── Step: map ────────────────────────────────────
 
@@ -622,6 +607,209 @@ fn StepRules() -> impl IntoView {
                         </div>
                         <div class="control"><Segmented options=personality_opts value=ai_personality /></div>
                         <div class="value">{move || ai_personality.get()}</div>
+                    </div>
+                </div>
+            </Panel>
+        </div>
+    }
+}
+
+// ─────────────────────────────── Step: players ────────────────────────────────
+
+#[derive(Copy, Clone)]
+enum SlotKind {
+    Human,
+    Open,
+    Ai,
+}
+
+impl SlotKind {
+    fn label(self) -> &'static str {
+        match self {
+            SlotKind::Human => "human",
+            SlotKind::Open => "open",
+            SlotKind::Ai => "ai",
+        }
+    }
+
+    fn tag_variant(self) -> &'static str {
+        match self {
+            SlotKind::Human => "accent-soft",
+            SlotKind::Open => "",
+            SlotKind::Ai => "dim",
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+struct PlayerRow {
+    name: &'static str,
+    civ: &'static str,
+    kind: SlotKind,
+    you: bool,
+    invite: bool,
+}
+
+const PLAYERS: &[PlayerRow] = &[
+    PlayerRow { name: "Alice (you)", civ: "Arabia · Saladin",  kind: SlotKind::Human, you: true,  invite: false },
+    PlayerRow { name: "—",           civ: "—",                 kind: SlotKind::Open,  you: false, invite: true  },
+    PlayerRow { name: "AI",          civ: "Rome · Trajan",     kind: SlotKind::Ai,    you: false, invite: false },
+    PlayerRow { name: "AI",          civ: "Russia · Catherine",kind: SlotKind::Ai,    you: false, invite: false },
+    PlayerRow { name: "AI",          civ: "Random",            kind: SlotKind::Ai,    you: false, invite: false },
+    PlayerRow { name: "AI",          civ: "Random",            kind: SlotKind::Ai,    you: false, invite: false },
+    PlayerRow { name: "AI",          civ: "Random",            kind: SlotKind::Ai,    you: false, invite: false },
+    PlayerRow { name: "AI",          civ: "Random",            kind: SlotKind::Ai,    you: false, invite: false },
+];
+
+fn slot_class(p: &PlayerRow) -> &'static str {
+    match (p.you, matches!(p.kind, SlotKind::Open)) {
+        (true, _) => "slot you",
+        (_, true) => "slot open",
+        _ => "slot",
+    }
+}
+
+fn invite_popup_content() -> AnyView {
+    view! {
+        <PopupBody>
+            <p class="xsmall muted" style="margin-bottom:6px">
+                "Paste any email, OpenID URL, atproto handle, or player ID:"
+            </p>
+            <input class="input mono" placeholder="alice@…  did:plc:…  0xA9C3·…" />
+            <div class="row wrap gap-xs" style="margin-top:8px">
+                <span class="xsmall muted" style="align-self:center; margin-right:4px">"recent:"</span>
+                <button class="chip">"bob.bsky.social"</button>
+                <button class="chip">"carol@…"</button>
+                <button class="chip">"0xFE12·…"</button>
+            </div>
+        </PopupBody>
+        <PopupActions right=true>
+            <Btn variant="ghost" size="sm">"⎘ copy invite link"</Btn>
+            <Btn variant="accent" size="sm">"send invite"</Btn>
+        </PopupActions>
+    }.into_any()
+}
+
+fn slot_menu_content() -> AnyView {
+    let items = vec![
+        PopupListItem::row("◔", "Change civ"),
+        PopupListItem::row("⚙", "AI personality"),
+        PopupListItem::row("↔", "Swap with…"),
+        PopupListItem::sep(),
+        PopupListItem::row("✕", "Remove slot"),
+    ];
+    view! { <PopupList items=items /> }.into_any()
+}
+
+#[component]
+fn StepPlayers() -> impl IntoView {
+    let timer = RwSignal::new("off".to_string());
+    let simultaneous = RwSignal::new(false);
+    let private_game = RwSignal::new(true);
+    let cross_play = RwSignal::new(true);
+
+    let timer_opts = Signal::derive(|| {
+        ["off", "5min", "10min", "30min", "24hr"].iter().map(|s| Segment::from_str(s)).collect()
+    });
+
+    let humans = PLAYERS.iter().filter(|p| matches!(p.kind, SlotKind::Human) || p.you).count();
+    let ais = PLAYERS.iter().filter(|p| matches!(p.kind, SlotKind::Ai)).count();
+    let sub = format!("// {humans}H · {ais}AI");
+
+    view! {
+        <div class="wizard-body">
+            <Panel flush=true>
+                // Inline panel-head — PanelHead doesn't accept a right slot
+                // (one-off; most heads don't need it).
+                <div class="panel-head">
+                    <span class="title">"Players & slots"</span>
+                    <span class="sub">{sub.clone()}</span>
+                    <div style="margin-left:auto">
+                        <Btn variant="ghost" size="sm">"+ slot"</Btn>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {PLAYERS.iter().enumerate().map(|(i, p)| {
+                        let class = slot_class(p);
+                        let kind_label = p.kind.label();
+                        let tag_variant = p.kind.tag_variant();
+                        let action = if p.invite {
+                            view! {
+                                <Popup
+                                    title="Invite player"
+                                    trigger=PopupTrigger::Click
+                                    content=Arc::new(invite_popup_content)
+                                >
+                                    <Btn variant="primary" size="sm">"invite"</Btn>
+                                </Popup>
+                            }.into_any()
+                        } else {
+                            view! {
+                                <Popup
+                                    title="Slot"
+                                    size=PopupSize::Narrow
+                                    trigger=PopupTrigger::Click
+                                    content=Arc::new(slot_menu_content)
+                                >
+                                    <Btn variant="ghost" size="sm">"···"</Btn>
+                                </Popup>
+                            }.into_any()
+                        };
+                        view! {
+                            <div class=class>
+                                <span class="num">{format!("#{}", i + 1)}</span>
+                                <div style="min-width:0">
+                                    <div class="row gap-sm center-y">
+                                        <span class="name">{p.name}</span>
+                                        <Tag variant=tag_variant>{kind_label}</Tag>
+                                    </div>
+                                    <div class="civ">{p.civ}</div>
+                                </div>
+                                {action}
+                            </div>
+                        }
+                    }).collect::<Vec<_>>()}
+                </div>
+            </Panel>
+
+            <Panel flush=true>
+                <PanelHead title="Turn mode".to_string() />
+                <div class="panel-body">
+                    <div class="param-row stack">
+                        <div class="label">"turn timer"</div>
+                        <div class="control"><Segmented options=timer_opts value=timer /></div>
+                    </div>
+                    <div class="param-row">
+                        <div class="label">
+                            <Popup
+                                title="simultaneous"
+                                content=Arc::new(|| view! {
+                                    <PopupBody>
+                                        <p>"All human players take their turns at the same time. Falls back to play-by-turn for AI phases."</p>
+                                    </PopupBody>
+                                }.into_any())
+                            >
+                                <span class="trigger">"simultaneous"</span>
+                            </Popup>
+                        </div>
+                        <div class="control"><Toggle on=simultaneous /></div>
+                        <div class="value muted xsmall">
+                            {move || if simultaneous.get() { "simultaneous" } else { "play-by-turn" }}
+                        </div>
+                    </div>
+                    <div class="param-row">
+                        <div class="label">"private game"</div>
+                        <div class="control"><Toggle on=private_game /></div>
+                        <div class="value muted xsmall">
+                            {move || if private_game.get() { "invite-only" } else { "public" }}
+                        </div>
+                    </div>
+                    <div class="param-row">
+                        <div class="label">"cross-play"</div>
+                        <div class="control"><Toggle on=cross_play /></div>
+                        <div class="value muted xsmall">
+                            {move || if cross_play.get() { "web · API" } else { "web only" }}
+                        </div>
                     </div>
                 </div>
             </Panel>

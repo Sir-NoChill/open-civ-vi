@@ -25,14 +25,12 @@ pub fn Panel(
 pub fn PanelHead(
     #[prop(into)] title: String,
     #[prop(optional, into)] sub: String,
-    #[prop(optional)] right: Option<Children>,
 ) -> impl IntoView {
     let has_sub = !sub.is_empty();
     view! {
         <div class="panel-head">
             <span class="title">{title}</span>
             {has_sub.then(|| view! { <span class="sub">{sub}</span> })}
-            {right.map(|r| view! { <div style="margin-left:auto">{r()}</div> })}
         </div>
     }
 }

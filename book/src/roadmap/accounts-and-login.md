@@ -167,9 +167,18 @@ plumbing.
       AI aggression with passive/balanced/warlike thresholds at
       34/66) and the AI-personality Segmented (historic / random /
       scripted). Help triggers are real `<Popup>` wrappers.
-- [ ] **NewGame `StepPlayers`** — player slot list with invite popup
-      (paste email / OpenID / atproto / player ID), turn-mode params
-      (timer, simultaneous, private, cross-play).
+- [x] **NewGame `StepPlayers`** — `screens/newgame.rs::StepPlayers`.
+      Renders the design's 8-slot baseline (1 human-you, 1 open
+      invite slot, 6 AI). Each row picks its `Tag` variant from
+      a `SlotKind` (Human → `accent-soft`, Open → default, AI →
+      `dim`) and shows either an invite Popup (click-pinned, with
+      email/OpenID/atproto/PlayerID input + recent-recipients chip
+      list) or a slot-management `PopupList` (Change civ / AI
+      personality / Swap with… / sep / Remove slot). Turn-mode
+      panel ships timer Segmented (off/5min/10min/30min/24hr),
+      simultaneous / private-game / cross-play Toggles with live
+      muted captions. Removes the now-redundant `StepPlaceholder`
+      helper in newgame.rs.
 - [x] **`Slider` primitive** — wraps `<input type="range">` with an
       optional `format: Arc<dyn Fn(i32) -> String>` callback for the
       value display. `RwSignal<i32>`-driven; `min` / `max` default to
