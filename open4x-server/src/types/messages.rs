@@ -100,6 +100,14 @@ pub enum GameAction {
     /// Clear the civ's `civic_in_progress` slot. Idempotent — a no-op
     /// when no civic is being studied. Partial progress is discarded.
     CancelCivic,
+    /// Switch the civ's active government to the named one. The
+    /// requested government must be in the civ's `unlocked_governments`
+    /// (typically populated by completing the prereq civic). Active
+    /// policies that don't fit the new slot configuration are unslotted.
+    /// No anarchy / cooldown is modeled.
+    ChangeGovernment {
+        name: String,
+    },
     QueueCivic {
         civic: CivicId,
     },

@@ -339,6 +339,68 @@ async fn units_actions_are_engine_derived_and_role_specific() {
 }
 
 #[tokio::test]
+async fn change_government_rejects_unknown_and_locked_then_succeeds_when_unlocked() {
+    let (app, state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    // Unknown government → 400.
+    let (status, body) = post_with(
+        &app,
+        "/api/v1/government/change",
+        Some(&token),
+        serde_json::json!({"government": "Atlantean Republic"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "unknown gov body: {body:?}");
+
+    // Known but not-yet-unlocked government → 400.
+    let (status, _) = post_with(
+        &app,
+        "/api/v1/government/change",
+        Some(&token),
+        serde_json::json!({"government": "Monarchy"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // Empty name → 400.
+    let (status, _) = post_with(
+        &app,
+        "/api/v1/government/change",
+        Some(&token),
+        serde_json::json!({"government": "   "}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // Pre-seed the only game's only civ with Chiefdom unlocked, then
+    // verify a switch succeeds and the wire shape reflects it.
+    {
+        // There's exactly one game per test (bootstrap_token mints it).
+        let game_entry = state.games.iter().next().expect("one game");
+        let game_id = *game_entry.key();
+        drop(game_entry);
+        let mut room = state.games.get_mut(&game_id).expect("game still present");
+        room.state.civilizations[0].unlocked_governments.push("Chiefdom");
+    }
+
+    let (status, body) = post_with(
+        &app,
+        "/api/v1/government/change",
+        Some(&token),
+        serde_json::json!({"government": "Chiefdom"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "unlock+switch body: {body:?}");
+    assert_eq!(body["ok"], true);
+    assert_eq!(body["view"]["government"]["name"], "Chiefdom");
+
+    // Re-read /government to confirm persistence.
+    let (_, gov) = get_with(&app, "/api/v1/government", &token).await;
+    assert_eq!(gov["government"]["name"], "Chiefdom");
+}
+
+#[tokio::test]
 async fn cancel_civic_clears_active_and_is_idempotent() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;

@@ -906,6 +906,52 @@ pub async fn government(
     Ok(Json(web_projection::build_government_from_room(&view, &room, civ_id)))
 }
 
+#[derive(Deserialize)]
+pub struct ChangeGovernmentBody {
+    /// Government name as it appears in the wire registry (e.g. "Chiefdom",
+    /// "Monarchy", "Democracy"). Case-sensitive — matches `Government.name`.
+    pub government: String,
+}
+
+/// `POST /api/v1/government/change` — switch the civ's active government.
+/// Rejects unknown or not-yet-unlocked governments with a structured 400.
+/// On success, returns the updated `/government` block.
+pub async fn change_government(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<ChangeGovernmentBody>,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let trimmed = body.government.trim();
+    if trimmed.is_empty() {
+        return Err(crate::server::rest::auth::bad_request(
+            "invalid_government",
+            "government name must not be empty",
+        ));
+    }
+
+    let action = crate::types::messages::GameAction::ChangeGovernment {
+        name: trimmed.to_string(),
+    };
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+
+    let (view, _) = view_and_turn_limit(&state, game_id, civ_id)?;
+    let room = state
+        .games
+        .get(&game_id)
+        .ok_or_else(|| crate::server::rest::auth::not_found("game not found"))?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view: web_projection::build_government_from_room(&view, &room, civ_id),
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
 // ── /map/overlays ────────────────────────────────────────────────────────────
 
 pub async fn map_overlays(

@@ -307,6 +307,53 @@ impl GameRoom {
                 civ.civic_in_progress = None;
                 Ok(())
             }
+            GameAction::ChangeGovernment { name } => {
+                // Find the requested government in the registry. Use the
+                // engine's static `&str` form so we set the same fields
+                // OneShotEffect::AdoptGovernment does.
+                let new_gov = self.state.governments.iter()
+                    .find(|g| g.name == name.as_str())
+                    .cloned()
+                    .ok_or_else(|| format!("unknown government: {name:?}"))?;
+
+                // Unlock check: civ must have completed the prereq civic.
+                let civ_idx = self.state.civilizations.iter()
+                    .position(|c| c.id == civ_id)
+                    .ok_or("civ not found")?;
+                let unlocked = self.state.civilizations[civ_idx]
+                    .unlocked_governments
+                    .contains(&new_gov.name);
+                if !unlocked {
+                    return Err(format!("government {} is not unlocked", new_gov.name));
+                }
+
+                // Mirror OneShotEffect::AdoptGovernment: evict policies
+                // that no longer fit the new slot configuration.
+                let mut mil = new_gov.slots.military as i32;
+                let mut eco = new_gov.slots.economic as i32;
+                let mut dip = new_gov.slots.diplomatic as i32;
+                let mut wc  = new_gov.slots.wildcard as i32;
+                let active = self.state.civilizations[civ_idx].active_policies.clone();
+                let mut kept = Vec::new();
+                for pid in active {
+                    let policy_type = self.state.policies.iter()
+                        .find(|p| p.id == pid)
+                        .map(|p| p.policy_type);
+                    use libciv::PolicyType as PT;
+                    let fits = match policy_type {
+                        Some(PT::Military)   if mil > 0 => { mil -= 1; true }
+                        Some(PT::Economic)   if eco > 0 => { eco -= 1; true }
+                        Some(PT::Diplomatic) if dip > 0 => { dip -= 1; true }
+                        Some(PT::Wildcard)   if wc  > 0 => { wc  -= 1; true }
+                        _ => false,
+                    };
+                    if fits { kept.push(pid); }
+                }
+                self.state.civilizations[civ_idx].active_policies = kept;
+                self.state.civilizations[civ_idx].current_government = Some(new_gov.id);
+                self.state.civilizations[civ_idx].current_government_name = Some(new_gov.name);
+                Ok(())
+            }
             GameAction::QueueCivic { civic } => {
                 let civic_id = to_libciv_civic_id(*civic);
                 let civ = self.state.civilizations.iter_mut()
