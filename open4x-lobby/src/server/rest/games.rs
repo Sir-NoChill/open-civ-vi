@@ -343,6 +343,21 @@ pub struct ThumbCell {
     pub q: i32,
     pub r: i32,
     pub terrain: String,
+    /// True when the tile is currently in fog-of-war for the
+    /// viewing civ. The SPA dims these cells.
+    #[serde(default)]
+    pub fog: bool,
+    /// Three-state ownership relative to the requesting player:
+    /// `Some(true)`  — owned by my civ
+    /// `Some(false)` — owned by *another* civ
+    /// `None`        — unowned (neutral)
+    pub owned_by_me: Option<bool>,
+    /// True when a city centre sits on this tile.
+    #[serde(default)]
+    pub city: bool,
+    /// True when the city on this tile is its civ's capital.
+    #[serde(default)]
+    pub capital: bool,
 }
 
 pub async fn thumbnail(
@@ -432,6 +447,9 @@ pub async fn thumbnail(
     let world = snap.get("world").cloned().unwrap_or_default();
     let width = world.get("width").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let height = world.get("height").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    // viewer's civ id from the lobby's games row — used to label
+    // each tile as "mine / foreign / neutral".
+    let my_civ = game.civ_id.clone();
     let cells: Vec<ThumbCell> = snap
         .get("tiles")
         .and_then(|v| v.as_array())
@@ -446,7 +464,24 @@ pub async fn thumbnail(
                 .and_then(|v| v.as_str())
                 .unwrap_or_default()
                 .to_string();
-            Some(ThumbCell { q, r, terrain })
+            let fog = t.get("fog").and_then(|v| v.as_bool()).unwrap_or(false);
+            let owner = t.get("owner").and_then(|v| v.as_str()).map(str::to_string);
+            let owned_by_me = owner.map(|o| o == my_civ);
+            let city_obj = t.get("city");
+            let city = city_obj.is_some_and(|c| !c.is_null());
+            let capital = city_obj
+                .and_then(|c| c.get("capital"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            Some(ThumbCell {
+                q,
+                r,
+                terrain,
+                fog,
+                owned_by_me,
+                city,
+                capital,
+            })
         })
         .collect();
     Json(ThumbnailResp {

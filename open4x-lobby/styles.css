@@ -764,7 +764,11 @@ textarea.input { resize: vertical; line-height: 1.5; }
 /* ===== game tile map mini SVG colors ===== */
 .svg-map .land { fill: var(--paper); stroke: var(--ink-3); stroke-width: 0.4; }
 .svg-map .land-self { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 0.5; }
+.svg-map .land-foreign { fill: var(--paper-2); stroke: var(--ink-3); stroke-width: 0.4; opacity: 0.8; }
 .svg-map .water { fill: var(--paper-2); }
+.svg-map .city { fill: var(--accent); stroke: var(--ink); stroke-width: 0.4; }
+.svg-map .city-capital { fill: var(--accent); stroke: var(--ink); stroke-width: 0.8; }
+.svg-map .fog { opacity: 0.35; }
 .svg-map .grid { stroke: var(--hairline); stroke-width: 0.15; fill: none; }
 
 /* ===== dropcap-style accent ===== */

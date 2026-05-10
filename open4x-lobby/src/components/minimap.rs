@@ -11,7 +11,7 @@
 use leptos::prelude::*;
 
 #[cfg(feature = "csr")]
-use crate::components::thumbnail::{terrain_class, ThumbnailGrid};
+use crate::components::thumbnail::{cell_class, ThumbnailGrid};
 
 #[component]
 pub fn MiniMap(
@@ -103,7 +103,7 @@ fn render_grid(
         .map(|c| {
             let x = c.q as f32 * cell_w;
             let y = c.r as f32 * cell_h;
-            let cls = terrain_class(&c.terrain);
+            let cls = cell_class(c);
             view! {
                 <rect class=cls x=x y=y width=cell_w height=cell_h />
             }
