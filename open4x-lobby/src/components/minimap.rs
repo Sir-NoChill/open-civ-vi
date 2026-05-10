@@ -1,15 +1,33 @@
-//! `<MiniMap>` — deterministic blobby SVG continent thumbnail. Direct port
-//! of the `MiniMap` JSX in `hifi/components.jsx`. Used by the New-Game
+//! `<MiniMap>` — SVG continent thumbnail. Direct port of the
+//! `MiniMap` JSX in `hifi/components.jsx`. Used by the New-Game
 //! preview pane and the ongoing-games tile thumbnails.
+//!
+//! When a real-game `ThumbnailGrid` is supplied via the `cells`
+//! prop (Phase 5 polish), renders a proper per-tile SVG grid
+//! sourced from `<server_url>/api/v1/world/snapshot`. Otherwise
+//! falls back to the deterministic LCG-blob layout used by the
+//! design — same output the JSX prototype produced.
 
 use leptos::prelude::*;
+
+#[cfg(feature = "csr")]
+use crate::components::thumbnail::{terrain_class, ThumbnailGrid};
 
 #[component]
 pub fn MiniMap(
     #[prop(default = 1)] seed: u64,
     #[prop(optional, into)] class: &'static str,
     #[prop(optional, into)] style: String,
+    /// When `Some`, render this real-game grid instead of the
+    /// seeded continent blobs. Cells are positioned in a
+    /// 100×64 viewBox by their (q, r) coords mapped through the
+    /// world's width/height.
+    #[prop(default = None)]
+    cells: Option<ThumbnailGrid>,
 ) -> impl IntoView {
+    if let Some(grid) = cells {
+        return render_grid(grid, class, style);
+    }
     // Deterministic LCG matching the JSX source so the same seed yields the
     // same continent layout cross-impl.
     let mut s = seed.wrapping_mul(9301).wrapping_add(49297);
@@ -60,5 +78,43 @@ pub fn MiniMap(
             </g>
             {blob_views}
         </svg>
+    }.into_any()
+}
+
+#[cfg(feature = "csr")]
+fn render_grid(
+    grid: ThumbnailGrid,
+    class: &'static str,
+    style: String,
+) -> leptos::prelude::AnyView {
+    use leptos::prelude::*;
+    // Project each (q, r) into the design's 100×64 viewBox. The
+    // game world uses offset coordinates internally, but for a
+    // 100×64-pixel thumbnail a straight axial projection is
+    // visually indistinguishable from the proper hex offset and
+    // saves the client the hex-math.
+    let w = grid.width.max(1) as f32;
+    let h = grid.height.max(1) as f32;
+    let cell_w = 100.0 / w;
+    let cell_h = 64.0 / h;
+    let rects: Vec<_> = grid
+        .cells
+        .iter()
+        .map(|c| {
+            let x = c.q as f32 * cell_w;
+            let y = c.r as f32 * cell_h;
+            let cls = terrain_class(&c.terrain);
+            view! {
+                <rect class=cls x=x y=y width=cell_w height=cell_h />
+            }
+        })
+        .collect();
+    let class = format!("svg-map {class}");
+    view! {
+        <svg viewBox="0 0 100 64" preserveAspectRatio="none" class=class style=style>
+            <rect class="water" width="100" height="64" />
+            {rects}
+        </svg>
     }
+    .into_any()
 }

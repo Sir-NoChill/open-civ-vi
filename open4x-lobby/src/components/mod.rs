@@ -15,6 +15,7 @@ pub mod qr;
 pub mod segmented;
 pub mod slider;
 pub mod tag;
+pub mod thumbnail;
 pub mod toggle;
 pub mod tweaks_panel;
 

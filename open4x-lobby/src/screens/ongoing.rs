@@ -299,6 +299,29 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                 .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64))
                                 .max(1)
                                 .saturating_add(i as u64);
+                            // Real-game thumbnail: kick off a fetch
+                            // (no-op if already cached) and pass any
+                            // ready grid into the MiniMap as a `cells`
+                            // override. Falls back to the seeded blob
+                            // layout while pending or on error.
+                            let thumb_cache =
+                                crate::components::thumbnail::use_thumbnail_cache();
+                            let thumb_game_id = g.game_id.clone();
+                            // Only kick off the fetch when the game has
+                            // a non-empty server_url (orchestrator
+                            // already produced a backing instance).
+                            if !g.server_url.is_empty() {
+                                crate::components::thumbnail::ensure_fetched(
+                                    &thumb_cache,
+                                    thumb_game_id.clone(),
+                                );
+                            }
+                            let cells = match thumb_cache.get_entry(&thumb_game_id) {
+                                Some(crate::components::thumbnail::ThumbnailEntry::Ready(g)) => {
+                                    Some(g)
+                                }
+                                _ => None,
+                            };
                             view! {
                                 <div class=tile_class style="width:100%">
                                     <div class="tile-head">
@@ -311,7 +334,11 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                         </div>
                                     </div>
                                     <div class="map-thumb">
-                                        <MiniMap seed=seed style="position:absolute; inset:0; width:100%; height:100%" />
+                                        <MiniMap
+                                            seed=seed
+                                            style="position:absolute; inset:0; width:100%; height:100%"
+                                            cells=cells
+                                        />
                                     </div>
                                     <div class="stats">
                                         <div class="row-stat"><span class="k">"turn"</span><span class="v">{g.turn.to_string()}</span></div>

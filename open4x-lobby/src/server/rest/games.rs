@@ -324,6 +324,139 @@ pub async fn set_notes(
     }
 }
 
+// ───────────────────────── GET /games/{id}/thumbnail ─────────────────────────
+
+/// Server-side proxy that asks `<server_url>/api/v1/world/snapshot`
+/// for the current game's tile array and reduces it to a minimap
+/// grid the SPA can render. Owner-gated. The bearer hop uses the
+/// games row's stored `server_token` so the browser never has to
+/// see it.
+#[derive(Debug, Serialize)]
+pub struct ThumbnailResp {
+    pub width: u32,
+    pub height: u32,
+    pub cells: Vec<ThumbCell>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ThumbCell {
+    pub q: i32,
+    pub r: i32,
+    pub terrain: String,
+}
+
+pub async fn thumbnail(
+    State(state): State<AppState>,
+    RequireSession(player_id): RequireSession,
+    Path(game_id): Path<String>,
+) -> Response {
+    let game = match state.games.get_game(&game_id).await {
+        Ok(Some(g)) if g.owner_player_id == player_id => g,
+        Ok(Some(_)) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ErrorBody {
+                    error: "not_a_member",
+                    message: None,
+                }),
+            )
+                .into_response();
+        }
+        Ok(None) => return store_error_response(GameStoreError::NotFound),
+        Err(e) => return store_error_response(e),
+    };
+    if game.server_url.is_empty() || game.server_token.is_empty() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorBody {
+                error: "orchestrator_not_ready",
+                message: Some("game has no backing server yet".into()),
+            }),
+        )
+            .into_response();
+    }
+    // For per-game mode: server_url stored on the row may be the
+    // public template-rendered form (https://g-4501.example.com)
+    // which the lobby itself can't always reach. The orchestrator
+    // tracks the loopback URL separately; for v1 we just hit the
+    // stored URL and document the constraint.
+    let url = format!(
+        "{}/api/v1/world/snapshot",
+        game.server_url.trim_end_matches('/')
+    );
+    let client = reqwest::Client::new();
+    let resp = match client
+        .get(&url)
+        .bearer_auth(&game.server_token)
+        .send()
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("[thumbnail] transport error for {url}: {e}");
+            return (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorBody {
+                    error: "upstream_unreachable",
+                    message: Some(e.to_string()),
+                }),
+            )
+                .into_response();
+        }
+    };
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return (
+            StatusCode::BAD_GATEWAY,
+            Json(ErrorBody {
+                error: "upstream_status",
+                message: Some(format!("{status}: {body}")),
+            }),
+        )
+            .into_response();
+    }
+    let snap: serde_json::Value = match resp.json().await {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorBody {
+                    error: "upstream_decode",
+                    message: Some(e.to_string()),
+                }),
+            )
+                .into_response();
+        }
+    };
+    let world = snap.get("world").cloned().unwrap_or_default();
+    let width = world.get("width").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let height = world.get("height").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let cells: Vec<ThumbCell> = snap
+        .get("tiles")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|t| {
+            let q = t.get("q").and_then(|v| v.as_i64())? as i32;
+            let r = t.get("r").and_then(|v| v.as_i64())? as i32;
+            let terrain = t
+                .get("terrain")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
+            Some(ThumbCell { q, r, terrain })
+        })
+        .collect();
+    Json(ThumbnailResp {
+        width,
+        height,
+        cells,
+    })
+    .into_response()
+}
+
 // ───────────────────────────── POST /games/{id}/resume ────────────────────────
 
 pub async fn resume(

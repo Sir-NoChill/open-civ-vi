@@ -39,6 +39,7 @@ pub fn App() -> impl IntoView {
     let screen = RwSignal::new(Screen::Landing);
     let menu_tab = RwSignal::new(MenuTab::Ongoing);
     let density = RwSignal::new("comfortable".to_string());
+    crate::components::thumbnail::provide_thumbnail_cache();
 
     // Bootstrap: try GET /api/v1/me once on mount; if the server
     // recognises our cookie, jump straight to Menu. The 401 case
