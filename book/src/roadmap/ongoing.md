@@ -115,23 +115,21 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 2.2 ▸ Magic-link mint / verify** — implement
-      `MagicLinkToken` shape behind `persistence` feature: HMAC-SHA256
-      over `(email, expires_at, nonce)`, signed with a per-deployment
-      key (env `OPEN4X_LOBBY_HMAC_KEY` or generated fresh on first
-      boot under `data/lobby.key`). 15-minute expiry; nonce stored in
-      `magic_link_nonces` table and consumed exactly once on verify.
-      Refuses re-use, expired, or signature-mismatch tokens with
-      typed `MagicLinkError`.
+- [ ] **Phase 2.2 ▸ Mailer trait** — pluggable transport interface in
+      `open4x-accounts/src/mailer.rs`: `Mailer: Send + Sync` async
+      trait with `send_magic_link(email, link)` plus `send_raw(to,
+      subject, body)` for future use. Default impl `LogMailer`
+      writes the magic link to stderr (developer ergonomics). SMTP
+      impl gated on a `mailer-smtp` cargo feature using
+      `lettre`. Errors via typed `MailerError`.
 
 ### Up next (Phase 2)
 
-- [ ] Pluggable Mailer trait + LogMailer default + `mailer-smtp` feature
+- [ ] Session token mint / validate / revoke (SHA-256 hashed bearer)
 - [ ] OIDC client (discovery + PKCE + ID-token verification +
       claims → `Identity::OpenId` mapping)
 - [ ] OIDC custom-issuer support
 - [ ] atproto handle/DID resolver + OAuth/DPoP flow
-- [ ] Session token mint / validate / revoke (SHA-256 hashed bearer)
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 

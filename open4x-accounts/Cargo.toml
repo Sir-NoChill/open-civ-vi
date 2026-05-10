@@ -20,7 +20,19 @@ chrono     = { version = "0.4", default-features = false, features = ["clock", "
 thiserror  = { version = "1", optional = true }
 async-trait = { version = "0.1", optional = true }
 
+# Magic-link minting (HMAC-SHA256 + base64url envelope + constant-time
+# compare). Pulled in alongside persistence because the nonce table is
+# part of the schema.
+hmac       = { version = "0.12", optional = true }
+sha2       = { version = "0.10", optional = true }
+subtle     = { version = "2", optional = true }
+base64     = { version = "0.22", optional = true }
+rand       = { workspace = true, optional = true }
+
 [features]
 default     = []
-persistence = ["dep:sqlx", "dep:tokio", "dep:chrono", "dep:thiserror", "dep:async-trait"]
+persistence = [
+    "dep:sqlx", "dep:tokio", "dep:chrono", "dep:thiserror", "dep:async-trait",
+    "dep:hmac", "dep:sha2", "dep:subtle", "dep:base64", "dep:rand",
+]
 postgres    = ["persistence", "sqlx/postgres"]

@@ -20,6 +20,9 @@
 #![allow(dead_code)]
 
 #[cfg(feature = "persistence")]
+pub mod magic_link;
+
+#[cfg(feature = "persistence")]
 pub mod store;
 
 use serde::{Deserialize, Serialize};

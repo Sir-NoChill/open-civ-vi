@@ -230,9 +230,18 @@ minting behind those types.
 
 #### 2.2 Magic-link tokens
 
-- [ ] `MagicLinkToken` mint / verify via HMAC-SHA256 over
-      `(email, expires_at, nonce)`. Server-side nonce-once table to
-      prevent reuse. 15-minute expiry.
+- [x] `MagicLinkSigner` mint / verify via HMAC-SHA256 over
+      `{email}|{expires_at_unix}|{nonce}` payload. Token shape
+      `b64url(payload).b64url(sig)`. Single-use enforcement via the
+      `magic_link_nonces` UPDATE-where-consumed_at-IS-NULL idiom (no
+      race; double-spend returns `MagicLinkError::Reused`). 15-min
+      default TTL via `DEFAULT_TTL`. `MagicLinkSigner::from_env_or_path`
+      resolves the per-deployment 32-byte key from
+      `OPEN4X_LOBBY_HMAC_KEY` (hex), falls back to
+      reading/generating a 0600 file on disk. Lives at
+      `open4x-accounts/src/magic_link.rs`. 6 tests cover round-trip
+      / reuse-rejection / expired-rejection /
+      tampered-signature-rejection / unknown-nonce / env-key-load.
 - [ ] Email transport: pluggable `Mailer` trait. Default `LogMailer`
       (writes the magic link to stderr — useful for dev). SMTP impl
       gated on a `mailer-smtp` feature.
