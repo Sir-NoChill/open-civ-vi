@@ -115,13 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Per-IP throttle on auth/email/start** — add a
-      lightweight in-memory IP→last-N-timestamps ring on AppState
-      (e.g. DashMap<IpAddr, ArrayVec<Instant, N>>) keyed via
-      `axum::extract::ConnectInfo` or a forwarded-for header
-      reader. Refuses with 429 when the same IP burst-mints magic
-      links across many emails, complementing the per-email cap
-      already in place.
+- [ ] **Phase 6 ▸ X-Forwarded-For reader for production proxies** —
+      per-IP throttle currently uses `ConnectInfo<SocketAddr>`
+      which sees only the direct TCP peer. Behind nginx / caddy
+      the peer is always 127.0.0.1, so the cap is meaningless.
+      Add an `OPEN4X_LOBBY_TRUSTED_PROXIES` env (CIDR list); when
+      the request peer falls inside any trusted CIDR, prefer the
+      last entry in `X-Forwarded-For`. Otherwise fall back to the
+      peer (current behaviour).
 
 ### Up next (Phase 6)
 

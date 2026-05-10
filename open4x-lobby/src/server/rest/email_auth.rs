@@ -11,7 +11,9 @@
 
 #![cfg(feature = "ssr")]
 
-use axum::extract::{Query, State};
+use std::net::SocketAddr;
+
+use axum::extract::{ConnectInfo, Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
@@ -51,10 +53,15 @@ struct ErrorBody {
 /// returns 429. Keep generous for normal use; tighten if abuse
 /// telemetry warrants it.
 const MAGIC_LINK_THROTTLE_LIMIT: u64 = 5;
+/// Per-IP cap for the same window — higher than per-email because
+/// a household / NAT can legitimately request links for a few
+/// different addresses.
+const MAGIC_LINK_THROTTLE_LIMIT_PER_IP: u64 = 20;
 const MAGIC_LINK_THROTTLE_WINDOW_SECS: i64 = 5 * 60;
 
 pub async fn start(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Json(body): Json<StartBody>,
 ) -> Response {
     let email = body.email.trim().to_lowercase();
@@ -69,10 +76,12 @@ pub async fn start(
             .into_response();
     }
 
-    // Per-email throttle. Reads the audit log directly so we don't
-    // need a second in-memory limiter and the cap survives restarts.
+    // Throttles read the audit log directly — no second in-memory
+    // limiter, and the caps survive restarts.
     let since = (Utc::now() - Duration::seconds(MAGIC_LINK_THROTTLE_WINDOW_SECS))
         .to_rfc3339();
+    let ip_str = addr.ip().to_string();
+
     if let Ok(count) = state
         .audit
         .recent_count_by_kind_and_detail(AuditEventKind::MagicLinkMint, &email, &since)
@@ -85,7 +94,28 @@ pub async fn start(
                 Json(ErrorBody {
                     error: "rate_limited",
                     message: Some(format!(
-                        "{MAGIC_LINK_THROTTLE_LIMIT} magic-links / {} min — try again later",
+                        "{MAGIC_LINK_THROTTLE_LIMIT} magic-links / {} min for this email — try again later",
+                        MAGIC_LINK_THROTTLE_WINDOW_SECS / 60
+                    )),
+                }),
+            )
+                .into_response();
+        }
+    }
+
+    if let Ok(count) = state
+        .audit
+        .recent_count_by_kind_and_ip(AuditEventKind::MagicLinkMint, &ip_str, &since)
+        .await
+    {
+        if count >= MAGIC_LINK_THROTTLE_LIMIT_PER_IP {
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                [(axum::http::header::RETRY_AFTER, "60")],
+                Json(ErrorBody {
+                    error: "rate_limited",
+                    message: Some(format!(
+                        "{MAGIC_LINK_THROTTLE_LIMIT_PER_IP} magic-links / {} min from this IP — try again later",
                         MAGIC_LINK_THROTTLE_WINDOW_SECS / 60
                     )),
                 }),
@@ -129,7 +159,7 @@ pub async fn start(
         .record(NewAuditEvent {
             kind: AuditEventKind::MagicLinkMint,
             player_id: None,
-            ip: None,
+            ip: Some(ip_str.clone()),
             detail: email.clone(),
         })
         .await;

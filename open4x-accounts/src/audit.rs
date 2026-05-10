@@ -86,6 +86,16 @@ pub trait AuditStore: Send + Sync {
         detail: &str,
         since_rfc3339: &str,
     ) -> Result<u64, sqlx::Error>;
+
+    /// Count rows matching `(kind, ip)` whose `ts` is at or after
+    /// `since_rfc3339`. Backs the per-IP throttle — magic-link mints
+    /// from a single client IP across many emails.
+    async fn recent_count_by_kind_and_ip(
+        &self,
+        kind: AuditEventKind,
+        ip: &str,
+        since_rfc3339: &str,
+    ) -> Result<u64, sqlx::Error>;
 }
 
 pub struct SqliteAuditStore {
@@ -135,6 +145,24 @@ impl AuditStore for SqliteAuditStore {
         )
         .bind(kind.as_str())
         .bind(detail)
+        .bind(since_rfc3339)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(row.0.max(0) as u64)
+    }
+
+    async fn recent_count_by_kind_and_ip(
+        &self,
+        kind: AuditEventKind,
+        ip: &str,
+        since_rfc3339: &str,
+    ) -> Result<u64, sqlx::Error> {
+        let row: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM audit_events \
+             WHERE kind = ?1 AND ip = ?2 AND ts >= ?3",
+        )
+        .bind(kind.as_str())
+        .bind(ip)
         .bind(since_rfc3339)
         .fetch_one(&self.pool)
         .await?;

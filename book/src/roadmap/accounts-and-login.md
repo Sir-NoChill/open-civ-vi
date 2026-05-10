@@ -561,13 +561,17 @@ production.
       flag.
 - [ ] **SMTP config** — env-driven (`SMTP_HOST`, `SMTP_PORT`,
       `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). Default no-op in dev.
-- [~] **Rate limiting** — per-email throttle on
-      `POST /api/v1/auth/email/start` enforced by counting recent
-      `magic_link_mint` audit rows (5 mints / 5 min). Returns
-      `429 rate_limited` + `Retry-After: 60` when over the cap.
-      Per-IP throttle and OIDC-callback-per-state-cookie limits
-      still pending (would land alongside the OIDC handler in
-      Phase 2.3 part 2).
+- [x] **Rate limiting** — per-email (5 mints / 5 min) and per-IP
+      (20 mints / 5 min) throttles on
+      `POST /api/v1/auth/email/start`, both backed by the audit
+      log via `recent_count_by_kind_and_{detail,ip}`. Per-IP cap
+      is higher because a household / NAT can legitimately request
+      links for several addresses. `axum::extract::ConnectInfo`
+      reads the peer; production behind a reverse proxy still
+      wants an X-Forwarded-For reader (separate task). Returns
+      `429 rate_limited` + `Retry-After: 60` with a structured
+      body distinguishing the two limits. OIDC-callback-per-state-
+      cookie limit lands with the OIDC handler in Phase 2.3 part 2.
 - [x] **Audit log** — `0004_audit_events.sql` adds an
       append-only `audit_events` table (id ULID + ts + kind +
       player_id + ip + detail). `open4x-accounts/src/audit.rs`
