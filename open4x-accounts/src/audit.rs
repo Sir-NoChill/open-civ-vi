@@ -75,6 +75,17 @@ pub trait AuditStore: Send + Sync {
 
     /// Bounded scan, newest first. Used by the Phase 6 CLI dump.
     async fn list_recent(&self, limit: u32) -> Result<Vec<AuditEvent>, sqlx::Error>;
+
+    /// Count rows matching `(kind, detail)` whose `ts` is at or after
+    /// `since_rfc3339`. Backs the rate-limiter — `magic_link_mint`
+    /// events store the email in `detail`, so this is the per-email
+    /// throttle key.
+    async fn recent_count_by_kind_and_detail(
+        &self,
+        kind: AuditEventKind,
+        detail: &str,
+        since_rfc3339: &str,
+    ) -> Result<u64, sqlx::Error>;
 }
 
 pub struct SqliteAuditStore {
@@ -110,6 +121,24 @@ impl AuditStore for SqliteAuditStore {
         .execute(&self.pool)
         .await?;
         Ok(())
+    }
+
+    async fn recent_count_by_kind_and_detail(
+        &self,
+        kind: AuditEventKind,
+        detail: &str,
+        since_rfc3339: &str,
+    ) -> Result<u64, sqlx::Error> {
+        let row: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM audit_events \
+             WHERE kind = ?1 AND detail = ?2 AND ts >= ?3",
+        )
+        .bind(kind.as_str())
+        .bind(detail)
+        .bind(since_rfc3339)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(row.0.max(0) as u64)
     }
 
     async fn list_recent(&self, limit: u32) -> Result<Vec<AuditEvent>, sqlx::Error> {
@@ -205,6 +234,74 @@ mod tests {
         assert_eq!(rows[0].player_id, Some(PlayerId::new(0xDEADBEEFu64)));
         assert_eq!(rows[1].kind, AuditEventKind::MagicLinkMint);
         assert_eq!(rows[1].ip.as_deref(), Some("127.0.0.1"));
+    }
+
+    #[tokio::test]
+    async fn recent_count_filters_by_kind_detail_window() {
+        let store = SqliteAuditStore::from_pool(fresh_pool().await);
+        let earlier = "1970-01-01T00:00:00+00:00";
+        // Three mints for alice, two for bob.
+        for _ in 0..3 {
+            store
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::MagicLinkMint,
+                    player_id: None,
+                    ip: None,
+                    detail: "alice@example.com".into(),
+                })
+                .await
+                .unwrap();
+        }
+        for _ in 0..2 {
+            store
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::MagicLinkMint,
+                    player_id: None,
+                    ip: None,
+                    detail: "bob@example.com".into(),
+                })
+                .await
+                .unwrap();
+        }
+        // One sign_in for alice — different kind, must not count.
+        store
+            .record(NewAuditEvent {
+                kind: AuditEventKind::SignIn,
+                player_id: None,
+                ip: None,
+                detail: "alice@example.com".into(),
+            })
+            .await
+            .unwrap();
+        let alice_mints = store
+            .recent_count_by_kind_and_detail(
+                AuditEventKind::MagicLinkMint,
+                "alice@example.com",
+                earlier,
+            )
+            .await
+            .unwrap();
+        assert_eq!(alice_mints, 3);
+        let bob_mints = store
+            .recent_count_by_kind_and_detail(
+                AuditEventKind::MagicLinkMint,
+                "bob@example.com",
+                earlier,
+            )
+            .await
+            .unwrap();
+        assert_eq!(bob_mints, 2);
+        // Future window -> 0.
+        let future = "9999-01-01T00:00:00+00:00";
+        let zero = store
+            .recent_count_by_kind_and_detail(
+                AuditEventKind::MagicLinkMint,
+                "alice@example.com",
+                future,
+            )
+            .await
+            .unwrap();
+        assert_eq!(zero, 0);
     }
 
     #[tokio::test]

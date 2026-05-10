@@ -115,11 +115,12 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Rate limiting** — `tower_governor` keyed per
-      email (POST /auth/email/start) + per IP for the auth /me
-      surface. Returns 429 with a `retry_after` header on
-      throttle. Audit log already in place to surface
-      bursts.
+- [ ] **Phase 6 ▸ Single-binary deploy** — `rust-embed` the
+      `dist/` SPA bundle + the migrations dir into the lobby
+      binary so a self-host deploy is just `open4x-lobby` plus
+      `OPEN4X_LOBBY_DATA_DIR`. The current ServeDir +
+      `sqlx::migrate!` macro both work fine in dev but force the
+      operator to ship a separate static directory.
 
 ### Up next (Phase 6)
 

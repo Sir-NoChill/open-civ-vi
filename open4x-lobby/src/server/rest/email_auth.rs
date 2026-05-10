@@ -15,6 +15,7 @@ use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
+use chrono::{Duration, Utc};
 use open4x_accounts::audit::{AuditEventKind, AuditStore, NewAuditEvent};
 use open4x_accounts::magic_link::{DEFAULT_TTL, MagicLinkError};
 use open4x_accounts::session;
@@ -45,6 +46,13 @@ struct ErrorBody {
     message: Option<String>,
 }
 
+/// Maximum magic-link mints per email in the last
+/// [`MAGIC_LINK_THROTTLE_WINDOW_SECS`] seconds before /email/start
+/// returns 429. Keep generous for normal use; tighten if abuse
+/// telemetry warrants it.
+const MAGIC_LINK_THROTTLE_LIMIT: u64 = 5;
+const MAGIC_LINK_THROTTLE_WINDOW_SECS: i64 = 5 * 60;
+
 pub async fn start(
     State(state): State<AppState>,
     Json(body): Json<StartBody>,
@@ -59,6 +67,31 @@ pub async fn start(
             }),
         )
             .into_response();
+    }
+
+    // Per-email throttle. Reads the audit log directly so we don't
+    // need a second in-memory limiter and the cap survives restarts.
+    let since = (Utc::now() - Duration::seconds(MAGIC_LINK_THROTTLE_WINDOW_SECS))
+        .to_rfc3339();
+    if let Ok(count) = state
+        .audit
+        .recent_count_by_kind_and_detail(AuditEventKind::MagicLinkMint, &email, &since)
+        .await
+    {
+        if count >= MAGIC_LINK_THROTTLE_LIMIT {
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                [(axum::http::header::RETRY_AFTER, "60")],
+                Json(ErrorBody {
+                    error: "rate_limited",
+                    message: Some(format!(
+                        "{MAGIC_LINK_THROTTLE_LIMIT} magic-links / {} min — try again later",
+                        MAGIC_LINK_THROTTLE_WINDOW_SECS / 60
+                    )),
+                }),
+            )
+                .into_response();
+        }
     }
 
     let minted = match state
