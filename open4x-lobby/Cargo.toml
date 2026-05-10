@@ -36,7 +36,7 @@ js-sys                  = { version = "0.3", optional = true }
 wasm-bindgen-futures    = { version = "0.4", optional = true }
 web-sys                 = { version = "0.3", features = [
     "Document", "Element", "DomRect", "EventTarget", "HtmlElement",
-    "Window", "Storage",
+    "Window", "Storage", "Location",
     "HtmlInputElement", "HtmlAnchorElement",
     "Response", "Headers", "RequestInit", "Request", "RequestCredentials",
     "KeyboardEvent", "MouseEvent",

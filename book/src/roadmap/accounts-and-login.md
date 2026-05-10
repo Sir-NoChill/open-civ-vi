@@ -456,7 +456,14 @@ PRIMARY KEY (game_id, player_id)
       `multiplayer`) — push filter to query params.
 - [ ] Search box filters client-side over names + notes.
 - [ ] Sort dropdown.
-- [ ] "Resume" CTA → `GET /api/v1/games/{id}/resume` → follow redirect.
+- [x] "Resume" CTA wired in `screens/ongoing.rs`: clicking the
+      tile's resume button posts `/api/v1/games/{id}/resume` via a
+      new `components::api::games::resume` binding and navigates
+      the browser to `<server_url>/?token=<server_token>`. The
+      button is disabled when `server_url` is empty (orchestrator
+      down at create-time). The in-game SPA needs a small change
+      to read the `?token=` query param instead of bootstrapping
+      its own anonymous bearer — tracked as the next commit.
 - [x] `+ New game` wizard's "⌬ Generate world" → `POST /api/v1/games`
       → on success, switches MenuTab back to Ongoing so the new tile
       appears immediately. Wizard step state isn't yet hoisted into

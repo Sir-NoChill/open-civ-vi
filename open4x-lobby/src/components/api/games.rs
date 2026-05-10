@@ -58,3 +58,16 @@ pub async fn delete_game(game_id: &str) -> Result<(), ApiError> {
         .await
         .map(|_| ())
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ResumeResp {
+    pub url: String,
+    pub token: String,
+}
+
+/// `POST /api/v1/games/{id}/resume`. Returns the open4x-server URL +
+/// bearer token the browser should use to enter the in-game SPA.
+pub async fn resume(game_id: &str) -> Result<ResumeResp, ApiError> {
+    let url = format!("/api/v1/games/{game_id}/resume");
+    fetch_json::<ResumeResp, ()>("POST", &url, None).await
+}

@@ -7,6 +7,7 @@
 //! requires the Phase 4.3 orchestrator to populate `server_url`.
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
 use crate::components::api::games as games_api;
 use crate::components::{Btn, MiniMap, Tag};
@@ -83,6 +84,23 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                 _ => "Open",
                             };
                             let resume_variant = if is_yours { "accent" } else { "primary" };
+                            let game_id_for_resume = g.game_id.clone();
+                            let resume_disabled = g.server_url.is_empty();
+                            let on_resume = Callback::new(move |_: ()| {
+                                let id = game_id_for_resume.clone();
+                                spawn_local(async move {
+                                    let Ok(resp) = games_api::resume(&id).await else { return };
+                                    if let Some(win) = web_sys::window() {
+                                        let target = format!(
+                                            "{}/?token={}",
+                                            resp.url.trim_end_matches('/'),
+                                            resp.token,
+                                        );
+                                        let _ = win.location().set_href(&target);
+                                    }
+                                });
+                            });
+                            let disabled_signal = Signal::derive(move || resume_disabled);
                             let players = format!("{}H · {}AI", g.players_human, g.players_ai);
                             // Seed the MiniMap from the actual world seed when
                             // possible; fall back to row index otherwise so
@@ -118,7 +136,12 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                     <div class="actions">
                                         <Btn variant="ghost" size="sm">"📝 Notes"</Btn>
                                         <span style="flex:1"></span>
-                                        <Btn variant=resume_variant size="sm">{resume_label}</Btn>
+                                        <Btn
+                                            variant=resume_variant
+                                            size="sm"
+                                            disabled=disabled_signal
+                                            on_click=on_resume
+                                        >{resume_label}</Btn>
                                         <Btn variant="ghost" size="sm">"···"</Btn>
                                     </div>
                                 </div>
