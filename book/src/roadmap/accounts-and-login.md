@@ -637,6 +637,24 @@ Running record of work performed against this plan, newest at top.
 
 ### Phase 4 — Games index polish (2026-05-10, in progress)
 
+- `bf726b35` — feat(open4x-{accounts,lobby}): per-game notes column +
+  popup. `0003_game_notes.sql` adds `notes TEXT NOT NULL DEFAULT ''`,
+  `GameStore::set_notes` lands, `POST /api/v1/games/{id}/notes`
+  enforces ownership + 16 KiB cap, tile "📝 Notes" button is now
+  a click-trigger Popup with a textarea + Save button + saved/error
+  feedback that bumps the list-tick.
+- `f14a94b4` — feat(open4x-lobby): URL-backed filter / sort / search
+  state on OngoingGames. `Filter::slug/parse` + `Sort::slug/parse`,
+  `read_query_state` seeds at mount, an Effect pushes
+  `history.replaceState` on every change, defaults are omitted to
+  keep the URL short, percent-codec helpers handle the search
+  string.
+- `ad8ff73b` — feat(open4x-lobby): View summary on the tile · · ·
+  menu. `tile_menu_popup` now drives the popup body through a
+  `SummaryMode {Menu, Summary}` signal: View summary flips to a kv
+  table of every GameView field; a `← back` row in the popup
+  footer returns. Renderer split into render_menu_rows +
+  render_summary_kv helpers for borrow-checker sanity.
 - `3a9abd9b` — feat(open4x-lobby): hoist NewGame wizard state into
   a `WizardState` struct provided through context. Generate world
   POST + Review summary now both read live values; replaces the
