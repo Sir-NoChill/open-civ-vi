@@ -115,32 +115,42 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 2.3 ▸ OIDC code exchange + ID-token verify** — picks
-      up where `oidc.rs` left off. Adds an `oidc-flow` cargo feature
-      that depends on `openidconnect` + `reqwest`; implements
-      `OidcClient::discover()` (caches `CoreProviderMetadata` per
-      issuer URL), `OidcClient::exchange_code(code, pkce_verifier,
-      expected_nonce) -> Identity` with full ID-token verification
-      (signature / iss / aud / exp / nonce match), and the
-      `Identity::OpenId{issuer, subject, label}` claims mapping
-      (label from `preferred_username` / `name` / `email` in that
-      order). Mocked-discovery integration test.
-- [ ] **Phase 2.3.x ▸ GitHub OAuth2 helper** — separate module
-      since GitHub doesn't speak OIDC. `github::exchange_code`
-      hits `/login/oauth/access_token` then `/user` and constructs
-      an `Identity::OpenId{issuer="github.com", subject=user.id,
-      label="github.com/" + user.login}`.
+- [ ] **Phase 3 ▸ Session-cookie middleware** — axum `Layer` /
+      from_extractor in `open4x-lobby/src/server/auth.rs` that:
+      reads the `lobby_session` cookie, looks up the player via
+      `open4x_accounts::session::validate_session`, attaches a
+      `PlayerId` to the request extensions, and rejects with a
+      structured 401 `{error: "no_session"}` on miss when the
+      handler is auth-required. The lobby crate gains an `ssr`
+      dependency on `open4x-accounts/persistence` (currently
+      type-only). Unblocks every Phase 3.1/3.2 route.
 
-### Up next (Phase 2)
+### Up next (Phase 3)
 
-- [ ] atproto handle/DID resolver + OAuth/DPoP flow
+- [ ] `POST /api/v1/auth/email/start` + `GET
+      /api/v1/auth/email/verify` (uses MagicLinkSigner +
+      LogMailer)
+- [ ] `GET /api/v1/me` + `PATCH /api/v1/me` (reads the player from
+      the cookie, hits AccountStore)
+- [ ] `POST /api/v1/auth/signout` (revokes the session)
+
+### Up next (deferred Phase 2 items)
+
+- [ ] **Phase 2.3 ▸ OIDC code exchange + ID-token verify** — needs
+      `openidconnect` + `reqwest` and a mocked-discovery test
+      harness. Land after Phase 3 surface stabilises so the lobby
+      handler shape is settled before the network plumbing.
+- [ ] **Phase 2.3.x ▸ GitHub OAuth2 helper**.
+- [ ] **Phase 2.4 ▸ atproto handle/DID resolver + OAuth/DPoP flow**.
 
 ### Phase 2 summary
 
 Phase 2.1 ✅ persistence · 2.2 ✅ magic-link + mailer · 2.5 ✅ sessions
-· 2.3 partial (config + auth-URL builder ✅; exchange + verify next)
-· 2.4 atproto. Phase 3 (lobby HTTP + session-cookie middleware) can
-start in parallel — the session validator already exists.
+· 2.3 partial (config + auth-URL builder ✅; exchange + verify next).
+Phase 3 starts now — middleware first, then the email-start /
+email-verify pair (which can ship end-to-end against the existing
+substrate), then `/me`. Deferred Phase 2 items pick up after Phase 3
+demonstrates the integration shape.
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
