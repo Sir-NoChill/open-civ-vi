@@ -51,6 +51,7 @@ pub struct GameView {
     pub server_url: String,
     pub last_played_at: Option<String>,
     pub created_at: String,
+    pub notes: String,
 }
 
 impl From<GameRecord> for GameView {
@@ -74,6 +75,7 @@ impl From<GameRecord> for GameView {
             server_url: g.server_url,
             last_played_at: g.last_played_at,
             created_at: g.created_at,
+            notes: g.notes,
         }
     }
 }
@@ -245,6 +247,51 @@ pub async fn delete_one(
     Path(game_id): Path<String>,
 ) -> Response {
     match state.games.soft_delete(&game_id, player_id).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => store_error_response(e),
+    }
+}
+
+// ───────────────────────────── POST /games/{id}/notes ────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct NotesBody {
+    pub notes: String,
+}
+
+pub async fn set_notes(
+    State(state): State<AppState>,
+    RequireSession(player_id): RequireSession,
+    Path(game_id): Path<String>,
+    Json(body): Json<NotesBody>,
+) -> Response {
+    // Owner-only.
+    let owns = match state.games.get_game(&game_id).await {
+        Ok(Some(g)) => g.owner_player_id == player_id,
+        Ok(None) => return store_error_response(GameStoreError::NotFound),
+        Err(e) => return store_error_response(e),
+    };
+    if !owns {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(ErrorBody {
+                error: "not_a_member",
+                message: None,
+            }),
+        )
+            .into_response();
+    }
+    if body.notes.len() > 16 * 1024 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorBody {
+                error: "notes_too_long",
+                message: Some("notes capped at 16 KiB".into()),
+            }),
+        )
+            .into_response();
+    }
+    match state.games.set_notes(&game_id, &body.notes).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => store_error_response(e),
     }

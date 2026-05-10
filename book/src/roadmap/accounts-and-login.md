@@ -415,7 +415,7 @@ PRIMARY KEY (game_id, player_id)
 | GET    | `/api/v1/games` ✅                | List games visible to the user (own + invited)         |
 | POST   | `/api/v1/games` ✅                | New-game wizard submit — bootstrap & return `game_id`  |
 | GET    | `/api/v1/games/{id}` ✅           | Single-game preview                                    |
-| POST   | `/api/v1/games/{id}/notes`        | Update markdown notes                                  |
+| POST   | `/api/v1/games/{id}/notes` ✅     | Update markdown notes                                  |
 | POST   | `/api/v1/games/{id}/invite`       | Invite by email / OpenID / atproto / `PlayerId`        |
 | DELETE | `/api/v1/games/{id}` ✅           | Resign / archive / delete                              |
 | POST   | `/api/v1/games/{id}/resume` (~)   | Returns server_url + token; 503 until orchestrator     |
@@ -483,8 +483,14 @@ PRIMARY KEY (game_id, player_id)
       world · civilization · difficulty · victory · dynamics ·
       players · turn mode`). Pending / error feedback under the
       button unchanged.
-- [ ] Notes popup: markdown textarea, persisted via
-      `POST /api/v1/games/{id}/notes`.
+- [x] Notes popup: markdown textarea, persisted via
+      `POST /api/v1/games/{id}/notes`. Schema landed in
+      `0003_game_notes.sql` (notes TEXT NOT NULL DEFAULT ''),
+      `GameStore::set_notes` + `GameView.notes` exposed, owner-only
+      route caps at 16 KiB and 403s cross-account. Tile button
+      seeds the textarea from the loaded value; Save shows
+      pending / saved ✓ / error feedback and bumps the list-tick
+      so the next reload reflects the persisted value.
 - [~] Per-tile `···` menu: shipped as a click-trigger Popup with
       Copy game ID (writes to `navigator.clipboard`, wired) and
       Resign / delete (`DELETE /games/{id}` + bumps the list's

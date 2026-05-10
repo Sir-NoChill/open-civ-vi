@@ -24,5 +24,6 @@ pub fn v1_router() -> Router<AppState> {
         .route("/games", post(games::create))
         .route("/games/{id}", get(games::get_one))
         .route("/games/{id}", delete(games::delete_one))
+        .route("/games/{id}/notes", post(games::set_notes))
         .route("/games/{id}/resume", post(games::resume))
 }

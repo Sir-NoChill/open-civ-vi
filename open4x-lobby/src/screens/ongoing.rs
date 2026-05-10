@@ -13,7 +13,8 @@ use wasm_bindgen_futures::spawn_local;
 
 use crate::components::api::games as games_api;
 use crate::components::{
-    Btn, MiniMap, Popup, PopupList, PopupListItem, PopupSize, PopupTrigger, Tag,
+    Btn, MiniMap, Popup, PopupActions, PopupBody, PopupList, PopupListItem, PopupSize,
+    PopupTrigger, Tag,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -266,7 +267,7 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                         <div class="row-stat"><span class="k">"last"</span><span class="v">{g.last_played_at.clone().unwrap_or_else(|| "—".into())}</span></div>
                                     </div>
                                     <div class="actions">
-                                        <Btn variant="ghost" size="sm">"📝 Notes"</Btn>
+                                        {notes_popup(g.game_id.clone(), g.name.clone(), g.notes.clone(), tick)}
                                         <span style="flex:1"></span>
                                         <Btn
                                             variant=resume_variant
@@ -385,4 +386,103 @@ fn tile_menu_popup(
             <Btn variant="ghost" size="sm">"···"</Btn>
         </Popup>
     }
+}
+
+/// Click-trigger popup wrapping the tile's "📝 Notes" button.
+/// The popup's textarea is seeded with `initial_notes` from the
+/// loaded GameView; clicking Save posts /api/v1/games/{id}/notes
+/// and bumps `tick` so the list reloads with the persisted value.
+fn notes_popup(
+    game_id: String,
+    game_name: String,
+    initial_notes: String,
+    tick: RwSignal<u32>,
+) -> impl IntoView {
+    let id = Arc::new(game_id);
+    let title = Arc::new(game_name);
+    let initial = Arc::new(initial_notes);
+
+    let content = Arc::new(move || {
+        let id = id.clone();
+        let title = title.clone();
+        let draft = RwSignal::new((*initial).clone());
+        let save_state = RwSignal::new(NotesSaveState::Idle);
+        let id_for_save = id.clone();
+        let on_save = move |_| {
+            save_state.set(NotesSaveState::Saving);
+            let id = id_for_save.clone();
+            let body = draft.get_untracked();
+            spawn_local(async move {
+                match games_api::set_notes(&id, body).await {
+                    Ok(()) => {
+                        save_state.set(NotesSaveState::Saved);
+                        tick.update(|t| *t += 1);
+                    }
+                    Err(e) => save_state.set(NotesSaveState::Error(e.to_string())),
+                }
+            });
+        };
+        let saving = Signal::derive(move || matches!(save_state.get(), NotesSaveState::Saving));
+
+        view! {
+            <PopupBody>
+                <p class="xsmall muted" style="letter-spacing:0.06em; text-transform:uppercase; margin-bottom:6px">
+                    "Notes — " {(*title).clone()}
+                </p>
+                <textarea
+                    class="input"
+                    rows="6"
+                    placeholder="markdown ok — your private notes for this game"
+                    prop:value=move || draft.get()
+                    on:input=move |ev| {
+                        use wasm_bindgen::JsCast as _;
+                        if let Some(el) = ev.target()
+                            .and_then(|t| t.dyn_into::<web_sys::HtmlTextAreaElement>().ok())
+                        {
+                            draft.set(el.value());
+                        }
+                    }
+                ></textarea>
+                {move || match save_state.get() {
+                    NotesSaveState::Saved => view! {
+                        <p class="xsmall" style="color:var(--good); margin-top:6px">"saved ✓"</p>
+                    }.into_any(),
+                    NotesSaveState::Error(msg) => view! {
+                        <p class="xsmall" style="color:var(--accent); margin-top:6px">{msg}</p>
+                    }.into_any(),
+                    _ => view! { <span /> }.into_any(),
+                }}
+            </PopupBody>
+            <PopupActions right=true>
+                <Btn
+                    variant="primary"
+                    size="sm"
+                    disabled=saving
+                    on_click=Callback::new(on_save)
+                >
+                    {move || if saving.get() { "saving…" } else { "save" }}
+                </Btn>
+            </PopupActions>
+        }
+        .into_any()
+    });
+
+    view! {
+        <Popup
+            title="Notes"
+            trigger=PopupTrigger::Click
+            content=content
+        >
+            <Btn variant="ghost" size="sm">"📝 Notes"</Btn>
+        </Popup>
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+enum NotesSaveState {
+    #[default]
+    Idle,
+    Saving,
+    Saved,
+    Error(String),
 }

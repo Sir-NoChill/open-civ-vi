@@ -57,6 +57,7 @@ pub struct GameRecord {
     pub server_token: String,
     pub last_played_at: Option<String>,
     pub created_at: String,
+    pub notes: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -124,6 +125,10 @@ pub trait GameStore: Send + Sync {
         score: i32,
         status: GameStatus,
     ) -> GameStoreResult<()>;
+
+    /// Replace the per-game markdown notes. Owner-only — the handler
+    /// is responsible for the auth check before calling this.
+    async fn set_notes(&self, game_id: &str, notes: &str) -> GameStoreResult<()>;
 }
 
 // ───────────────────────────── Sqlite impl ────────────────────────────────────
@@ -295,6 +300,20 @@ impl GameStore for SqliteGameStore {
         .await?;
         Ok(())
     }
+
+    async fn set_notes(&self, game_id: &str, notes: &str) -> GameStoreResult<()> {
+        let res = sqlx::query(
+            "UPDATE games SET notes = ?1 WHERE game_id = ?2 AND deleted_at IS NULL",
+        )
+        .bind(notes)
+        .bind(game_id)
+        .execute(&self.pool)
+        .await?;
+        if res.rows_affected() == 0 {
+            return Err(GameStoreError::NotFound);
+        }
+        Ok(())
+    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -320,6 +339,8 @@ struct GameRow {
     created_at: String,
     #[allow(dead_code)]
     deleted_at: Option<String>,
+    #[sqlx(default)]
+    notes: String,
 }
 
 impl TryFrom<GameRow> for GameRecord {
@@ -345,6 +366,7 @@ impl TryFrom<GameRow> for GameRecord {
             server_token: r.server_token,
             last_played_at: r.last_played_at,
             created_at: r.created_at,
+            notes: r.notes,
         })
     }
 }

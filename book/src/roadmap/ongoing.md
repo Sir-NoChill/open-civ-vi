@@ -115,12 +115,11 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4 polish ▸ Notes column + popup** — add `notes TEXT
-      NOT NULL DEFAULT ''` to the `games` row,
-      `POST /api/v1/games/{id}/notes { notes }` route, and wire
-      the tile's "📝 Notes" button to a click-trigger Popup with a
-      textarea + Save button. Markdown rendering deferred —
-      raw text round-trips first.
+- [ ] **Phase 4.4 ▸ URL-backed filter + sort state** — push the
+      Filter + Sort + search query into the URL via
+      `web_sys::window().history().push_state_with_url(...)` so the
+      back button + bookmark + reload restore the user's view. On
+      mount, parse `?filter=&sort=&q=` and seed the signals.
 
 ### Up next (Phase 4 polish)
 

@@ -24,6 +24,8 @@ pub struct GameView {
     pub server_url: String,
     pub last_played_at: Option<String>,
     pub created_at: String,
+    #[serde(default)]
+    pub notes: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -70,4 +72,18 @@ pub struct ResumeResp {
 pub async fn resume(game_id: &str) -> Result<ResumeResp, ApiError> {
     let url = format!("/api/v1/games/{game_id}/resume");
     fetch_json::<ResumeResp, ()>("POST", &url, None).await
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct NotesBody {
+    pub notes: String,
+}
+
+/// `POST /api/v1/games/{id}/notes`.
+pub async fn set_notes(game_id: &str, notes: String) -> Result<(), ApiError> {
+    let url = format!("/api/v1/games/{game_id}/notes");
+    let body = NotesBody { notes };
+    fetch_json::<serde_json::Value, NotesBody>("POST", &url, Some(&body))
+        .await
+        .map(|_| ())
 }
