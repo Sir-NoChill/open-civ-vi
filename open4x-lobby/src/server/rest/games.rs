@@ -13,6 +13,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use open4x_accounts::audit::{AuditEventKind, AuditStore, NewAuditEvent};
 use open4x_accounts::games::{GameRecord, GameStatus, GameStore, GameStoreError, NewGame};
 use serde::{Deserialize, Serialize};
 
@@ -173,7 +174,18 @@ pub async fn create(
         server_token,
     };
     match state.games.create_game(new).await {
-        Ok(g) => (StatusCode::CREATED, Json(GameView::from(g))).into_response(),
+        Ok(g) => {
+            let _ = state
+                .audit
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::NewGameCreated,
+                    player_id: Some(player_id),
+                    ip: None,
+                    detail: g.game_id.clone(),
+                })
+                .await;
+            (StatusCode::CREATED, Json(GameView::from(g))).into_response()
+        }
         Err(e) => store_error_response(e),
     }
 }

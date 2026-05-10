@@ -115,12 +115,20 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 6 ▸ Rate limiting + audit log** — first real op
-      hardening. Magic-link mint capped per email + per IP
-      (`tower_governor` keyed on the email body field; per-IP
-      via `axum_client_ip`). New `audit_events` table logs
-      sign-in / identity link / unlink / account-delete with
-      ts + actor_player_id + ip; surface via a CLI dump.
+- [ ] **Phase 6 ▸ Rate limiting** — `tower_governor` keyed per
+      email (POST /auth/email/start) + per IP for the auth /me
+      surface. Returns 429 with a `retry_after` header on
+      throttle. Audit log already in place to surface
+      bursts.
+
+### Up next (Phase 6)
+
+- [ ] **CLI: `open4x-accounts dump-audit`** — surface the audit
+      log without sqlite3 (binary takes `--db <path>` and
+      `--limit <n>`, prints tab-separated rows).
+- [ ] **Single-binary deploy** — embed migrations + serve dist/
+      from the binary's bundled assets (rust-embed) so a deploy is
+      just `open4x-lobby` + an `OPEN4X_LOBBY_DATA_DIR`.
 
 ### Up next (Phase 5 polish)
 

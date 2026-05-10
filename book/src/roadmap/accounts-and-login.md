@@ -561,8 +561,18 @@ production.
       `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). Default no-op in dev.
 - [ ] **Rate limiting** — magic-link mint per email + per IP, OIDC
       callback per state cookie.
-- [ ] **Audit log** — append-only table of auth events (sign-in,
-      identity link/unlink, account delete) for incident response.
+- [x] **Audit log** — `0004_audit_events.sql` adds an
+      append-only `audit_events` table (id ULID + ts + kind +
+      player_id + ip + detail). `open4x-accounts/src/audit.rs`
+      ships `AuditEventKind` (8 variants), `NewAuditEvent` input
+      shape, `AuditStore` async trait + `SqliteAuditStore` impl
+      with `record` and `list_recent(limit)`. Wired from the lobby:
+      magic-link mint, sign-in (with player_id), sign-in-failed
+      (with `Reused` / `Expired` / `BadSignature` / `Malformed`
+      detail), sign-out, account delete, new game created. CLI
+      dump subcommand still pending. Smoke-tested:
+      `magic_link_mint` → `sign_in` → `sign_out` → `sign_in_failed`
+      land in order with the right `player_id` / `detail`.
 - [ ] **Account deletion (GDPR)** — purge identities + sessions,
       anonymize game records (replace `owner_player_id` with a
       tombstone), document retention policy.

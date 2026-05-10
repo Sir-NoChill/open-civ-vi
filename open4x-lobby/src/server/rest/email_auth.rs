@@ -15,6 +15,7 @@ use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
+use open4x_accounts::audit::{AuditEventKind, AuditStore, NewAuditEvent};
 use open4x_accounts::magic_link::{DEFAULT_TTL, MagicLinkError};
 use open4x_accounts::session;
 use open4x_accounts::store::AccountStore;
@@ -90,6 +91,16 @@ pub async fn start(
             .into_response();
     }
 
+    let _ = state
+        .audit
+        .record(NewAuditEvent {
+            kind: AuditEventKind::MagicLinkMint,
+            player_id: None,
+            ip: None,
+            detail: email.clone(),
+        })
+        .await;
+
     (
         StatusCode::ACCEPTED,
         Json(StartResp {
@@ -124,8 +135,19 @@ pub async fn verify(
 ) -> Response {
     let email = match state.signer.verify(&state.pool, &q.token).await {
         Ok(e) => e,
-        Err(MagicLinkError::Reused) | Err(MagicLinkError::Expired)
-        | Err(MagicLinkError::BadSignature) | Err(MagicLinkError::Malformed) => {
+        Err(err @ (MagicLinkError::Reused
+        | MagicLinkError::Expired
+        | MagicLinkError::BadSignature
+        | MagicLinkError::Malformed)) => {
+            let _ = state
+                .audit
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::SignInFailed,
+                    player_id: None,
+                    ip: None,
+                    detail: format!("{err:?}"),
+                })
+                .await;
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(ErrorBody {
@@ -184,6 +206,16 @@ pub async fn verify(
         }
     };
 
+    let _ = state
+        .audit
+        .record(NewAuditEvent {
+            kind: AuditEventKind::SignIn,
+            player_id: Some(account.player_id),
+            ip: None,
+            detail: email.clone(),
+        })
+        .await;
+
     let mut headers = HeaderMap::new();
     headers.insert(
         header::SET_COOKIE,
@@ -199,10 +231,20 @@ pub async fn verify(
 pub async fn signout(
     State(state): State<AppState>,
     cookie: Option<axum::extract::Extension<AuthCookie>>,
+    player_id: Option<axum::extract::Extension<open4x_accounts::PlayerId>>,
 ) -> Response {
     if let Some(axum::extract::Extension(AuthCookie(raw))) = cookie {
         let _ = session::revoke_session(&state.pool, &raw).await;
     }
+    let _ = state
+        .audit
+        .record(NewAuditEvent {
+            kind: AuditEventKind::SignOut,
+            player_id: player_id.map(|axum::extract::Extension(p)| p),
+            ip: None,
+            detail: String::new(),
+        })
+        .await;
     let mut headers = HeaderMap::new();
     headers.insert(
         header::SET_COOKIE,

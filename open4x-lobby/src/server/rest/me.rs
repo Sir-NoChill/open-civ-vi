@@ -6,6 +6,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use open4x_accounts::audit::{AuditEventKind, AuditStore, NewAuditEvent};
 use open4x_accounts::store::AccountStore;
 use open4x_accounts::{Account, Preferences};
 use serde::{Deserialize, Serialize};
@@ -86,7 +87,18 @@ pub async fn delete_me(
     RequireSession(player_id): RequireSession,
 ) -> Response {
     match state.store.delete_account(player_id).await {
-        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Ok(()) => {
+            let _ = state
+                .audit
+                .record(NewAuditEvent {
+                    kind: AuditEventKind::AccountDeleted,
+                    player_id: Some(player_id),
+                    ip: None,
+                    detail: String::new(),
+                })
+                .await;
+            StatusCode::NO_CONTENT.into_response()
+        }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorBody {

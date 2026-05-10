@@ -20,6 +20,9 @@
 #![allow(dead_code)]
 
 #[cfg(feature = "persistence")]
+pub mod audit;
+
+#[cfg(feature = "persistence")]
 pub mod games;
 
 #[cfg(feature = "persistence")]
