@@ -330,7 +330,7 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
                                             disabled=disabled_signal
                                             on_click=on_resume
                                         >{resume_label}</Btn>
-                                        {tile_menu_popup(g.game_id.clone(), g.name.clone(), tick)}
+                                        {tile_menu_popup(g.clone(), tick)}
                                     </div>
                                 </div>
                             }
@@ -353,83 +353,32 @@ pub fn OngoingGames(on_new: Callback<()>) -> impl IntoView {
 /// Resign and Copy game ID are wired today; Archive / View summary
 /// / Share invite are visible-but-inert pending their underlying
 /// routes / popups.
-fn tile_menu_popup(
-    game_id: String,
-    game_name: String,
-    tick: RwSignal<u32>,
-) -> impl IntoView {
-    let id_for_resign = game_id.clone();
-    let id_for_clipboard = game_id.clone();
-    let _ = game_name;
+fn tile_menu_popup(g: games_api::GameView, tick: RwSignal<u32>) -> impl IntoView {
+    let game = Arc::new(g);
 
-    // Build the menu items inside an Arc'd renderer because the
-    // PopupList items embed click closures that capture game_id.
-    let content = Arc::new(move || {
-        let id_resign = id_for_resign.clone();
-        let id_copy = id_for_clipboard.clone();
+    let content = {
+        let game = game.clone();
+        Arc::new(move || {
+            // Local state inside the popup content lets us flip between
+            // the action menu and the summary view without re-rendering
+            // the whole popup. The popup's pinned state survives the
+            // flip because PopupRender re-runs the renderer.
+            let view_mode = RwSignal::new(SummaryMode::Menu);
+            let game = game.clone();
 
-        // PopupList today renders inert <button class="item"> rows
-        // (no on_click plumbing — that lands when the menu rows
-        // gain an interactive callback). For now we fan out to
-        // bespoke <button> rows for the two interactive items, and
-        // use PopupList for the inert ones.
-        view! {
-            <div class="popup-list">
-                <button
-                    class="item"
-                    type="button"
-                    on:click=move |_| {
-                        let id = id_copy.clone();
-                        if let Some(win) = web_sys::window() {
-                            let nav = win.navigator();
-                            let _ = nav.clipboard().write_text(&id);
-                        }
-                    }
-                >
-                    <span class="icon">"⎘"</span>
-                    <span>"Copy game ID"</span>
-                </button>
-                <button class="item" type="button">
-                    <span class="icon">"◑"</span>
-                    <span>"View summary"</span>
-                    <span class="desc">"(TODO)"</span>
-                </button>
-                <button class="item" type="button">
-                    <span class="icon">"↗"</span>
-                    <span>"Share invite link"</span>
-                    <span class="desc">"(TODO)"</span>
-                </button>
-                <div class="sep"></div>
-                <button class="item" type="button">
-                    <span class="icon">"⊟"</span>
-                    <span>"Archive"</span>
-                    <span class="desc">"(TODO)"</span>
-                </button>
-                <button
-                    class="item"
-                    type="button"
-                    on:click=move |_| {
-                        let id = id_resign.clone();
-                        spawn_local(async move {
-                            let _ = games_api::delete_game(&id).await;
-                            tick.update(|t| *t += 1);
-                        });
-                    }
-                >
-                    <span class="icon">"⊗"</span>
-                    <span>"Resign / delete"</span>
-                </button>
-            </div>
-        }
-        .into_any()
-    });
+            // Suppress dead_code on PopupList — used elsewhere
+            // (StepPlayers slot menu).
+            let _ = (PopupListItem::sep, PopupList);
 
-    // Suppress dead_code on PopupList — it's still used elsewhere
-    // (StepPlayers slot menu).
-    let _ = (
-        PopupListItem::sep,
-        PopupList,
-    );
+            view! {
+                {move || match view_mode.get() {
+                    SummaryMode::Menu => render_menu_rows(game.clone(), view_mode, tick),
+                    SummaryMode::Summary => render_summary_kv(game.clone(), view_mode),
+                }}
+            }
+            .into_any()
+        })
+    };
 
     view! {
         <Popup
@@ -441,6 +390,111 @@ fn tile_menu_popup(
             <Btn variant="ghost" size="sm">"···"</Btn>
         </Popup>
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum SummaryMode {
+    Menu,
+    Summary,
+}
+
+fn render_menu_rows(
+    game: Arc<games_api::GameView>,
+    view_mode: RwSignal<SummaryMode>,
+    tick: RwSignal<u32>,
+) -> AnyView {
+    let id_resign = game.game_id.clone();
+    let id_copy = game.game_id.clone();
+
+    view! {
+        <div class="popup-list">
+            <button
+                class="item"
+                type="button"
+                on:click=move |_| {
+                    let id = id_copy.clone();
+                    if let Some(win) = web_sys::window() {
+                        let nav = win.navigator();
+                        let _ = nav.clipboard().write_text(&id);
+                    }
+                }
+            >
+                <span class="icon">"⎘"</span>
+                <span>"Copy game ID"</span>
+            </button>
+            <button
+                class="item"
+                type="button"
+                on:click=move |_| view_mode.set(SummaryMode::Summary)
+            >
+                <span class="icon">"◑"</span>
+                <span>"View summary"</span>
+            </button>
+            <button class="item" type="button">
+                <span class="icon">"↗"</span>
+                <span>"Share invite link"</span>
+                <span class="desc">"(TODO)"</span>
+            </button>
+            <div class="sep"></div>
+            <button class="item" type="button">
+                <span class="icon">"⊟"</span>
+                <span>"Archive"</span>
+                <span class="desc">"(TODO)"</span>
+            </button>
+            <button
+                class="item"
+                type="button"
+                on:click=move |_| {
+                    let id = id_resign.clone();
+                    spawn_local(async move {
+                        let _ = games_api::delete_game(&id).await;
+                        tick.update(|t| *t += 1);
+                    });
+                }
+            >
+                <span class="icon">"⊗"</span>
+                <span>"Resign / delete"</span>
+            </button>
+        </div>
+    }
+    .into_any()
+}
+
+fn render_summary_kv(
+    game: Arc<games_api::GameView>,
+    view_mode: RwSignal<SummaryMode>,
+) -> AnyView {
+    let players = format!("{}H · {}AI", game.players_human, game.players_ai);
+    let last = game.last_played_at.clone().unwrap_or_else(|| "—".into());
+    view! {
+        <div class="popup-body">
+            <div class="kv xsmall">
+                <span class="k">"name"</span><span>{game.name.clone()}</span>
+                <span class="k">"id"</span><span style="font-family:var(--font-mono)">{game.game_id.clone()}</span>
+                <span class="k">"leader"</span><span>{format!("{} · {}", game.leader, game.civ_id)}</span>
+                <span class="k">"map"</span>
+                <span>{format!("{} · {}", game.map_type, game.map_size)}</span>
+                <span class="k">"seed"</span>
+                <span style="font-family:var(--font-mono); font-size:10px">{game.seed.clone()}</span>
+                <span class="k">"difficulty"</span><span>{game.difficulty.clone()}</span>
+                <span class="k">"turn"</span><span>{game.turn.to_string()}</span>
+                <span class="k">"era"</span><span>{game.era.clone()}</span>
+                <span class="k">"score"</span><span>{game.score.to_string()}</span>
+                <span class="k">"status"</span><span>{game.status.clone()}</span>
+                <span class="k">"players"</span><span>{players}</span>
+                <span class="k">"created"</span><span>{game.created_at.clone()}</span>
+                <span class="k">"last played"</span><span>{last}</span>
+            </div>
+        </div>
+        <PopupActions>
+            <Btn
+                variant="bare"
+                size="sm"
+                on_click=Callback::new(move |_| view_mode.set(SummaryMode::Menu))
+            >"← back"</Btn>
+        </PopupActions>
+    }
+    .into_any()
 }
 
 /// Click-trigger popup wrapping the tile's "📝 Notes" button.

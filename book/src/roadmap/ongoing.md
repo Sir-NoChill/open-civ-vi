@@ -115,14 +115,16 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 4 polish ▸ Per-tile View summary popup** — wire the
-      currently-inert "View summary" row in the tile · · · menu to
-      a Popup-in-Popup with a kv table mirroring the wizard
-      Review block (map · seed · world · civilization · difficulty
-      · victory · dynamics · players · turn mode). Pulls every
-      field straight from the loaded GameView.
+- [ ] **Phase 5 ▸ Real game tile thumbnails** — `OngoingGames`
+      currently seeds the `MiniMap` from a hash of the seed
+      string. Switch to fetching `GET /api/v1/world/snapshot` from
+      the open4x-server bound to the row (using the stored
+      `server_token`), turn the resulting tile list into an
+      ownership map, and render a real thumbnail per tile. Cache
+      results so each tile renders once per session. Phase 5
+      polish item.
 
-### Up next (Phase 4 polish)
+### Up next (Phase 5 polish)
 
 - [ ] Per-tile `···` menu: View summary / Copy game ID / Share
       invite link / Archive / Resign.

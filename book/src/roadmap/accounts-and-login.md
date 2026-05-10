@@ -492,13 +492,14 @@ PRIMARY KEY (game_id, player_id)
       seeds the textarea from the loaded value; Save shows
       pending / saved ✓ / error feedback and bumps the list-tick
       so the next reload reflects the persisted value.
-- [~] Per-tile `···` menu: shipped as a click-trigger Popup with
-      Copy game ID (writes to `navigator.clipboard`, wired) and
-      Resign / delete (`DELETE /games/{id}` + bumps the list's
-      tick to refresh, wired). View summary / Share invite link /
-      Archive are visible-but-inert pending their underlying
-      surfaces (summary popup, invite-link minting, archive
-      column).
+- [~] Per-tile `···` menu: click-trigger Popup with five rows.
+      Wired today: Copy game ID (clipboard), View summary
+      (flips the popup body to a kv table — name / id / leader+civ
+      / map / seed / difficulty / turn / era / score / status /
+      players / created / last played, with a `← back` row
+      footer), Resign / delete (DELETE + tick refresh). Visible-
+      but-inert: Share invite link, Archive (need their underlying
+      surfaces — invite mint + status column).
 
 **Done when**: a logged-in user can run the wizard end-to-end and find
 themselves in a freshly-created `open4x-server` `GameRoom` they own,
