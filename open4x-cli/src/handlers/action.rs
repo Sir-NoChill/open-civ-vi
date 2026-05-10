@@ -363,6 +363,15 @@ pub(crate) fn dispatch_action(
             });
             Ok(GameStateDiff { deltas: Vec::new() })
         }
+        ActionKind::CancelResearch => {
+            let civ = state
+                .civilizations
+                .iter_mut()
+                .find(|c| c.id == civ_id)
+                .ok_or("civ not found")?;
+            civ.research_queue.pop_front();
+            Ok(GameStateDiff { deltas: Vec::new() })
+        }
         ActionKind::StudyCivic { civic } => {
             // Set the current civic to research by name.
             let civic_id = state

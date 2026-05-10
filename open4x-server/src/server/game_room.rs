@@ -290,6 +290,15 @@ impl GameRoom {
                 }
                 Ok(())
             }
+            GameAction::CancelResearch => {
+                let civ = self.state.civilizations.iter_mut()
+                    .find(|c| c.id == civ_id)
+                    .ok_or("civ not found")?;
+                // Drop the front of the queue (active research). Partial
+                // progress is discarded. Idempotent: no-op on empty queue.
+                civ.research_queue.pop_front();
+                Ok(())
+            }
             GameAction::QueueCivic { civic } => {
                 let civic_id = to_libciv_civic_id(*civic);
                 let civ = self.state.civilizations.iter_mut()

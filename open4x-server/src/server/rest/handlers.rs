@@ -804,6 +804,28 @@ pub async fn tech_research(
     ))
 }
 
+/// `DELETE /api/v1/tech/research` — drop the active (front) entry from the
+/// civ's research queue. Idempotent. Returns the updated tech tree.
+pub async fn cancel_research(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let (game_id, civ_id) = auth_or_401(&state, &headers)?;
+    let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
+
+    let action = crate::types::messages::GameAction::CancelResearch;
+    let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
+    let view = view_only(&state, game_id, civ_id)?;
+    Ok((
+        StatusCode::OK,
+        Json(MutationResponse {
+            ok: true,
+            view: web_projection::build_tech_tree(&view),
+            turn_status: TurnStatusBlock { turn: new_turn, ended: false },
+        }),
+    ))
+}
+
 // ── /civics ──────────────────────────────────────────────────────────────────
 
 pub async fn civics(

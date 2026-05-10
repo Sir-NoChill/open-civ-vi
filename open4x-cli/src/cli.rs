@@ -281,6 +281,8 @@ pub enum ActionKind {
         #[arg(long)]
         tech: String,
     },
+    /// Cancel the active (front) tech in the player's research queue
+    CancelResearch,
     /// Set the current civic to research
     StudyCivic {
         #[arg(long)]

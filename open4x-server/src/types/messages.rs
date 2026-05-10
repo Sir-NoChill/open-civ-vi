@@ -92,6 +92,11 @@ pub enum GameAction {
     QueueResearch {
         tech: TechId,
     },
+    /// Drop the active (front) entry from the civ's research queue.
+    /// Idempotent — a no-op when the queue is empty. Partial progress on
+    /// the dropped tech is discarded (matches Civ VI's switch-research
+    /// semantics).
+    CancelResearch,
     QueueCivic {
         civic: CivicId,
     },

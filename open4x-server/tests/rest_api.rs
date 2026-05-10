@@ -339,6 +339,51 @@ async fn units_actions_are_engine_derived_and_role_specific() {
 }
 
 #[tokio::test]
+async fn cancel_research_drops_active_tech_and_is_idempotent() {
+    let (app, _state) = build_app();
+    let token = bootstrap_token(&app).await;
+
+    // Pick an available tech and queue it.
+    let (_, tt) = get_with(&app, "/api/v1/tech", &token).await;
+    let tech_id = tt["techs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["status"] == "available")
+        .and_then(|t| t["id"].as_str())
+        .expect("at least one available tech")
+        .to_string();
+    let (status, _) = post_with(
+        &app,
+        "/api/v1/tech/research",
+        Some(&token),
+        serde_json::json!({"tech_id": tech_id}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Confirm the tech is now active (research_queue is non-empty).
+    let (_, tt) = get_with(&app, "/api/v1/tech", &token).await;
+    assert!(
+        !tt["research_queue"].as_array().unwrap().is_empty(),
+        "expected research queue to have one entry after queue, got {tt:?}"
+    );
+
+    // DELETE — drops the active tech.
+    let (status, body) = delete_with(&app, "/api/v1/tech/research", &token).await;
+    assert_eq!(status, StatusCode::OK, "cancel: {body:?}");
+    assert_eq!(body["ok"], true);
+    assert!(
+        body["view"]["research_queue"].as_array().unwrap().is_empty(),
+        "expected empty research queue after cancel, got {body:?}"
+    );
+
+    // Idempotent: a second DELETE on an empty queue still succeeds.
+    let (status, _) = delete_with(&app, "/api/v1/tech/research", &token).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
 async fn city_rename_round_trip_persists_via_post_rename() {
     let (app, _state) = build_app();
     let token = bootstrap_token(&app).await;
