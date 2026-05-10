@@ -141,8 +141,11 @@ plumbing.
 - [ ] **NewGame `StepPlayers`** — player slot list with invite popup
       (paste email / OpenID / atproto / player ID), turn-mode params
       (timer, simultaneous, private, cross-play).
-- [ ] **`Slider` primitive** — wraps `<input type="range">` with
-      `format` callback for value display.
+- [x] **`Slider` primitive** — wraps `<input type="range">` with an
+      optional `format: Arc<dyn Fn(i32) -> String>` callback for the
+      value display. `RwSignal<i32>`-driven; `min` / `max` default to
+      `0` / `100`. Lives at
+      `open4x-lobby/src/components/slider.rs`.
 - [ ] **Tweaks panel port** — runtime density toggle (`compact` /
       `comfortable` / `spacious`) wired to the `data-density` attr on
       `.app`. Already on the JSX side; just port the React component.

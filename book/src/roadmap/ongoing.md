@@ -115,18 +115,20 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ Slider primitive** —
-      `open4x-lobby/src/components/slider.rs`. Wraps
-      `<input type=range>` with optional `format` callback. Source:
-      `docs/open4x-landing/project/primitives.jsx`.
+- [ ] **Phase 1 ▸ PopupBody / PopupActions / PopupList containers** —
+      `open4x-lobby/src/components/popup_body.rs`. Pure layout
+      wrappers used inside the popup's body / footer. Source:
+      `docs/open4x-landing/project/hifi/popup.jsx` (PopupRender's
+      slot shape) + the `.popup-body`, `.popup-actions`,
+      `.popup-list` CSS rules already in `styles.css`.
 
 ### Up next (Phase 1)
 
-- [ ] PopupBody / PopupActions / PopupList containers
 - [ ] Popup component (Gwern-style: hover preview, pin on click,
       esc-close, click-outside, smart positioning)
 - [ ] NewGame StepCiv (civ picker grid + CivSheet popups)
-- [ ] NewGame StepRules (difficulty / victory / world dynamics)
+- [ ] NewGame StepRules (difficulty / victory / world dynamics) —
+      depends on Slider (✅) and Popup body/triggers
 - [ ] NewGame StepPlayers (slot list + invite popup + turn-mode params)
 - [ ] Tweaks panel port (runtime density toggle)
 

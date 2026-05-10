@@ -14,6 +14,7 @@ pub mod minimap;
 pub mod panel;
 pub mod popup_stub;
 pub mod segmented;
+pub mod slider;
 pub mod tag;
 pub mod toggle;
 
@@ -22,5 +23,6 @@ pub use minimap::MiniMap;
 pub use panel::{Panel, PanelHead};
 pub use popup_stub::Trigger;
 pub use segmented::Segmented;
+pub use slider::{FormatFn, Slider};
 pub use tag::Tag;
 pub use toggle::Toggle;
