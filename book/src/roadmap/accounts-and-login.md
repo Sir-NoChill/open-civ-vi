@@ -554,8 +554,16 @@ User-visible quality once the platform basics are wired.
       `verified=false`. Audit rows for the new mint carry detail
       `verify:<identity_id>` so ops can distinguish verify-start
       mints from sign-in mints.
-- [ ] **Sign-in feedback states** — pending / success / failure for
-      every entry point.
+- [x] **Sign-in feedback states** — `EmailFlow::Error` is now a
+      discriminated `EmailFlowError` enum (EmptyEmail /
+      RateLimited / ServerBusy / Network / Other) populated
+      from `ApiError.status`. Each variant returns category-
+      specific copy; retryable variants render a "↻ Try again"
+      Btn that re-submits without forcing the user to re-type
+      their email. New `AuthEmailStartFailed` audit kind logs
+      mint_failed / mail_failed paths so ops can split server-
+      side breakage from token-validation failures (the
+      `SignInFailed` row now stays scoped to /verify).
 - [ ] **Real game tile thumbnails** — `MiniMap` re-seeded by the game's
       world seed so you actually recognise your saves.
 - [ ] **Tile thumbnails reflect ownership** — show captured cities,
@@ -826,6 +834,16 @@ Running record of work performed against this plan, newest at top.
   "verify" button on unverified email rows. Audit detail
   `verify:<identity_id>` distinguishes verify-start mints
   from sign-in mints. Smoke verified the full roundtrip.
+- `77072665` — feat(open4x-{accounts,lobby}): hardened
+  sign-in feedback states. `EmailFlow::Error` is now a
+  discriminated `EmailFlowError` enum populated from
+  `ApiError.status`; each variant has category-specific
+  user-facing copy and retryable variants render a Try-again
+  Btn that re-submits without forcing the user to re-type.
+  New `AuthEmailStartFailed` audit kind logs mint_failed /
+  mail_failed with prefixed detail; smoke against an
+  unreachable SMTP host wrote the row with
+  `mail_failed:transport error: Connection refused`.
 
 - `3e7bf7d4` — feat(open4x-{accounts,lobby}): per-email magic-link
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`

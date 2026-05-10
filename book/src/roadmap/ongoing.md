@@ -115,16 +115,14 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 5 ▸ Sign-in feedback states** — Login's email
-      panel already cycles Idle / Pending / Sent / Error. The
-      OIDC + atproto buttons in Login are visible-but-inert
-      pending Phase 2.3 / 2.4. This task: harden the Login
-      `EmailFlow` reducer so transient errors (rate-limit 429,
-      mailer 5xx, network) surface specific copy, plus a Retry
-      affordance after Error. Audit-log the
-      `auth_email_start_failed` distinct from
-      `magic_link_mint_failed` so ops can split client-side
-      errors from server-side errors.
+- [ ] **Phase 5 ▸ Real game tile thumbnails** — `MiniMap`
+      currently renders deterministic noise seeded from the
+      game's seed string. The plan calls for a per-game
+      snapshot fetched from `server_url` (the open4x-server
+      already exposes `/api/v1/world` returning the
+      `WorldSnapshot`), reduced to a tile-color array, cached
+      under the lobby's data dir keyed by `server_token` so
+      repeated mounts don't re-hit the game server.
 
 ### Up next (Phase 6)
 
