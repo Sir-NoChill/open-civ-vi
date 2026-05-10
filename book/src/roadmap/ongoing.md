@@ -72,7 +72,10 @@ into the server projector.
       writes `City.name` after trim + 1..=64 char validation +
       ownership check; structured 400 on empty / oversize. CLI:
       `action rename-city`.
-- [ ] `GameAction::CancelResearch` + `DELETE /tech/research`
+- [x] `GameAction::CancelResearch` + `DELETE /tech/research` —
+      idempotent pop of `research_queue` front; partial progress
+      discarded (matches Civ VI switch-research semantics). CLI:
+      `action cancel-research`.
 - [ ] `GameAction::CancelCivic` + `DELETE /civics/research`
 - [ ] `GameAction::ChangeGovernment` + `POST /government/change`
 
@@ -101,6 +104,8 @@ into the server projector.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `oumzyopv` — feat(open4x-server): GameAction::CancelResearch +
+  DELETE /tech/research.
 - `lynqxskw` — feat(open4x-server): GameAction::RenameCity + POST
   /cities/{id}/rename.
 - `pkmywxno` — feat(libciv,open4x-server): GameAction::AssignCityFocus
