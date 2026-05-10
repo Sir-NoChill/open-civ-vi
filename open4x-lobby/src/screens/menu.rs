@@ -37,7 +37,15 @@ impl MenuTab {
 const SECONDARY: &[(&str, &str)] = &[("◎", "Friends"), ("≡", "Presets"), ("?", "Docs")];
 
 #[component]
-pub fn MenuShell(tab: RwSignal<MenuTab>, children: Children) -> impl IntoView {
+pub fn MenuShell(
+    tab: RwSignal<MenuTab>,
+    #[prop(optional)] on_signout: Option<Callback<()>>,
+    children: Children,
+) -> impl IntoView {
+    let _ = on_signout; // TODO: wire into the user-card popup once the
+                        // user-card menu is interactive. The Profile
+                        // screen's "Sign out" quick-action is the
+                        // primary path today.
     view! {
         <div class="menu-shell">
             <aside class="sidebar">

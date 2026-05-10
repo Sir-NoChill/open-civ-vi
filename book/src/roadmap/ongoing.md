@@ -115,14 +115,25 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 3 ▸ Bootstrap auth-on-mount + sign-out wiring** —
-      App fetches `/api/v1/me` once on mount; on success switches
-      `screen` to `Menu`. Sign-out button in `Profile` quick-actions
-      and the menu sidebar's user-card menu both call
-      `auth::signout` and reset to `Landing`. Surface errors
-      (e.g. 401 → unauthenticated, 5xx → toast).
+- [ ] **Phase 4.1 ▸ Games index schema migration** — add
+      `0002_games.sql` migration with the games + game_members
+      tables from §4.1 of the plan. Schema first; wire-types and
+      handlers follow once the migration is in place.
 
-### Up next (Phase 3)
+### Up next (Phase 4)
+
+- [ ] Phase 4.2 routes — `GET /api/v1/games`, `POST /api/v1/games`,
+      `GET /api/v1/games/{id}`, `DELETE /api/v1/games/{id}`,
+      `POST /api/v1/games/{id}/notes`, `POST
+      /api/v1/games/{id}/resume`.
+- [ ] Phase 4.3 orchestrator — shared-server-multi-room v1 (teach
+      open4x-server to validate accounts-issued tokens; lobby
+      `POST /games` translates wizard params into a server-side
+      bootstrap call).
+- [ ] Phase 4.4 SPA wiring — `OngoingGames` reads `/api/v1/games`,
+      `+ New game` "⌬ Generate world" → `POST /api/v1/games`.
+
+### Up next (deferred Phase 3 items)
 
 - [ ] OIDC provider buttons in Login wire to
       `GET /auth/oidc/{provider}/start` (depends on Phase 2.3 part 2).

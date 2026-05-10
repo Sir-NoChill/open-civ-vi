@@ -23,7 +23,7 @@ enum SaveState {
 }
 
 #[component]
-pub fn Profile() -> impl IntoView {
+pub fn Profile(#[prop(optional)] on_signout: Option<Callback<()>>) -> impl IntoView {
     let me = LocalResource::new(|| async { me_api::get().await.ok() });
 
     let preferred_name = RwSignal::new(String::new());
@@ -123,7 +123,15 @@ pub fn Profile() -> impl IntoView {
                         <Btn variant="bare" size="sm">"⎘ Copy player ID"</Btn>
                         <Btn variant="bare" size="sm">"▦ Show invite QR"</Btn>
                         <Btn variant="bare" size="sm">"↓ Export save data"</Btn>
-                        <Btn variant="bare" size="sm">"→ Sign out"</Btn>
+                        <Btn
+                            variant="bare"
+                            size="sm"
+                            on_click=Callback::new(move |_| {
+                                if let Some(cb) = on_signout {
+                                    cb.run(());
+                                }
+                            })
+                        >"→ Sign out"</Btn>
                     </div>
                 </Panel>
 

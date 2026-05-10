@@ -7,7 +7,9 @@
 //! user into the [`crate::screens::MenuShell`] with a default tab.
 
 use leptos::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 
+use crate::components::api::me as me_api;
 use crate::components::{PopupProvider, TweaksPanel};
 use crate::screens::{Landing, Login, MenuShell, MenuTab, NewGame, OngoingGames, Profile};
 
@@ -36,12 +38,34 @@ pub fn App() -> impl IntoView {
     let menu_tab = RwSignal::new(MenuTab::Ongoing);
     let density = RwSignal::new("comfortable".to_string());
 
+    // Bootstrap: try GET /api/v1/me once on mount; if the server
+    // recognises our cookie, jump straight to Menu. The 401 case
+    // (unauthenticated) leaves us on Landing.
+    Effect::new(move |_| {
+        // Fire exactly once.
+        let already_set = screen.get_untracked() != Screen::Landing;
+        if already_set {
+            return;
+        }
+        spawn_local(async move {
+            if me_api::get().await.is_ok() {
+                screen.set(Screen::Menu);
+            }
+        });
+    });
+
     // Callbacks reused across screens.
     let go_login = Callback::new(move |_: ()| screen.set(Screen::Login));
     let go_landing = Callback::new(move |_: ()| screen.set(Screen::Landing));
     let go_newgame = Callback::new(move |_: ()| {
         screen.set(Screen::Menu);
         menu_tab.set(MenuTab::NewGame);
+    });
+    let on_signout = Callback::new(move |_: ()| {
+        spawn_local(async move {
+            let _ = crate::components::api::auth::signout().await;
+            screen.set(Screen::Landing);
+        });
     });
 
     view! {
@@ -78,13 +102,15 @@ pub fn App() -> impl IntoView {
                         <Login on_back=go_landing />
                     }.into_any(),
                     Screen::Menu => view! {
-                        <MenuShell tab=menu_tab>
+                        <MenuShell tab=menu_tab on_signout=on_signout>
                             {move || match menu_tab.get() {
                                 MenuTab::Ongoing => view! {
                                     <OngoingGames on_new=go_newgame />
                                 }.into_any(),
                                 MenuTab::NewGame => view! { <NewGame /> }.into_any(),
-                                MenuTab::Profile => view! { <Profile /> }.into_any(),
+                                MenuTab::Profile => view! {
+                                    <Profile on_signout=on_signout />
+                                }.into_any(),
                             }}
                         </MenuShell>
                     }.into_any(),
