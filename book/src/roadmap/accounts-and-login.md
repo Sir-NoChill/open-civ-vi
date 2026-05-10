@@ -688,7 +688,23 @@ Running record of work performed against this plan, newest at top.
   rate limit. New `AuditStore::recent_count_by_kind_and_detail`
   backs a 5-mints-per-5-min cap on `POST /auth/email/start`.
   Returns 429 + `Retry-After: 60` header + structured body when
-  over. Per-IP throttle still pending.
+  over.
+- `596af021` — feat(open4x-{accounts,lobby}): per-IP throttle on
+  /auth/email/start. Mirror of the per-email cap at 20 mints / 5
+  min via `recent_count_by_kind_and_ip`. ConnectInfo<SocketAddr>
+  reads the peer; magic_link_mint audit rows now carry the IP.
+  X-Forwarded-For reader for production-behind-proxy is a
+  follow-up.
+- `89d4fdfb` — feat(open4x-{accounts,lobby}): DELETE
+  /api/v1/me/identities/{id}. AccountStore gains
+  `list_identities_with_ids` so the wire surfaces stable row
+  ids; the /me handler refuses unlinks that would orphan the
+  account; audit log records `identity_unlinked`.
+- `b01e98fb` — feat(open4x-lobby): wire Profile per-row identity
+  unlink button. Confirm-popup posts the new
+  `components::api::me::unlink_identity` binding and bumps the
+  resource tick. Disabled (no popup) for the only-identity case
+  so it mirrors the server-side guard.
 - `573b9b55` — feat(open4x-lobby): real /health + graceful
   shutdown. /health pings the DB (200 ok / 503 db_unreachable);
   axum graceful_shutdown drains in-flight requests on
