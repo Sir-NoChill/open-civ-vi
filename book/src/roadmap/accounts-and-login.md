@@ -146,9 +146,17 @@ plumbing.
       `Separator`) so menu definitions read structurally rather than
       as untyped JSX. No interactivity yet — wired up when the Popup
       shell lands.
-- [ ] **NewGame `StepCiv`** — civ picker grid (8 leaders), per-leader
-      `CivSheet` popup with unique unit / unique building / leader
-      ability / civ ability. Selection state stored on `RwSignal`.
+- [x] **NewGame `StepCiv`** — civ picker grid implemented in
+      `open4x-lobby/src/screens/newgame.rs::StepCiv`. Static
+      `CIVS: &[CivPick]` table holds leader / civ / trait + unique
+      unit / unique building / leader ability / civ ability. Each
+      card is a `<Popup>` wrapping a `<div class=panel>` with hover
+      to surface the `CivSheet` body, click to select. Selection
+      stored on a screen-local `RwSignal<String>` keyed on leader
+      name; the active card flips its border + background to
+      `var(--accent-soft)` per the JSX. Real catalogue
+      handshake with libciv lands in Phase 4 alongside the games
+      index.
 - [ ] **NewGame `StepRules`** — difficulty Segmented (settler → deity),
       starting era, game speed, victory toggles ×6, world dynamics
       sliders (disasters, barbarians, city-states, AI aggression, AI

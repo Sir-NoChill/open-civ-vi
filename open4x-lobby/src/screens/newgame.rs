@@ -3,9 +3,14 @@
 //! Map and Review having content; the middle three steps render an empty
 //! panel for now (TODO: port StepCiv / StepRules / StepPlayers).
 
+use std::sync::Arc;
+
 use leptos::prelude::*;
 
-use crate::components::{Btn, MiniMap, Panel, PanelHead, Segmented, segmented::Segment, Toggle};
+use crate::components::{
+    Btn, MiniMap, Panel, PanelHead, Popup, PopupActions, PopupBody, Segmented,
+    Toggle, segmented::Segment,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Step {
@@ -61,6 +66,7 @@ pub fn NewGame() -> impl IntoView {
             <div style="flex:1; overflow:auto; padding-bottom:12px">
                 {move || match step.get() {
                     Step::Map => view! { <StepMap /> }.into_any(),
+                    Step::Civ => view! { <StepCiv /> }.into_any(),
                     Step::Review => view! { <StepReview /> }.into_any(),
                     other => view! { <StepPlaceholder name=other.label() /> }.into_any(),
                 }}
@@ -294,6 +300,118 @@ fn StepReview() -> impl IntoView {
                     </p>
                 </Panel>
             </div>
+        </div>
+    }
+}
+
+// ─────────────────────────────── Step: civ ────────────────────────────────────
+
+/// One row in the civ picker. Static for now; the real catalogue lives in
+/// `libciv` and will hand-shake with the lobby once the games-index ships.
+#[derive(Copy, Clone)]
+struct CivPick {
+    leader: &'static str,
+    civ: &'static str,
+    trait_: &'static str,
+    unique_unit: &'static str,
+    unique_building: &'static str,
+    leader_ability: &'static str,
+    civ_ability: &'static str,
+}
+
+const CIVS: &[CivPick] = &[
+    CivPick { leader: "Saladin",   civ: "Arabia",  trait_: "Trade & faith",     unique_unit: "Mamluk",         unique_building: "Madrasa",     leader_ability: "Righteousness of the Faith", civ_ability: "The Last Prophet" },
+    CivPick { leader: "Trajan",    civ: "Rome",    trait_: "Expansionist",      unique_unit: "Legion",         unique_building: "Bath",        leader_ability: "Trajan's Column",            civ_ability: "All Roads Lead to Rome" },
+    CivPick { leader: "Catherine", civ: "Russia",  trait_: "Wide / faith",      unique_unit: "Cossack",        unique_building: "Lavra",       leader_ability: "The Grand Embassy",          civ_ability: "Mother Russia" },
+    CivPick { leader: "Cleopatra", civ: "Egypt",   trait_: "Wonders / trade",   unique_unit: "Maryannu Chariot Archer", unique_building: "Sphinx", leader_ability: "Mediterranean's Bride",   civ_ability: "Iteru" },
+    CivPick { leader: "Hojo",      civ: "Japan",   trait_: "Coastal / military", unique_unit: "Samurai",       unique_building: "Electronics Factory", leader_ability: "Divine Wind",        civ_ability: "Meiji Restoration" },
+    CivPick { leader: "Gandhi",    civ: "India",   trait_: "Religion / peace",  unique_unit: "Varu",           unique_building: "Stepwell",    leader_ability: "Satyagraha",                 civ_ability: "Dharma" },
+    CivPick { leader: "Pedro II",  civ: "Brazil",  trait_: "Cultural",          unique_unit: "Minas Geraes",   unique_building: "Street Carnival", leader_ability: "Magnanimous",            civ_ability: "Amazon" },
+    CivPick { leader: "Random",    civ: "?",       trait_: "surprise me",       unique_unit: "—",              unique_building: "—",           leader_ability: "—",                          civ_ability: "—" },
+];
+
+#[component]
+fn StepCiv() -> impl IntoView {
+    let selected = RwSignal::new("Saladin".to_string());
+
+    view! {
+        <div class="wizard-body single">
+            <Panel flush=true>
+                <PanelHead
+                    title="Pick your civilization".to_string()
+                    sub="// hover any leader to see their unique units & abilities"
+                />
+                <div class="panel-body">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px">
+                        {CIVS.iter().copied().map(|c| {
+                            let leader = c.leader;
+                            let civ = c.civ;
+                            let trait_ = c.trait_;
+                            let leader_initial = leader.chars().next().unwrap_or('?').to_string();
+
+                            let pick_for_click = leader.to_string();
+                            let pick_for_class = leader.to_string();
+
+                            let card_panel_style = move || {
+                                let is_sel = selected.get() == pick_for_class;
+                                if is_sel {
+                                    "cursor:pointer; padding:12px; width:100%; border-color:var(--accent); background:var(--accent-soft)"
+                                } else {
+                                    "cursor:pointer; padding:12px; width:100%; border-color:var(--hairline); background:var(--paper)"
+                                }
+                            };
+
+                            let popup_content = Arc::new(move || view! {
+                                <PopupBody>
+                                    <div style="font-weight:600; font-size:var(--fs-md)">
+                                        {leader} " · " {civ}
+                                    </div>
+                                    <p class="muted xsmall" style="margin-bottom:8px">
+                                        {trait_}
+                                    </p>
+                                    <div class="kv xsmall">
+                                        <span class="k">"unique unit"</span><span>{c.unique_unit}</span>
+                                        <span class="k">"unique bldg"</span><span>{c.unique_building}</span>
+                                        <span class="k">"leader ability"</span><span>{c.leader_ability}</span>
+                                        <span class="k">"civ ability"</span><span>{c.civ_ability}</span>
+                                    </div>
+                                </PopupBody>
+                                <PopupActions right=true>
+                                    <Btn variant="ghost" size="sm">"view full sheet"</Btn>
+                                    <Btn variant="primary" size="sm">"select"</Btn>
+                                </PopupActions>
+                            }.into_any());
+
+                            view! {
+                                <Popup
+                                    title="civ sheet"
+                                    content=popup_content
+                                >
+                                    <div
+                                        class="panel"
+                                        style=card_panel_style
+                                        on:click=move |_| selected.set(pick_for_click.clone())
+                                    >
+                                        <div class="row gap-sm">
+                                            <div style="width:40px; height:40px; \
+                                                        background:var(--ink); color:var(--paper); \
+                                                        display:grid; place-items:center; \
+                                                        font-family:var(--font-serif); font-size:22px">
+                                                {leader_initial}
+                                            </div>
+                                            <div style="min-width:0">
+                                                <div style="font-weight:600">{leader}</div>
+                                                <div class="muted xsmall">{civ}</div>
+                                                <div class="xsmall" style="margin-top:2px">{trait_}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Popup>
+                            }
+                        }).collect::<Vec<_>>()}
+                    </div>
+                </div>
+            </Panel>
         </div>
     }
 }

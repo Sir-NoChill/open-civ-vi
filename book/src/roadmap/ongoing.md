@@ -115,22 +115,21 @@ _(this section is the running tracker — items here are picked up by the
 next loop tick; mark items done in `accounts-and-login.md` and delete
 from this list when complete)_
 
-- [ ] **Phase 1 ▸ Migrate Trigger stubs to real Popups** — sweep the
-      `<Trigger>` call sites in landing.rs / login.rs / menu.rs /
-      profile.rs / newgame.rs and replace each with a `<Popup>`
-      wrapper, lifting the `title=` text into `Popup`'s `title` prop
-      and the previous tooltip text into a `PopupBody`. Smaller
-      cleanup but high-visibility — the design's whole "hover any
-      underlined word" affordance lights up after this.
+- [ ] **Phase 1 ▸ NewGame StepRules** — port
+      `docs/open4x-landing/project/hifi/newgame.jsx::StepRules`. Two
+      side-by-side panels: "Difficulty & pace" (difficulty Segmented
+      settler→deity, starting era, game speed, six victory toggles)
+      + "World dynamics" (disasters / barbarians slider 0-4,
+      city-states slider 0-24, AI aggression slider with
+      categorical labels, AI personality Segmented). Uses the Slider
+      primitive landed in `kpnxvpkm`.
 
 ### Up next (Phase 1)
 
-- [ ] NewGame StepCiv (civ picker grid + CivSheet popups)
-- [ ] NewGame StepRules (difficulty / victory / world dynamics) —
-      depends on Slider (✅) and Popup (✅)
 - [ ] NewGame StepPlayers (slot list + invite popup + turn-mode params)
-      — depends on Popup (✅)
 - [ ] Tweaks panel port (runtime density toggle)
+- [ ] Sweep remaining `<Trigger>` and `<span class="trigger">` sites
+      in menu.rs / newgame.rs / profile.rs into real Popups
 
 ## Civsim Non-REPL CLI — ALL 5 PHASES COMPLETE
 
