@@ -566,6 +566,60 @@ These don't fit cleanly into one phase but need to be settled early.
 
 Running record of work performed against this plan, newest at top.
 
+### Phase 3 — Lobby HTTP (2026-05-10, in progress)
+
+Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
+
+- `lvlvptxx` — docs(roadmap): pivot to Phase 3 before completing the
+  network half of OIDC and the atproto resolver. The session
+  validator already exists, so wiring email → cookie → `/me`
+  through the lobby gives the design a working sign-in loop while
+  the deeper auth providers ship under their own ticks.
+- `mkorpkkt` — feat(open4x-lobby): session-cookie middleware +
+  `RequireSession` extractor. `AppState::boot` opens / migrates
+  the sqlite db at `$OPEN4X_LOBBY_DATA_DIR/accounts.sqlite`, loads
+  the magic-link signer key, and defaults to `LogMailer`.
+  `session_layer` always runs; auth-required handlers pull the
+  resolved `PlayerId` via the extractor (missing →
+  `401 {error:"no_session"}`). Hand-rolled cookie parser with 3
+  unit tests.
+- `lnprrwmn` — feat(open4x-lobby): email magic-link auth route
+  pair + signout. `POST /api/v1/auth/email/start { email }`
+  validates, mints, records, mails. `GET /api/v1/auth/email/verify`
+  consumes the nonce, finds-or-creates the account, mints a
+  30-day session, sets the `lobby_session` cookie, redirects to
+  `/`. `POST /api/v1/auth/signout` revokes + clears. Smoke-tested
+  end-to-end.
+- `zyvslvzk` — feat(open4x-{accounts,lobby}): `/api/v1/me` reads,
+  writes, and delete. `AccountStore::get_by_player_id` added;
+  `MeView` wire shape exposes the hex `PlayerId` (never the raw
+  u64) plus the linked-identity list. `DELETE /me` cascades
+  sessions + identities via the FK. Smoke-tested.
+
+### Phase 2 — `open4x-accounts` substrate (2026-05-10, partial)
+
+- `kwtktvux` — feat(open4x-accounts): persistence layer (sqlite
+  store + migrations). `AccountStore` trait + `SqliteAccountStore`
+  + `MemAccountStore` test double. Four-table schema in
+  `0001_initial.sql` (accounts · identities · sessions ·
+  magic_link_nonces). `persistence` cargo feature +
+  `postgres` opt-in.
+- `lqpoutsu` — feat(open4x-accounts): `MagicLinkSigner` mint /
+  verify (Phase 2.2). HMAC-SHA256 envelope, single-use nonce
+  enforcement via `UPDATE-where-consumed_at-IS-NULL`,
+  `from_env_or_path` key resolver. 6 tests.
+- `ozlwxlus` — feat(open4x-accounts): pluggable `Mailer` trait +
+  `LogMailer`. `mailer-smtp` cargo feature stub. 2 tests.
+- `orplmxzv` — feat(open4x-accounts): session token mint /
+  validate / revoke (Phase 2.5). Bearer `lobby_<base64url(48)>`
+  hashed to SHA-256 hex in storage. `revoke_all_for_player` for
+  sign-out-everywhere. 5 tests.
+- `qsnnmnvs` — feat(open4x-accounts): OIDC config + PKCE + auth-URL
+  builder (Phase 2.3 part 1). Deterministic, network-free half
+  of the code-flow. Built-in factories for Google · GitLab ·
+  Microsoft + Custom. 7 tests. Discovery + exchange + ID-token
+  verify deferred to a follow-up commit.
+
 ### Phase 1 — Visual completeness (2026-05-10, complete)
 
 Driven by the `dfdcd4f5` cron tick. Conventional-commit chain:
