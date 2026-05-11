@@ -188,21 +188,51 @@ demonstrates the integration shape.
 ## CLI Server Mode (Parity Harness) — ACTIVE
 
 > **Plan**: [book/src/roadmap/cli-server-mode.md](./cli-server-mode.md)
-> **Status**: Phase 0 (scaffolding) + Phase 2 (REST-backed mutations)
-> in flight. Local CLI mode is untouched; `--server <URL>` opts into
-> the remote dispatcher.
+> **Status**: Phases 0–2 landed (`8e827da`, `1ac48a9`, `2a8f40c`).
+> Phase 3 (parity harness integration test) is the active next item;
+> Phase 4 (promoting ⛔ rows) is the long-tail follow-up.
+> **Cadence**: 15-min recurring loop — each tick picks the top
+> unchecked item below, lands a single conventional commit, then
+> updates this file.
 
-- [ ] Phase 0 — `--server` / `--token-file` flags, `ApiClient`,
+- [x] Phase 0 — `--server` / `--token-file` flags, `ApiClient`,
       session JSON, `new-game` + `end-turn` over REST
-- [ ] Phase 1 — read coverage (`view`, `status`, `list`)
-- [ ] Phase 2 — REST-backed `action` arms
+- [x] Phase 1 — read coverage (`view`, `status`, `list`)
+- [x] Phase 2 — REST-backed `action` arms (move, attack, found-city,
+      build, cancel-production, research, cancel-research,
+      study-civic, cancel-civic, adopt-government, assign-city-focus,
+      rename-city)
 - [ ] Phase 3 — parity harness integration test
+      (`open4x-cli/tests/remote_parity.rs`)
 - [ ] Phase 4 — promote ⛔ rows as new `GameAction` variants land
+
+### Phase 3 — Up next
+
+- [ ] `open4x-cli/tests/remote_parity.rs` — spin up an
+      `open4x-server` child process on an ephemeral port, drive a
+      fixed sequence (`new-game` → `action research` →
+      `action study-civic` → `action move` → `end-turn`) through the
+      remote dispatcher, assert each response has the expected wire
+      shape.
+- [ ] Capture a baseline JSON-line transcript under
+      `open4x-cli/tests/fixtures/remote_parity_baseline.txt` so the
+      test fails loudly if a projector field is renamed.
+
+### Phase 4 — Promotion queue
+
+As new `GameAction` + REST mutation pairs land (tracked in the
+"GameAction variants + REST mutations" section above), promote the
+matching `remote::action` arm out of the `_ => unsupported` catch-all
+and bump the parity matrix in `cli-server-mode.md`.
 
 ## Changelog (post-plan)
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `2a8f40c` — infra(dockerfiles): API-only server + cli compose stack.
+- `1ac48a9` — feat(open4x-cli): --server flag and remote HTTP
+  dispatcher (Phase 0/1/2 of the parity harness).
+- `8e827da` — docs(roadmap): add CLI server-mode parity-harness plan.
 - `ownpwskt` — feat(open4x-server): GameAction::ChangeGovernment +
   POST /government/change.
 - `nttqzwzx` — feat(open4x-server): GameAction::CancelCivic + DELETE
