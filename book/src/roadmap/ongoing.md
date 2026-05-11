@@ -185,15 +185,16 @@ demonstrates the integration shape.
 - [x] Phase 0–5 (see git log).
 - 554 tests, 0 failures.
 
-## CLI Server Mode (Parity Harness) — ACTIVE
+## CLI Server Mode (Parity Harness) — PAUSED
 
 > **Plan**: [book/src/roadmap/cli-server-mode.md](./cli-server-mode.md)
-> **Status**: Phases 0–2 landed (`8e827da`, `1ac48a9`, `2a8f40c`).
-> Phase 3 (parity harness integration test) is the active next item;
-> Phase 4 (promoting ⛔ rows) is the long-tail follow-up.
-> **Cadence**: 15-min recurring loop — each tick picks the top
-> unchecked item below, lands a single conventional commit, then
-> updates this file.
+> **Status**: Phases 0–3 landed; Phase 4 is an open-ended maintenance
+> queue with no actionable items right now (every current server
+> REST mutation already has a matching `remote::action` arm).
+> **Loop**: 15-min self-paced loop was cancelled (`CronDelete` on the
+> session-only job that had been spinning). Resume by scheduling a
+> new tick once a new `GameAction` + REST mutation pair lands — see
+> "Phase 4 trigger" below.
 
 - [x] Phase 0 — `--server` / `--token-file` flags, `ApiClient`,
       session JSON, `new-game` + `end-turn` over REST
@@ -203,8 +204,26 @@ demonstrates the integration shape.
       study-civic, cancel-civic, adopt-government, assign-city-focus,
       rename-city)
 - [x] Phase 3 — parity harness integration test
-      (`open4x-cli/tests/remote_parity.rs`, landed `bb56d09`)
-- [ ] Phase 4 — promote ⛔ rows as new `GameAction` variants land
+      (`open4x-cli/tests/remote_parity.rs`, landed `bb56d09`) +
+      baseline-transcript drift check (`912b6d7`)
+- [~] Phase 4 — promote ⛔ rows as new `GameAction` variants land
+      (open-ended; nothing to promote today — see Phase 4 trigger)
+
+### Phase 4 trigger
+
+Audit on `405b33d`: every `POST`/`DELETE` route in
+`open4x-server/src/server/rest/mod.rs` maps to an `ActionKind` arm in
+`open4x-cli/src/remote/action.rs`. When the next `GameAction` +
+REST mutation pair lands (track them under "GameAction variants +
+REST mutations" above), do three things in a single conventional
+commit:
+
+1. Add the matching arm to `remote/action.rs`.
+2. Promote the row in the parity matrix in `cli-server-mode.md`
+   from ⛔ to ✅ (or 🟡 + note the divergence).
+3. Extend `remote_parity.rs` (or `remote_parity_baseline.txt`) to
+   exercise it, regenerating the baseline with
+   `OPEN4X_UPDATE_BASELINE=1` if its output is shape-affecting.
 
 ### Phase 3 — Follow-ups
 
@@ -222,12 +241,6 @@ demonstrates the integration shape.
       HashMap-randomised tech / civic / policy registries.
       Regenerate with `OPEN4X_UPDATE_BASELINE=1`.
 
-### Phase 4 — Promotion queue
-
-As new `GameAction` + REST mutation pairs land (tracked in the
-"GameAction variants + REST mutations" section above), promote the
-matching `remote::action` arm out of the `_ => unsupported` catch-all
-and bump the parity matrix in `cli-server-mode.md`.
 
 ## Changelog (post-plan)
 
