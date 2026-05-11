@@ -1,0 +1,1902 @@
+=== new-game ===
+{
+  "ai": [
+    "Babylon"
+  ],
+  "civ_id": "<ULID>",
+  "game_id": "<ULID>",
+  "map_size": [
+    20,
+    12
+  ],
+  "mode": "remote",
+  "players": [
+    "Rome"
+  ],
+  "seed": 7,
+  "server": "<SERVER_URL>",
+  "session_file": "<SESSION_PATH>",
+  "success": true,
+  "turn": 0
+}
+
+=== status yields ===
+{
+  "era": "Ancient",
+  "era_progress": 0.0,
+  "happiness": 0,
+  "resources": {
+    "culture": {
+      "per_turn": 1,
+      "value": null
+    },
+    "faith": {
+      "per_turn": 0,
+      "value": 0
+    },
+    "food": {
+      "per_turn": 1,
+      "value": null
+    },
+    "gold": {
+      "per_turn": 0,
+      "value": 0
+    },
+    "production": {
+      "per_turn": 1,
+      "value": null
+    },
+    "science": {
+      "per_turn": 1,
+      "value": null
+    }
+  },
+  "strategic": {},
+  "turn": 0,
+  "turn_max": 500
+}
+
+=== status pending ===
+{
+  "items": [
+    {
+      "desc": "2/2 MP available",
+      "id": "unit_00000000M4Z855S5PTXJH3HMKD",
+      "kind": "unit",
+      "required": false,
+      "skip_label": "Sleep",
+      "target": {
+        "q": 11,
+        "r": 10,
+        "screen": "hud"
+      },
+      "title": "Unit at (11, 10)"
+    },
+    {
+      "desc": "2/2 MP available",
+      "id": "unit_00000000M55P43A0P38DV872X2",
+      "kind": "unit",
+      "required": false,
+      "skip_label": "Sleep",
+      "target": {
+        "q": 11,
+        "r": 10,
+        "screen": "hud"
+      },
+      "title": "Unit at (11, 10)"
+    },
+    {
+      "desc": "No civic is in progress — pick one to start studying.",
+      "id": "choose_civic",
+      "kind": "civic",
+      "required": true,
+      "skip_label": null,
+      "target": {
+        "q": null,
+        "r": null,
+        "screen": "culture"
+      },
+      "title": "Choose next civic"
+    },
+    {
+      "desc": "No tech is queued — pick one to start researching.",
+      "id": "choose_research",
+      "kind": "research",
+      "required": true,
+      "skip_label": null,
+      "target": {
+        "q": null,
+        "r": null,
+        "screen": "tech"
+      },
+      "title": "Choose next research"
+    },
+    {
+      "desc": "Pick a unit, building, or district to start producing.",
+      "id": "city_00000000M3Z9JYTBPBVD6R4E85",
+      "kind": "city",
+      "required": false,
+      "skip_label": null,
+      "target": {
+        "q": 11,
+        "r": 10,
+        "screen": "city"
+      },
+      "title": "Rome Capital has nothing in production"
+    }
+  ],
+  "turn": 0
+}
+
+=== list cities ===
+{
+  "cities": [
+    {
+      "capital": true,
+      "focus": "default",
+      "food_stored": 0,
+      "food_to_grow": 15,
+      "id": "<ULID>",
+      "is_own": true,
+      "name": "Rome Capital",
+      "owner": "Rome",
+      "population": 1,
+      "position": {
+        "q": 11,
+        "r": 10
+      },
+      "production_queue": [],
+      "production_stored": 0,
+      "territory_count": 7,
+      "worked_tile_count": 1
+    }
+  ]
+}
+
+=== action research Pottery ===
+{
+  "ok": true,
+  "turn_status": {
+    "ended": false,
+    "turn": 0
+  },
+  "view": {
+    "research_queue": [
+      "<ULID>"
+    ],
+    "techs": [
+      {
+        "cost": 2155,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Advanced AI",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Robot Factory."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Advanced Ballistics",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Power Plants."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Advanced Flight",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Biplanes."
+      },
+      {
+        "cost": 2155,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Advanced Power Cells",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Solar Farm."
+      },
+      {
+        "cost": 25,
+        "era": "Ancient",
+        "id": "<ULID>",
+        "name": "Animal Husbandry",
+        "prereqs": [],
+        "progress": null,
+        "status": "available",
+        "unlocks": "Find a tribal village."
+      },
+      {
+        "cost": 300,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Apprenticeship",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Mines."
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Archery",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill a unit."
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Astrology",
+        "prereqs": [],
+        "progress": null,
+        "status": "available",
+        "unlocks": "Find a Natural Wonder."
+      },
+      {
+        "cost": 660,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Astronomy",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a University adjacent to a Mountain."
+      },
+      {
+        "cost": 845,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Ballistics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 2 Forts in your territory."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Banking",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have the Feudalism civic."
+      },
+      {
+        "cost": 80,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Bronze Working",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill 3 units."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Cartography",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Harbors."
+      },
+      {
+        "cost": 390,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Castles",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have a government with 6 policy slots."
+      },
+      {
+        "cost": 120,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Celestial Navigation",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Improve 2 sea resources."
+      },
+      {
+        "cost": 1250,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Chemistry",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Complete a Research Agreement."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Combined Arms",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Airstrip."
+      },
+      {
+        "cost": 1250,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Combustion",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Extract an Artifact."
+      },
+      {
+        "cost": 1850,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Composites",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Tanks."
+      },
+      {
+        "cost": 1580,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Computers",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have a government with 8 policy slots."
+      },
+      {
+        "cost": 200,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Construction",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Water Mill."
+      },
+      {
+        "cost": 120,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Currency",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Make a trade route."
+      },
+      {
+        "cost": 2500,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Cybernetics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build the Giant Death Robot."
+      },
+      {
+        "cost": 970,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Economics",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Banks."
+      },
+      {
+        "cost": 390,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Education",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Earn a Great Scientist."
+      },
+      {
+        "cost": 1250,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Electricity",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Own 3 Privateers."
+      },
+      {
+        "cost": 200,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Engineering",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build Ancient Walls."
+      },
+      {
+        "cost": 1140,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Flight",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Industrial-era or later wonder."
+      },
+      {
+        "cost": 2500,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Future Tech",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>",
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": ""
+      },
+      {
+        "cost": 1850,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Guidance Systems",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill a Fighter."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Gunpowder",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Armory."
+      },
+      {
+        "cost": 120,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Horseback Riding",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Pasture."
+      },
+      {
+        "cost": 845,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Industrialization",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Workshops."
+      },
+      {
+        "cost": 120,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Iron Working",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Iron Mine."
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Irrigation",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Find a Floodplain or River."
+      },
+      {
+        "cost": 1850,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Lasers",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Boost through a Great Scientist."
+      },
+      {
+        "cost": 300,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Machinery",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Own 3 Archers."
+      },
+      {
+        "cost": 80,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Masonry",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Quarry."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Mass Production",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Lumber Mill."
+      },
+      {
+        "cost": 200,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Mathematics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 different specialty districts."
+      },
+      {
+        "cost": 660,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Metal Casting",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Own 2 Crossbowmen."
+      },
+      {
+        "cost": 390,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Military Engineering",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Aqueduct."
+      },
+      {
+        "cost": 845,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Military Science",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill a unit with a Knight."
+      },
+      {
+        "cost": 300,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Military Tactics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill a unit with a Spearman."
+      },
+      {
+        "cost": 25,
+        "era": "Ancient",
+        "id": "<ULID>",
+        "name": "Mining",
+        "prereqs": [],
+        "progress": null,
+        "status": "available",
+        "unlocks": "Clear a Forest or Rainforest."
+      },
+      {
+        "cost": 2155,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Nanotechnology",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Aluminum Mine."
+      },
+      {
+        "cost": 1580,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Nuclear Fission",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Boost through a Great Scientist."
+      },
+      {
+        "cost": 2155,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Nuclear Fusion",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Boost through a Great Scientist."
+      },
+      {
+        "cost": 2500,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Offworld Mission",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Launch an Exoplanet Expedition."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Plastics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Research Lab."
+      },
+      {
+        "cost": 25,
+        "era": "Ancient",
+        "id": "<ULID>",
+        "name": "Pottery",
+        "prereqs": [],
+        "progress": 0,
+        "status": "current",
+        "unlocks": "Harvest any resource."
+      },
+      {
+        "cost": 2500,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Predictive Systems",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Broadcast Center."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Printing",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Universities."
+      },
+      {
+        "cost": 1250,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Radio",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a National Park."
+      },
+      {
+        "cost": 1140,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Replaceable Parts",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Own 3 Musketmen."
+      },
+      {
+        "cost": 970,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Rifling",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Niter Mine."
+      },
+      {
+        "cost": 2155,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Robotics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have the Globalization civic."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Rocketry",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Boost through a Great Scientist."
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Sailing",
+        "prereqs": [],
+        "progress": null,
+        "status": "available",
+        "unlocks": "Found a city on the coast."
+      },
+      {
+        "cost": 970,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Sanitation",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Neighborhoods."
+      },
+      {
+        "cost": 1850,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Satellites",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Boost through a Great Scientist."
+      },
+      {
+        "cost": 845,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Scientific Theory",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have the Enlightenment civic."
+      },
+      {
+        "cost": 2155,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Seasteads",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Seastead."
+      },
+      {
+        "cost": 200,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Shipbuilding",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Own 2 Galleys."
+      },
+      {
+        "cost": 660,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Siege Tactics",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Earn a Great Engineer."
+      },
+      {
+        "cost": 2500,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Smart Materials",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Solar Farms."
+      },
+      {
+        "cost": 660,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Square Rigging",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill a unit with a Musketman."
+      },
+      {
+        "cost": 1850,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Stealth Technology",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Boost through a Great Scientist."
+      },
+      {
+        "cost": 970,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Steam Power",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Shipyards."
+      },
+      {
+        "cost": 1140,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Steel",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Coal Mine."
+      },
+      {
+        "cost": 390,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Stirrups",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Stable."
+      },
+      {
+        "cost": 1580,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Synthetic Materials",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Aerodrome."
+      },
+      {
+        "cost": 1850,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Telecommunications",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Broadcast Centers."
+      },
+      {
+        "cost": 80,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "The Wheel",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Quarry."
+      },
+      {
+        "cost": 4294967295,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Unreachable",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": ""
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Writing",
+        "prereqs": [],
+        "progress": null,
+        "status": "available",
+        "unlocks": "Meet another civilization."
+      }
+    ]
+  }
+}
+
+=== action study-civic Code of Laws ===
+{
+  "ok": true,
+  "turn_status": {
+    "ended": false,
+    "turn": 0
+  },
+  "view": {
+    "civic_queue": [
+      "<ULID>"
+    ],
+    "civics": [
+      {
+        "cost": 1560,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Capitalism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Stock Exchanges."
+      },
+      {
+        "cost": 920,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Civil Engineering",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 7 different specialty districts."
+      },
+      {
+        "cost": 275,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Civil Service",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Grow a city to 10 population."
+      },
+      {
+        "cost": 1715,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Class Struggle",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Factories."
+      },
+      {
+        "cost": 20,
+        "era": "Ancient",
+        "id": "<ULID>",
+        "name": "Code of Laws",
+        "prereqs": [],
+        "progress": 0,
+        "status": "current",
+        "unlocks": "Found your first city."
+      },
+      {
+        "cost": 2185,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Cold War",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Research Nuclear Fission."
+      },
+      {
+        "cost": 725,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Colonialism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Research the Astronomy technology."
+      },
+      {
+        "cost": 1255,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Conservation",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have a Neighborhood with Breathtaking Appeal."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Corporate Libertarianism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 5 trade routes."
+      },
+      {
+        "cost": 40,
+        "era": "Ancient",
+        "id": "<ULID>",
+        "name": "Craftsmanship",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 tile improvements."
+      },
+      {
+        "cost": 3200,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Cultural Hegemony",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have cultural dominance over another civ."
+      },
+      {
+        "cost": 1955,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Cultural Heritage",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have a themed building."
+      },
+      {
+        "cost": 175,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Defensive Tactics",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Be the target of a declaration of war."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Digital Democracy",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 2 tier-3 buildings in every district type."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Diplomatic Service",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Ally with a city-state."
+      },
+      {
+        "cost": 290,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Divine Right",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Temples."
+      },
+      {
+        "cost": 110,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Drama & Poetry",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Wonder."
+      },
+      {
+        "cost": 70,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Early Empire",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Reach a population of 6."
+      },
+      {
+        "cost": 2415,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Environmentalism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Solar Farm or Wind Farm."
+      },
+      {
+        "cost": 3200,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Exodus Imperative",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Launch an Exoplanet Expedition."
+      },
+      {
+        "cost": 400,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Exploration",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Caravels."
+      },
+      {
+        "cost": 275,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Feudalism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 6 Farms."
+      },
+      {
+        "cost": 40,
+        "era": "Ancient",
+        "id": "<ULID>",
+        "name": "Foreign Trade",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Find a second continent."
+      },
+      {
+        "cost": 3200,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Future Civic",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": ""
+      },
+      {
+        "cost": 110,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Games & Recreation",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Entertainment Complex."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Globalization",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Airports."
+      },
+      {
+        "cost": 385,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Guilds",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Markets."
+      },
+      {
+        "cost": 540,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Humanism",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Earn a Great Artist."
+      },
+      {
+        "cost": 660,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Ideology",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 2 Policies slotted."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Information Warfare",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Complete an espionage operation."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Mass Media",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Research Radio."
+      },
+      {
+        "cost": 385,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Medieval Faires",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 4 trade routes."
+      },
+      {
+        "cost": 655,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Mercantilism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Earn a Great Merchant."
+      },
+      {
+        "cost": 290,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Mercenaries",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 8 land combat units."
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Military Tradition",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Clear a Barbarian Camp."
+      },
+      {
+        "cost": 120,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Military Training",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Encampment."
+      },
+      {
+        "cost": 1410,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Mobilization",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 3 Corps in your military."
+      },
+      {
+        "cost": 50,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "Mysticism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Found a pantheon."
+      },
+      {
+        "cost": 920,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Nationalism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Declare war using a Casus Belli."
+      },
+      {
+        "cost": 870,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Natural History",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Archaeological Museums."
+      },
+      {
+        "cost": 200,
+        "era": "Renaissance",
+        "id": "<ULID>",
+        "name": "Naval Tradition",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Kill a unit with a Quadrireme."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Near Future Governance",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Future Era buildings."
+      },
+      {
+        "cost": 1715,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Nuclear Program",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Research Lab."
+      },
+      {
+        "cost": 725,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Opera & Ballet",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Art Museums."
+      },
+      {
+        "cost": 110,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Political Philosophy",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Meet 3 city-states."
+      },
+      {
+        "cost": 2185,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Professional Sports",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 4 Entertainment Complexes."
+      },
+      {
+        "cost": 2415,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Rapid Deployment",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build an Aerodrome or Airstrip on a foreign continent."
+      },
+      {
+        "cost": 175,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Recorded History",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Campus districts."
+      },
+      {
+        "cost": 400,
+        "era": "Industrial",
+        "id": "<ULID>",
+        "name": "Reformed Church",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have 6 cities following your religion."
+      },
+      {
+        "cost": 1060,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Scorched Earth",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 2 Field Cannons."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Social Media",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Have the highest Tourism output."
+      },
+      {
+        "cost": 2415,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Space Race",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a Spaceport."
+      },
+      {
+        "cost": 70,
+        "era": "Classical",
+        "id": "<ULID>",
+        "name": "State Workforce",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build a district."
+      },
+      {
+        "cost": 1715,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Suffrage",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 4 Neighborhoods."
+      },
+      {
+        "cost": 2880,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Synthetic Technocracy",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Research a Future Era technology."
+      },
+      {
+        "cost": 655,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "The Enlightenment",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Earn 3 Great People."
+      },
+      {
+        "cost": 120,
+        "era": "Medieval",
+        "id": "<ULID>",
+        "name": "Theology",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Found a religion."
+      },
+      {
+        "cost": 1715,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Totalitarianism",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Build 3 Military Academies."
+      },
+      {
+        "cost": 4294967295,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Unreachable",
+        "prereqs": [
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": ""
+      },
+      {
+        "cost": 1060,
+        "era": "Modern+",
+        "id": "<ULID>",
+        "name": "Urbanization",
+        "prereqs": [
+          "<ULID>",
+          "<ULID>"
+        ],
+        "progress": null,
+        "status": "locked",
+        "unlocks": "Grow a city to 15 population."
+      }
+    ]
+  }
+}
+
+=== end-turn ===
+{
+  "ok": true,
+  "turn_status": {
+    "ended": false,
+    "turn": 1
+  },
+  "view": {
+    "turn": 1
+  }
+}
+
+=== status yields (turn 1) ===
+{
+  "era": "Ancient",
+  "era_progress": 0.0,
+  "happiness": 0,
+  "resources": {
+    "culture": {
+      "per_turn": 1,
+      "value": null
+    },
+    "faith": {
+      "per_turn": 0,
+      "value": 0
+    },
+    "food": {
+      "per_turn": 1,
+      "value": null
+    },
+    "gold": {
+      "per_turn": 0,
+      "value": 0
+    },
+    "production": {
+      "per_turn": 1,
+      "value": null
+    },
+    "science": {
+      "per_turn": 1,
+      "value": null
+    }
+  },
+  "strategic": {},
+  "turn": 1,
+  "turn_max": 500
+}
+

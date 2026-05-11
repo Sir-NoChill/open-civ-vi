@@ -313,3 +313,169 @@ fn remote_action_unsupported_errors_cleanly() {
     let _ = std::fs::remove_file(&session_path);
 }
 
+// ── baseline-transcript test ───────────────────────────────────────────────
+
+/// Walks a fixed happy-path sequence and captures each step's JSON
+/// output (normalized to strip per-run variability: ULIDs, bearer
+/// tokens, ephemeral ports, temp session paths) into a transcript
+/// checked into the repo. The diff catches projector regressions —
+/// if a field rename slips through the shape-only asserts above,
+/// the transcript drift surfaces it.
+///
+/// To regenerate after an intentional projector change:
+///
+/// ```sh
+/// OPEN4X_UPDATE_BASELINE=1 cargo test -p open4x-cli \
+///     --test remote_parity remote_parity_baseline
+/// ```
+#[test]
+fn remote_parity_baseline() {
+    let server = ServerHandle::new();
+    let url = server.base_url();
+    let session_path = temp_session_file("baseline");
+    let _ = std::fs::remove_file(&session_path);
+
+    // Fixed sequence. Avoid actions whose outcome depends on
+    // randomised starting positions (e.g. `move` to a specific
+    // tile) — the baseline must be fully deterministic for the
+    // given seed.
+    let steps: &[(&str, &[&str])] = &[
+        ("new-game", &[
+            "new-game", "--width", "20", "--height", "12",
+            "--seed", "7", "--player", "Rome", "--ai", "Babylon",
+        ]),
+        ("status yields", &["status", "yields"]),
+        ("status pending", &["status", "pending"]),
+        ("list cities", &["list", "cities"]),
+        ("action research Pottery", &["action", "research", "--tech", "Pottery"]),
+        ("action study-civic Code of Laws", &["action", "study-civic", "--civic", "Code of Laws"]),
+        ("end-turn", &["end-turn"]),
+        ("status yields (turn 1)", &["status", "yields"]),
+    ];
+
+    let mut transcript = String::new();
+    for (label, args) in steps {
+        let (ok, mut body) = run_remote(&url, &session_path, args);
+        assert!(ok, "baseline step {label:?} failed: {body}");
+        normalize(&mut body);
+        transcript.push_str(&format!("=== {label} ===\n"));
+        transcript.push_str(&serde_json::to_string_pretty(&body).unwrap());
+        transcript.push_str("\n\n");
+    }
+
+    let baseline_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/remote_parity_baseline.txt");
+
+    if std::env::var("OPEN4X_UPDATE_BASELINE").is_ok() {
+        std::fs::create_dir_all(baseline_path.parent().unwrap()).unwrap();
+        std::fs::write(&baseline_path, &transcript).expect("write baseline");
+        eprintln!("Updated baseline: {}", baseline_path.display());
+    } else {
+        let expected = std::fs::read_to_string(&baseline_path).unwrap_or_else(|_| {
+            panic!(
+                "no baseline at {} — run `OPEN4X_UPDATE_BASELINE=1 cargo test \
+                 -p open4x-cli --test remote_parity remote_parity_baseline` to create one",
+                baseline_path.display(),
+            );
+        });
+        if expected != transcript {
+            let diff = first_diff(&expected, &transcript);
+            panic!(
+                "transcript drift vs. baseline. If intentional (projector change), \
+                 regenerate with OPEN4X_UPDATE_BASELINE=1.\n\n{diff}"
+            );
+        }
+    }
+
+    let _ = std::fs::remove_file(&session_path);
+}
+
+/// Walk a `Value` and replace per-run-variable fields. Keeps wire
+/// shape and stable content; drops random tokens / IDs / ports /
+/// paths. Also sorts arrays of objects by their `id` field (after
+/// the ID itself has been masked to `<ULID>`, we sort by the next
+/// most-stable key — `name` — when present). This is necessary
+/// because libciv's tech / civic / policy registries are HashMap-
+/// backed, so the server projector emits them in hash-randomized
+/// order. Sorting on the client side keeps the baseline stable
+/// while still catching set-level regressions (drops, additions,
+/// content changes).
+fn normalize(v: &mut Value) {
+    match v {
+        Value::String(s) => {
+            if is_ulid(s) {
+                *s = "<ULID>".into();
+            }
+        }
+        Value::Object(map) => {
+            let keys: Vec<String> = map.keys().cloned().collect();
+            for k in keys {
+                let val = map.get_mut(&k).unwrap();
+                match k.as_str() {
+                    "token" => *val = Value::String("<TOKEN>".into()),
+                    "session_file" => *val = Value::String("<SESSION_PATH>".into()),
+                    "server" => *val = Value::String("<SERVER_URL>".into()),
+                    _ => normalize(val),
+                }
+            }
+        }
+        Value::Array(a) => {
+            for elem in a.iter_mut() {
+                normalize(elem);
+            }
+            // After children are normalized, sort if every element is
+            // an object — by `name` first, then by the rendered
+            // string of the entry as a tiebreaker.
+            if !a.is_empty() && a.iter().all(Value::is_object) {
+                a.sort_by(|x, y| sort_key(x).cmp(&sort_key(y)));
+            }
+        }
+        _ => {}
+    }
+}
+
+fn sort_key(v: &Value) -> String {
+    let name = v.get("name").and_then(Value::as_str).unwrap_or("");
+    if !name.is_empty() {
+        return name.to_string();
+    }
+    // No name — fall back to the serialized representation. This is
+    // stable across runs because every child has already been
+    // normalized (IDs are <ULID>, tokens are <TOKEN>, etc).
+    v.to_string()
+}
+
+fn is_ulid(s: &str) -> bool {
+    s.len() == 26
+        && s.chars().all(|c| {
+            matches!(
+                c,
+                '0'..='9'
+                | 'A'..='H'
+                | 'J' | 'K' | 'M' | 'N'
+                | 'P'..='T'
+                | 'V'..='Z'
+            )
+        })
+}
+
+/// Short diff hint: byte position + ~200 bytes of context on both
+/// sides. Cheap regression signal without pulling in `pretty_assertions`.
+fn first_diff(expected: &str, actual: &str) -> String {
+    let mismatch = expected
+        .as_bytes()
+        .iter()
+        .zip(actual.as_bytes())
+        .position(|(a, b)| a != b)
+        .unwrap_or(expected.len().min(actual.len()));
+    let start = mismatch.saturating_sub(80);
+    let exp_end = (mismatch + 200).min(expected.len());
+    let act_end = (mismatch + 200).min(actual.len());
+    format!(
+        "first diff at byte {mismatch}\n\
+         expected: ...{}\n\
+         actual:   ...{}",
+        &expected[start..exp_end],
+        &actual[start..act_end],
+    )
+}
