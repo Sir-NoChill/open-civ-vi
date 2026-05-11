@@ -7,6 +7,23 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(name = "open4x", about = "Civilization VI game engine CLI", version)]
 pub struct Cli {
+    /// API base URL of an open4x-server instance. When set, every
+    /// subcommand dispatches over HTTP instead of running the rules
+    /// engine in-process. See book/src/roadmap/cli-server-mode.md.
+    #[arg(long, env = "OPEN4X_SERVER_URL", global = true)]
+    pub server: Option<String>,
+
+    /// Path to the JSON file holding the bearer token + game/civ IDs
+    /// returned by `new-game` in server mode. `new-game` writes it;
+    /// every other subcommand reads it. Ignored without `--server`.
+    #[arg(
+        long,
+        env = "OPEN4X_TOKEN_FILE",
+        global = true,
+        default_value = ".open4x-session.json",
+    )]
+    pub token_file: PathBuf,
+
     #[command(subcommand)]
     pub command: Command,
 }
@@ -15,9 +32,11 @@ pub struct Cli {
 pub enum Command {
     /// Create a new game and write initial state to disk
     NewGame {
-        /// Path to write the new game file
+        /// Path to write the new game file (required in local mode;
+        /// ignored in `--server` mode where the session JSON holds
+        /// the game ID instead).
         #[arg(long)]
-        game_file: PathBuf,
+        game_file: Option<PathBuf>,
         /// RNG seed
         #[arg(long, default_value_t = 42)]
         seed: u64,
@@ -39,52 +58,63 @@ pub enum Command {
     },
     /// Perform a single game action
     Action {
-        /// Path to the game state file
+        /// Path to the game state file (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        game_file: PathBuf,
-        /// Player performing the action
+        game_file: Option<PathBuf>,
+        /// Player performing the action (required in local mode;
+        /// in `--server` mode the bearer token already identifies
+        /// the civ).
         #[arg(long)]
-        player: String,
+        player: Option<String>,
         #[command(subcommand)]
         action: ActionKind,
     },
     /// End a player's turn
     EndTurn {
-        /// Path to the game state file
+        /// Path to the game state file (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        game_file: PathBuf,
-        /// Player ending their turn
+        game_file: Option<PathBuf>,
+        /// Player ending their turn (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        player: String,
+        player: Option<String>,
     },
     /// Export player-visible state (fog-of-war filtered)
     View {
-        /// Path to the game state file
+        /// Path to the game state file (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        game_file: PathBuf,
-        /// Player whose view to export
+        game_file: Option<PathBuf>,
+        /// Player whose view to export (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        player: String,
+        player: Option<String>,
     },
     /// Read-only queries against the game state
     Status {
-        /// Path to the game state file
+        /// Path to the game state file (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        game_file: PathBuf,
-        /// Player perspective (for fog-of-war filtering)
+        game_file: Option<PathBuf>,
+        /// Player perspective for fog-of-war filtering (required in
+        /// local mode; ignored in `--server` mode).
         #[arg(long)]
-        player: String,
+        player: Option<String>,
         #[command(subcommand)]
         kind: StatusKind,
     },
     /// List available items
     List {
-        /// Path to the game state file
+        /// Path to the game state file (required in local mode;
+        /// ignored in `--server` mode).
         #[arg(long)]
-        game_file: PathBuf,
-        /// Player whose available items to list
+        game_file: Option<PathBuf>,
+        /// Player whose available items to list (required in local
+        /// mode; ignored in `--server` mode).
         #[arg(long)]
-        player: String,
+        player: Option<String>,
         #[command(subcommand)]
         kind: ListKind,
     },

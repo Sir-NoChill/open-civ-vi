@@ -2,6 +2,7 @@ mod cli;
 mod handlers;
 mod output;
 mod player_view;
+mod remote;
 mod repl;
 mod state_io;
 
@@ -32,9 +33,22 @@ use libhexgrid::coord::HexCoord;
 
 fn main() {
     let parsed = cli::Cli::parse();
+
+    // Server mode: dispatch every subcommand over HTTP instead of
+    // running the rules engine in-process. Plan:
+    // book/src/roadmap/cli-server-mode.md.
+    if let Some(server_url) = parsed.server.as_deref() {
+        if let Err(e) = remote::dispatch(server_url, &parsed.token_file, parsed.command) {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     match parsed.command {
         // ── New CLI commands ─────────────────────────────────────────────
         cli::Command::NewGame { game_file, seed, width, height, player, ai, victory: _ } => {
+            let game_file = require_game_file(game_file);
             if let Err(e) = handlers::new_game::handle_new_game(
                 &game_file, seed, width, height, &player, &ai,
             ) {
@@ -43,30 +57,40 @@ fn main() {
             }
         }
         cli::Command::Action { game_file, player, action } => {
+            let game_file = require_game_file(game_file);
+            let player = require_player(player);
             if let Err(e) = handlers::action::handle_action(&game_file, &player, &action) {
                 eprintln!("Error: {e}");
                 std::process::exit(1);
             }
         }
         cli::Command::EndTurn { game_file, player } => {
+            let game_file = require_game_file(game_file);
+            let player = require_player(player);
             if let Err(e) = handlers::end_turn::handle_end_turn(&game_file, &player) {
                 eprintln!("Error: {e}");
                 std::process::exit(1);
             }
         }
         cli::Command::View { game_file, player } => {
+            let game_file = require_game_file(game_file);
+            let player = require_player(player);
             if let Err(e) = handlers::view::handle_view(&game_file, &player) {
                 eprintln!("Error: {e}");
                 std::process::exit(1);
             }
         }
         cli::Command::Status { game_file, player, kind } => {
+            let game_file = require_game_file(game_file);
+            let player = require_player(player);
             if let Err(e) = handlers::status::handle_status(&game_file, &player, &kind) {
                 eprintln!("Error: {e}");
                 std::process::exit(1);
             }
         }
         cli::Command::List { game_file, player, kind } => {
+            let game_file = require_game_file(game_file);
+            let player = require_player(player);
             if let Err(e) = handlers::list::handle_list(&game_file, &player, &kind) {
                 eprintln!("Error: {e}");
                 std::process::exit(1);
@@ -91,6 +115,22 @@ fn main() {
             run_ai_demo(turns, seed, board_every);
         }
     }
+}
+
+// ── Local-mode arg validation ────────────────────────────────────────────────
+
+fn require_game_file(opt: Option<std::path::PathBuf>) -> std::path::PathBuf {
+    opt.unwrap_or_else(|| {
+        eprintln!("Error: --game-file is required in local mode (omit by setting --server <URL>)");
+        std::process::exit(1);
+    })
+}
+
+fn require_player(opt: Option<String>) -> String {
+    opt.unwrap_or_else(|| {
+        eprintln!("Error: --player is required in local mode (omit by setting --server <URL>)");
+        std::process::exit(1);
+    })
 }
 
 // ── Session ───────────────────────────────────────────────────────────────────
