@@ -246,6 +246,8 @@ commit:
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `c62fe60` — docs(roadmap): pause CLI server-mode loop; Phase 4
+  awaits a new server-side `GameAction` + REST mutation pair.
 - `912b6d7` — tests(open4x-cli): baseline-transcript drift check
   (Phase 3 follow-up — normalized + sorted JSON fixture).
 - `bb56d09` — tests(open4x-cli): remote-parity integration test
