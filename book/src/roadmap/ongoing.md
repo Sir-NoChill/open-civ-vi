@@ -214,10 +214,13 @@ demonstrates the integration shape.
       research`/`study-civic`/`move` → `end-turn` (turn 0→1).
       Second test asserts unsupported actions exit non-zero with a
       clear stderr message.
-- [ ] Capture a baseline JSON-line transcript under
+- [x] Capture a baseline JSON-line transcript under
       `open4x-cli/tests/fixtures/remote_parity_baseline.txt` so the
-      test fails loudly if a projector field is renamed (vs. just
-      checking shape today).
+      test fails loudly if a projector field is renamed (landed
+      `912b6d7`). Normalizer masks ULIDs / tokens / ports / paths
+      and sorts arrays of objects by `name` to stabilise the
+      HashMap-randomised tech / civic / policy registries.
+      Regenerate with `OPEN4X_UPDATE_BASELINE=1`.
 
 ### Phase 4 — Promotion queue
 
@@ -230,6 +233,8 @@ and bump the parity matrix in `cli-server-mode.md`.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `912b6d7` — tests(open4x-cli): baseline-transcript drift check
+  (Phase 3 follow-up — normalized + sorted JSON fixture).
 - `bb56d09` — tests(open4x-cli): remote-parity integration test
   (Phase 3 of the CLI server-mode plan).
 - `2a8f40c` — infra(dockerfiles): API-only server + cli compose stack.
