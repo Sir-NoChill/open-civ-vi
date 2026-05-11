@@ -53,3 +53,4 @@
 - [Remaining TODOs](./roadmap/todo.md)
 - [Web UI Port (Leptos REST)](./roadmap/web-ui.md)
 - [Accounts and Login](./roadmap/accounts-and-login.md)
+- [CLI Server Mode (Parity Harness)](./roadmap/cli-server-mode.md)

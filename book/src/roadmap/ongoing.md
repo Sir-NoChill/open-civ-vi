@@ -185,6 +185,20 @@ demonstrates the integration shape.
 - [x] Phase 0–5 (see git log).
 - 554 tests, 0 failures.
 
+## CLI Server Mode (Parity Harness) — ACTIVE
+
+> **Plan**: [book/src/roadmap/cli-server-mode.md](./cli-server-mode.md)
+> **Status**: Phase 0 (scaffolding) + Phase 2 (REST-backed mutations)
+> in flight. Local CLI mode is untouched; `--server <URL>` opts into
+> the remote dispatcher.
+
+- [ ] Phase 0 — `--server` / `--token-file` flags, `ApiClient`,
+      session JSON, `new-game` + `end-turn` over REST
+- [ ] Phase 1 — read coverage (`view`, `status`, `list`)
+- [ ] Phase 2 — REST-backed `action` arms
+- [ ] Phase 3 — parity harness integration test
+- [ ] Phase 4 — promote ⛔ rows as new `GameAction` variants land
+
 ## Changelog (post-plan)
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
