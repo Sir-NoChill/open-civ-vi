@@ -202,21 +202,22 @@ demonstrates the integration shape.
       build, cancel-production, research, cancel-research,
       study-civic, cancel-civic, adopt-government, assign-city-focus,
       rename-city)
-- [ ] Phase 3 — parity harness integration test
-      (`open4x-cli/tests/remote_parity.rs`)
+- [x] Phase 3 — parity harness integration test
+      (`open4x-cli/tests/remote_parity.rs`, landed `bb56d09`)
 - [ ] Phase 4 — promote ⛔ rows as new `GameAction` variants land
 
-### Phase 3 — Up next
+### Phase 3 — Follow-ups
 
-- [ ] `open4x-cli/tests/remote_parity.rs` — spin up an
-      `open4x-server` child process on an ephemeral port, drive a
-      fixed sequence (`new-game` → `action research` →
-      `action study-civic` → `action move` → `end-turn`) through the
-      remote dispatcher, assert each response has the expected wire
-      shape.
+- [x] `open4x-cli/tests/remote_parity.rs` — spawns a real
+      `open4x-server` child on an ephemeral port and walks
+      `new-game` → reads → required-actions gate → `action
+      research`/`study-civic`/`move` → `end-turn` (turn 0→1).
+      Second test asserts unsupported actions exit non-zero with a
+      clear stderr message.
 - [ ] Capture a baseline JSON-line transcript under
       `open4x-cli/tests/fixtures/remote_parity_baseline.txt` so the
-      test fails loudly if a projector field is renamed.
+      test fails loudly if a projector field is renamed (vs. just
+      checking shape today).
 
 ### Phase 4 — Promotion queue
 
@@ -229,6 +230,8 @@ and bump the parity matrix in `cli-server-mode.md`.
 
 Most recent first. Each entry: `<jj change short> — <subject>`.
 
+- `bb56d09` — tests(open4x-cli): remote-parity integration test
+  (Phase 3 of the CLI server-mode plan).
 - `2a8f40c` — infra(dockerfiles): API-only server + cli compose stack.
 - `1ac48a9` — feat(open4x-cli): --server flag and remote HTTP
   dispatcher (Phase 0/1/2 of the parity harness).
