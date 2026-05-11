@@ -1,0 +1,56 @@
+# Compose stack for the CLI ⇄ server parity harness.
+#
+# Plan: ../book/src/roadmap/cli-server-mode.md
+#
+# Run from this directory:
+#
+#   docker compose build
+#   docker compose up -d server
+#   docker compose run --rm cli new-game --width 30 --height 18 --seed 1 \
+#                                        --player Rome --ai Babylon
+#   docker compose run --rm cli status yields
+#   docker compose run --rm cli list units
+#   docker compose run --rm cli end-turn
+#   docker compose down
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: dockerfiles/server.Dockerfile
+    image: open4x-server:dev
+    ports:
+      # Expose 3001 on the host so you can also hit the API directly
+      # (curl, browser, the local non-docker CLI) for ad-hoc testing.
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+    healthcheck:
+      # The root /health endpoint is a plain "ok" string — perfect
+      # for a one-shot wget probe.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+
+  cli:
+    build:
+      context: ..
+      dockerfile: dockerfiles/cli.Dockerfile
+    image: open4x-cli:dev
+    depends_on:
+      server:
+        condition: service_healthy
+    environment:
+      # Picked up by the global --server flag (clap `env = ...`).
+      OPEN4X_SERVER_URL: "http://server:3001"
+      OPEN4X_TOKEN_FILE: "/work/.open4x-session.json"
+    volumes:
+      # Persist the session JSON across `docker compose run` invocations.
+      - open4x-session:/work
+    # No `command:` — every invocation passes args after `cli`:
+    #   docker compose run --rm cli <subcommand> [args...]
+
+volumes:
+  open4x-session:
