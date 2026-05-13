@@ -52,5 +52,6 @@
 - [Implementation Status](./roadmap/status.md)
 - [Remaining TODOs](./roadmap/todo.md)
 - [Web UI Port (Leptos REST)](./roadmap/web-ui.md)
+- [Crate Split (Protocol, SDK, Client)](./roadmap/crate-split.md)
 - [Accounts and Login](./roadmap/accounts-and-login.md)
 - [CLI Server Mode (Parity Harness)](./roadmap/cli-server-mode.md)
