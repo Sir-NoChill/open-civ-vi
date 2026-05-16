@@ -1,0 +1,25 @@
+[package]
+name = "open4x-client-web"
+version = "0.1.0"
+edition = "2024"
+description = "Leptos/WASM web client for open4x. Mounts to a static index.html, fetches via open4x-sdk, renders via Leptos + (future) WebGL."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+open4x-protocol = { path = "../open4x-protocol" }
+# open4x-sdk dep added in Phase 4 once the wasm backend lands. Phase 0
+# keeps this crate dep-light so a stub native build stays cheap.
+
+# WASM-only deps. Listed unconditionally because they all compile for
+# native (no-op on non-wasm); the cdylib only matters under
+# `--target wasm32-unknown-unknown`.
+wasm-bindgen             = { version = "0.2" }
+console_error_panic_hook = { version = "0.1" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# These pull in browser APIs and only make sense for the wasm build.
+# Phase 4 expands this to match the current open4x-server `csr` feature set
+# (leptos, web-sys, js-sys, wasm-bindgen-futures, serde-wasm-bindgen,
+# getrandom with wasm_js backend, gloo-timers as needed).

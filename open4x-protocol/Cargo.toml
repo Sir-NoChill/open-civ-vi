@@ -1,0 +1,10 @@
+[package]
+name = "open4x-protocol"
+version = "0.1.0"
+edition = "2024"
+description = "Wire-protocol types for the open4x REST/WS API. The single source of truth for the contract between server, SDK, and any bring-your-own client."
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+ulid       = { workspace = true }

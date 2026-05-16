@@ -1,0 +1,42 @@
+[package]
+name = "open4x-sdk"
+version = "0.1.0"
+edition = "2024"
+description = "Typed client SDK for the open4x REST/WS API. Two backends (native via reqwest, wasm via web-sys) share one set of typed endpoint functions over the open4x-protocol types."
+
+[dependencies]
+# ── Shared (both backends) ────────────────────────────────────────────
+serde      = { workspace = true }
+serde_json = { workspace = true }
+open4x-protocol = { path = "../open4x-protocol" }
+
+# ── Native backends ───────────────────────────────────────────────────
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+tokio   = { workspace = true, optional = true }
+
+# ── WASM backend ──────────────────────────────────────────────────────
+wasm-bindgen         = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+js-sys               = { version = "0.3", optional = true }
+serde-wasm-bindgen   = { version = "0.6", optional = true }
+web-sys = { version = "0.3", optional = true, features = [
+    "Headers", "Request", "RequestInit", "Response", "Window",
+] }
+
+[features]
+# Default to the blocking native backend so `cargo build` on a fresh
+# checkout produces a usable lib without needing flags.
+default = ["native-blocking"]
+
+# Native blocking (reqwest::blocking). Used by `open4x-cli` remote mode.
+native-blocking = ["dep:reqwest", "reqwest/blocking"]
+
+# Native async (reqwest async). Used by server-side integration tests
+# that hit the in-process Axum router via tower::ServiceExt::oneshot.
+native-async = ["dep:reqwest", "dep:tokio"]
+
+# WASM via web_sys::fetch. Used by `open4x-client-web`.
+wasm = [
+    "dep:wasm-bindgen", "dep:wasm-bindgen-futures",
+    "dep:js-sys", "dep:web-sys", "dep:serde-wasm-bindgen",
+]
