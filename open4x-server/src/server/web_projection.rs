@@ -1564,6 +1564,7 @@ mod tests {
             religious_followers: std::collections::HashMap::new(),
             majority_religion: None,
             is_own: true,
+            focus: crate::types::enums::CityFocus::default(),
         });
 
         let cities = build_cities(&view);

@@ -849,7 +849,7 @@ pub fn print_scores(state: &GameState) {
             .find(|c| c.id == *cid)
             .map(|c| c.name)
             .unwrap_or("?");
-        println!("  {:<20} {:>6}", name, score);
+        println!("  {name:<20} {score:>6}");
     }
 }
 

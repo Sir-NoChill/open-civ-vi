@@ -960,7 +960,7 @@ fn run_play() {
                                                     let dest_name = session.state.cities.iter()
                                                         .find(|c| c.id == *destination)
                                                         .map(|c| c.name.as_str()).unwrap_or("?");
-                                                    println!("  Trade route established: {} -> {}!", orig, dest_name);
+                                                    println!("  Trade route established: {orig} -> {dest_name}!");
                                                 }
                                             }
                                             if session.state.unit(uid).is_none() {
@@ -1712,7 +1712,7 @@ fn cmd_build(session: &mut Session, name: &str) {
     let all_unit_match = session.state.unit_type_defs.iter().any(|d| d.name.to_lowercase() == key);
     let all_bldg_match = session.state.building_defs.iter().any(|d| d.name.to_lowercase() == key);
     if all_unit_match || all_bldg_match {
-        println!("  [error] {:?} is not yet available (requires tech unlock or is exclusive to another civ).", key);
+        println!("  [error] {key:?} is not yet available (requires tech unlock or is exclusive to another civ).");
     } else {
         let mut available: Vec<&str> = avail_units.iter().map(|d| d.name).collect();
         available.extend(avail_buildings.iter().map(|d| d.name));
@@ -1880,7 +1880,7 @@ fn cmd_congress(session: &Session) {
                 .map(|c| c.name)
                 .unwrap_or("?");
             let marker = if *civ_id == session.civ_id { " <" } else { "" };
-            println!("    {:<20}  {} VP{}", name, vp, marker);
+            println!("    {name:<20}  {vp} VP{marker}");
         }
     }
     hline_end();
@@ -2047,7 +2047,7 @@ fn cmd_religion(session: &mut Session, rules: &DefaultRulesEngine, name: &str, b
 
     match rules.found_religion(&mut session.state, uid, name.to_string(), vec![bid1, bid2]) {
         Ok(_) => {
-            println!("  Religion '{}' founded!", name);
+            println!("  Religion '{name}' founded!");
             session.selected_unit = None;
         }
         Err(e) => println!("  [error] {e}"),
@@ -2126,7 +2126,7 @@ fn cmd_recruit(session: &mut Session, rules: &DefaultRulesEngine, type_name: &st
                         .find(|gp| gp.id == *great_person)
                         .map(|gp| gp.name)
                         .unwrap_or("?");
-                    println!("  Recruited {} for {} gold!", name, gold_spent);
+                    println!("  Recruited {name} for {gold_spent} gold!");
                 }
             }
         }
@@ -2632,7 +2632,7 @@ fn cmd_spread(session: &mut Session, rules: &DefaultRulesEngine) {
         Ok(diff) => {
             for delta in &diff.deltas {
                 if let StateDelta::ReligionSpread { city, followers_added, .. } = delta {
-                    println!("  Religion spread to city {:?}: +{followers_added} followers.", city);
+                    println!("  Religion spread to city {city:?}: +{followers_added} followers.");
                 }
                 if let StateDelta::UnitDestroyed { .. } = delta {
                     println!("  Unit exhausted (no charges left).");
@@ -2721,7 +2721,7 @@ fn cmd_great_work(session: &mut Session, rules: &DefaultRulesEngine, name: &str)
             Ok(diff) => {
                 for delta in &diff.deltas {
                     if let StateDelta::GreatWorkCreated { work_name, city, .. } = delta {
-                        println!("  Great Work '{work_name}' created in city {:?}!", city);
+                        println!("  Great Work '{work_name}' created in city {city:?}!");
                     }
                 }
             }
