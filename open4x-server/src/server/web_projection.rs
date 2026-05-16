@@ -1,5 +1,5 @@
 //! Builders that turn `GameView` into wire types under
-//! [`crate::types::web`].
+//! [`open4x_protocol::v1::web`].
 //!
 //! See `book/src/roadmap/web-ui.md` §5.2. Each builder is a pure function
 //! over the player-projected `GameView` plus a small amount of room
@@ -10,9 +10,9 @@
 
 #![allow(dead_code, unused_variables)]
 
-use crate::types::enums::{BoardTopology, BuiltinTerrain, TileVisibility};
-use crate::types::view::GameView;
-use crate::types::web::*;
+use open4x_protocol::v1::enums::{BoardTopology, BuiltinTerrain, TileVisibility};
+use open4x_protocol::v1::view::GameView;
+use open4x_protocol::v1::web::*;
 
 // ── /player-state ────────────────────────────────────────────────────────────
 
@@ -235,7 +235,7 @@ fn capitalize(s: &str) -> String {
 // ── /cities ──────────────────────────────────────────────────────────────────
 
 pub fn build_cities(view: &GameView) -> city_data::CityData {
-    use crate::types::enums::ProductionItemView;
+    use open4x_protocol::v1::enums::ProductionItemView;
     let unit_type_by_id: std::collections::HashMap<_, _> = view
         .unit_type_defs
         .iter()
@@ -305,7 +305,7 @@ pub fn build_cities(view: &GameView) -> city_data::CityData {
 
 pub fn build_city_tiles(view: &GameView, city_id: &str) -> Option<city_tiles::CityTiles> {
     let target_ulid: ulid::Ulid = city_id.parse().ok()?;
-    let target = crate::types::ids::CityId::from_ulid(target_ulid);
+    let target = open4x_protocol::v1::ids::CityId::from_ulid(target_ulid);
     let city = view.cities.iter().find(|c| c.id == target)?;
 
     let worked: std::collections::HashSet<_> = city.worked_tiles.iter().collect();
@@ -604,7 +604,7 @@ pub fn build_combat_preview(
     defender_r: i32,
 ) -> Option<combat_preview::CombatPreview> {
     let attacker_ulid: ulid::Ulid = attacker_id.parse().ok()?;
-    let attacker_uid = crate::types::ids::UnitId::from_ulid(attacker_ulid);
+    let attacker_uid = open4x_protocol::v1::ids::UnitId::from_ulid(attacker_ulid);
     let attacker = view.units.iter().find(|u| u.id == attacker_uid)?;
     let attacker_str = attacker.combat_strength? as i32;
 
@@ -777,7 +777,7 @@ fn era_for_tech_cost(cost: u32) -> String {
 pub fn build_government_from_room(
     view: &GameView,
     room: &crate::server::state::GameRoom,
-    civ:  crate::types::ids::CivId,
+    civ:  open4x_protocol::v1::ids::CivId,
 ) -> government::GovernmentPolicies {
     use libciv::{PolicyCardStatus, RulesEngine};
 
@@ -894,7 +894,7 @@ pub fn build_government(view: &GameView) -> government::GovernmentPolicies {
 // ── /diplomacy ───────────────────────────────────────────────────────────────
 
 pub fn build_diplomacy(view: &GameView) -> diplomacy::Diplomacy {
-    use crate::types::enums::DiplomaticStatus;
+    use open4x_protocol::v1::enums::DiplomaticStatus;
 
     let civs = view
         .other_civs
@@ -1013,7 +1013,7 @@ const VICTORY_CONDITION_WIRE: [(&str, &str); 6] = [
 pub fn build_victory_from_room(
     view: &GameView,
     room: &crate::server::state::GameRoom,
-    civ:  crate::types::ids::CivId,
+    civ:  open4x_protocol::v1::ids::CivId,
     turn_limit: Option<u32>,
 ) -> victory::Victory {
     use libciv::RulesEngine;
@@ -1184,7 +1184,7 @@ pub fn build_notifications(view: &GameView) -> notifications::Notifications {
 pub fn build_notifications_from_room(
     view: &GameView,
     room: &crate::server::state::GameRoom,
-    civ: crate::types::ids::CivId,
+    civ: open4x_protocol::v1::ids::CivId,
 ) -> notifications::Notifications {
     let recs = room.notifications.for_civ(civ);
     let items = recs
@@ -1219,7 +1219,7 @@ pub fn build_notifications_from_room(
 pub fn build_turn_queue_from_room(
     view: &GameView,
     room: &crate::server::state::GameRoom,
-    civ:  crate::types::ids::CivId,
+    civ:  open4x_protocol::v1::ids::CivId,
 ) -> turn_queue::TurnQueue {
     use libciv::{PendingActionKind, RulesEngine};
 
@@ -1430,9 +1430,9 @@ pub fn build_map_overlays(view: &GameView) -> map_overlays::MapOverlays {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::coord::HexCoord;
-    use crate::types::ids::CivId;
-    use crate::types::view::*;
+    use open4x_protocol::v1::coord::HexCoord;
+    use open4x_protocol::v1::ids::CivId;
+    use open4x_protocol::v1::view::*;
 
     fn empty_game_view() -> GameView {
         let civ_id = CivId::from_ulid(ulid::Ulid::new());
@@ -1452,7 +1452,7 @@ mod tests {
                 adjective: "Egyptian".into(),
                 leader_name: "Cleopatra".into(),
                 gold: 100,
-                current_era: crate::types::enums::AgeType::Classical,
+                current_era: open4x_protocol::v1::enums::AgeType::Classical,
                 researched_techs: Vec::new(),
                 research_queue: Vec::new(),
                 completed_civics: Vec::new(),
@@ -1526,8 +1526,8 @@ mod tests {
 
     #[test]
     fn cities_projector_includes_owner_and_queue() {
-        use crate::types::enums::ProductionItemView;
-        use crate::types::ids::{CityId, UnitTypeId};
+        use open4x_protocol::v1::enums::ProductionItemView;
+        use open4x_protocol::v1::ids::{CityId, UnitTypeId};
 
         let mut view = empty_game_view();
         let unit_type_id = UnitTypeId::from_ulid(ulid::Ulid::new());
@@ -1535,8 +1535,8 @@ mod tests {
             id: unit_type_id,
             name: "warrior".into(),
             production_cost: 40,
-            domain: crate::types::enums::UnitDomain::Land,
-            category: crate::types::enums::UnitCategory::Combat,
+            domain: open4x_protocol::v1::enums::UnitDomain::Land,
+            category: open4x_protocol::v1::enums::UnitCategory::Combat,
             max_movement: 200,
             combat_strength: Some(20),
             range: 0,
@@ -1559,12 +1559,12 @@ mod tests {
             buildings: Vec::new(),
             worked_tiles: vec![HexCoord::from_qr(2, 3)],
             territory: vec![HexCoord::from_qr(2, 3), HexCoord::from_qr(3, 3)],
-            ownership: crate::types::enums::CityOwnership::Normal,
-            walls: crate::types::enums::WallLevel::None,
+            ownership: open4x_protocol::v1::enums::CityOwnership::Normal,
+            walls: open4x_protocol::v1::enums::WallLevel::None,
             religious_followers: std::collections::HashMap::new(),
             majority_religion: None,
             is_own: true,
-            focus: crate::types::enums::CityFocus::default(),
+            focus: open4x_protocol::v1::enums::CityFocus::default(),
         });
 
         let cities = build_cities(&view);
@@ -1582,7 +1582,7 @@ mod tests {
 
     #[test]
     fn units_projector_emits_action_set() {
-        use crate::types::ids::{UnitId, UnitTypeId};
+        use open4x_protocol::v1::ids::{UnitId, UnitTypeId};
 
         let mut view = empty_game_view();
         let unit_type_id = UnitTypeId::from_ulid(ulid::Ulid::new());
@@ -1590,8 +1590,8 @@ mod tests {
             id: unit_type_id,
             name: "settler".into(),
             production_cost: 80,
-            domain: crate::types::enums::UnitDomain::Land,
-            category: crate::types::enums::UnitCategory::Civilian,
+            domain: open4x_protocol::v1::enums::UnitDomain::Land,
+            category: open4x_protocol::v1::enums::UnitCategory::Civilian,
             max_movement: 200,
             combat_strength: None,
             range: 0,
@@ -1604,8 +1604,8 @@ mod tests {
             unit_type: unit_type_id,
             owner: view.my_civ.id,
             coord: HexCoord::from_qr(0, 0),
-            domain: crate::types::enums::UnitDomain::Land,
-            category: crate::types::enums::UnitCategory::Civilian,
+            domain: open4x_protocol::v1::enums::UnitDomain::Land,
+            category: open4x_protocol::v1::enums::UnitCategory::Civilian,
             movement_left: 200,
             max_movement: 200,
             combat_strength: None,
@@ -1637,7 +1637,7 @@ mod tests {
             for r in -3..=3 {
                 view.board.tiles.push(TileView {
                     coord: HexCoord::from_qr(q, r),
-                    terrain: crate::types::enums::BuiltinTerrain::Plains,
+                    terrain: open4x_protocol::v1::enums::BuiltinTerrain::Plains,
                     hills: false,
                     feature: None,
                     resource: None,

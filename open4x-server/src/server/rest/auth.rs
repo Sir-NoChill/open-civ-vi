@@ -10,8 +10,8 @@ use axum::http::{HeaderMap, StatusCode};
 
 use crate::server::api_token;
 use crate::server::state::AppState;
-use crate::types::ids::{CivId, GameId};
-use crate::types::web::ApiErrorBody;
+use open4x_protocol::v1::ids::{CivId, GameId};
+use open4x_protocol::v1::web::ApiErrorBody;
 
 pub type ApiError = (StatusCode, Json<ApiErrorBody>);
 

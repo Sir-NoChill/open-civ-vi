@@ -5,10 +5,10 @@ use libciv::{CivId, DefaultRulesEngine, RulesEngine};
 use libciv::game::score::{all_scores, compute_score};
 use libhexgrid::board::{HexBoard, HexEdge};
 
-use crate::types::enums::*;
-use crate::types::view::*;
-use crate::types::coord::HexCoord as ApiCoord;
-use crate::types::ids as api;
+use open4x_protocol::v1::enums::*;
+use open4x_protocol::v1::view::*;
+use open4x_protocol::v1::coord::HexCoord as ApiCoord;
+use open4x_protocol::v1::ids as api;
 
 // ── Coordinate conversion ────────────────────────────────────────────────────
 

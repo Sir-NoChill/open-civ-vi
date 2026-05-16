@@ -18,10 +18,10 @@ use crate::server::projection::project_game_view;
 use crate::server::rest::auth::{auth_or_401, ApiError};
 use crate::server::state::{AppState, GameRoom, GameRoomConfig, PlayerRecord};
 use crate::server::web_projection;
-use crate::types::ids::{CivId, GameId};
-use crate::types::messages::{CreateGameRequest, GameStatus};
-use crate::types::view::GameView;
-use crate::types::web::{MutationResponse, TurnStatusBlock};
+use open4x_protocol::v1::ids::{CivId, GameId};
+use open4x_protocol::v1::messages::{CreateGameRequest, GameStatus};
+use open4x_protocol::v1::view::GameView;
+use open4x_protocol::v1::web::{MutationResponse, TurnStatusBlock};
 
 #[derive(Serialize)]
 pub struct HealthResponse {
@@ -436,23 +436,23 @@ pub async fn queue_production(
     let city_ulid: ulid::Ulid = id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
-    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+    let city_id = open4x_protocol::v1::ids::CityId::from_ulid(city_ulid);
 
     let item_ulid: ulid::Ulid = body.item_id.parse().map_err(|_| {
         crate::server::rest::auth::bad_request("invalid_id", "invalid item id")
     })?;
     let item = match body.item_type.as_str() {
-        "unit" => crate::types::enums::ProductionItemView::Unit(
-            crate::types::ids::UnitTypeId::from_ulid(item_ulid),
+        "unit" => open4x_protocol::v1::enums::ProductionItemView::Unit(
+            open4x_protocol::v1::ids::UnitTypeId::from_ulid(item_ulid),
         ),
-        "building" => crate::types::enums::ProductionItemView::Building(
-            crate::types::ids::BuildingId::from_ulid(item_ulid),
+        "building" => open4x_protocol::v1::enums::ProductionItemView::Building(
+            open4x_protocol::v1::ids::BuildingId::from_ulid(item_ulid),
         ),
-        "wonder" => crate::types::enums::ProductionItemView::Wonder(
-            crate::types::ids::WonderId::from_ulid(item_ulid),
+        "wonder" => open4x_protocol::v1::enums::ProductionItemView::Wonder(
+            open4x_protocol::v1::ids::WonderId::from_ulid(item_ulid),
         ),
-        "project" => crate::types::enums::ProductionItemView::Project(
-            crate::types::ids::ProjectId::from_ulid(item_ulid),
+        "project" => open4x_protocol::v1::enums::ProductionItemView::Project(
+            open4x_protocol::v1::ids::ProjectId::from_ulid(item_ulid),
         ),
         // District is a plain enum (not ULID); unsupported here.
         other => {
@@ -463,7 +463,7 @@ pub async fn queue_production(
         }
     };
 
-    let action = crate::types::messages::GameAction::QueueProduction { city: city_id, item };
+    let action = open4x_protocol::v1::messages::GameAction::QueueProduction { city: city_id, item };
 
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
 
@@ -490,9 +490,9 @@ pub async fn cancel_production(
     let city_ulid: ulid::Ulid = id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
-    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+    let city_id = open4x_protocol::v1::ids::CityId::from_ulid(city_ulid);
 
-    let action = crate::types::messages::GameAction::CancelProduction { city: city_id, index: pos };
+    let action = open4x_protocol::v1::messages::GameAction::CancelProduction { city: city_id, index: pos };
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
 
     let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
@@ -530,16 +530,16 @@ pub async fn assign_city_focus(
     let city_ulid: ulid::Ulid = id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
-    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+    let city_id = open4x_protocol::v1::ids::CityId::from_ulid(city_ulid);
 
     let focus = match body.focus.to_lowercase().as_str() {
-        "default"    => crate::types::enums::CityFocus::Default,
-        "food"       => crate::types::enums::CityFocus::Food,
-        "production" => crate::types::enums::CityFocus::Production,
-        "gold"       => crate::types::enums::CityFocus::Gold,
-        "science"    => crate::types::enums::CityFocus::Science,
-        "culture"    => crate::types::enums::CityFocus::Culture,
-        "faith"      => crate::types::enums::CityFocus::Faith,
+        "default"    => open4x_protocol::v1::enums::CityFocus::Default,
+        "food"       => open4x_protocol::v1::enums::CityFocus::Food,
+        "production" => open4x_protocol::v1::enums::CityFocus::Production,
+        "gold"       => open4x_protocol::v1::enums::CityFocus::Gold,
+        "science"    => open4x_protocol::v1::enums::CityFocus::Science,
+        "culture"    => open4x_protocol::v1::enums::CityFocus::Culture,
+        "faith"      => open4x_protocol::v1::enums::CityFocus::Faith,
         other => {
             return Err(crate::server::rest::auth::bad_request(
                 "invalid_focus",
@@ -548,7 +548,7 @@ pub async fn assign_city_focus(
         }
     };
 
-    let action = crate::types::messages::GameAction::AssignCityFocus { city: city_id, focus };
+    let action = open4x_protocol::v1::messages::GameAction::AssignCityFocus { city: city_id, focus };
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
 
     let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
@@ -584,7 +584,7 @@ pub async fn rename_city(
     let city_ulid: ulid::Ulid = id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid city id"))?;
-    let city_id = crate::types::ids::CityId::from_ulid(city_ulid);
+    let city_id = open4x_protocol::v1::ids::CityId::from_ulid(city_ulid);
 
     // Validate at the boundary — match the rule the engine enforces, but
     // surface a structured 400 rather than a generic 'apply_action failed'.
@@ -602,7 +602,7 @@ pub async fn rename_city(
         ));
     }
 
-    let action = crate::types::messages::GameAction::RenameCity { city: city_id, name: trimmed };
+    let action = open4x_protocol::v1::messages::GameAction::RenameCity { city: city_id, name: trimmed };
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
 
     let view = view_after_mutation_city(&state, game_id, civ_id, &id)?;
@@ -643,10 +643,10 @@ pub async fn unit_action(
     let unit_ulid: ulid::Ulid = id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid unit id"))?;
-    let unit_id = crate::types::ids::UnitId::from_ulid(unit_ulid);
+    let unit_id = open4x_protocol::v1::ids::UnitId::from_ulid(unit_ulid);
 
     let target = match (body.target_q, body.target_r) {
-        (Some(q), Some(r)) => Some(crate::types::coord::HexCoord { q, r, s: -q - r }),
+        (Some(q), Some(r)) => Some(open4x_protocol::v1::coord::HexCoord { q, r, s: -q - r }),
         _ => None,
     };
 
@@ -655,7 +655,7 @@ pub async fn unit_action(
             let to = target.ok_or_else(|| {
                 crate::server::rest::auth::bad_request("missing_target", "move requires target_q/target_r")
             })?;
-            crate::types::messages::GameAction::MoveUnit { unit: unit_id, to }
+            open4x_protocol::v1::messages::GameAction::MoveUnit { unit: unit_id, to }
         }
         "attack" => {
             // Resolve defender by coord lookup against the player's view.
@@ -668,12 +668,12 @@ pub async fn unit_action(
                 .iter()
                 .find(|u| u.coord == to && !u.is_own)
                 .ok_or_else(|| crate::server::rest::auth::not_found("no enemy unit at target"))?;
-            crate::types::messages::GameAction::Attack {
+            open4x_protocol::v1::messages::GameAction::Attack {
                 attacker: unit_id,
                 defender: defender.id,
             }
         }
-        "found_city" => crate::types::messages::GameAction::FoundCity {
+        "found_city" => open4x_protocol::v1::messages::GameAction::FoundCity {
             settler: unit_id,
             name: body.name.clone().unwrap_or_else(|| "New City".into()),
         },
@@ -752,7 +752,7 @@ fn view_after_mutation_city(
     game_id: GameId,
     civ_id: CivId,
     city_id: &str,
-) -> Result<crate::types::web::city_data::CityRow, ApiError> {
+) -> Result<open4x_protocol::v1::web::city_data::CityRow, ApiError> {
     let view = view_only(state, game_id, civ_id)?;
     web_projection::build_cities(&view)
         .cities
@@ -789,8 +789,8 @@ pub async fn tech_research(
         .tech_id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid tech id"))?;
-    let tech = crate::types::ids::TechId::from_ulid(tech_ulid);
-    let action = crate::types::messages::GameAction::QueueResearch { tech };
+    let tech = open4x_protocol::v1::ids::TechId::from_ulid(tech_ulid);
+    let action = open4x_protocol::v1::messages::GameAction::QueueResearch { tech };
 
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
     let view = view_only(&state, game_id, civ_id)?;
@@ -813,7 +813,7 @@ pub async fn cancel_research(
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
 
-    let action = crate::types::messages::GameAction::CancelResearch;
+    let action = open4x_protocol::v1::messages::GameAction::CancelResearch;
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
     let view = view_only(&state, game_id, civ_id)?;
     Ok((
@@ -854,8 +854,8 @@ pub async fn civic_research(
         .civic_id
         .parse()
         .map_err(|_| crate::server::rest::auth::bad_request("invalid_id", "invalid civic id"))?;
-    let civic = crate::types::ids::CivicId::from_ulid(civic_ulid);
-    let action = crate::types::messages::GameAction::QueueCivic { civic };
+    let civic = open4x_protocol::v1::ids::CivicId::from_ulid(civic_ulid);
+    let action = open4x_protocol::v1::messages::GameAction::QueueCivic { civic };
 
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
     let view = view_only(&state, game_id, civ_id)?;
@@ -878,7 +878,7 @@ pub async fn cancel_civic(
     let (game_id, civ_id) = auth_or_401(&state, &headers)?;
     let libciv_civ = libciv::CivId::from_ulid(civ_id.as_ulid());
 
-    let action = crate::types::messages::GameAction::CancelCivic;
+    let action = open4x_protocol::v1::messages::GameAction::CancelCivic;
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;
     let view = view_only(&state, game_id, civ_id)?;
     Ok((
@@ -932,7 +932,7 @@ pub async fn change_government(
         ));
     }
 
-    let action = crate::types::messages::GameAction::ChangeGovernment {
+    let action = open4x_protocol::v1::messages::GameAction::ChangeGovernment {
         name: trimmed.to_string(),
     };
     let new_turn = mutate_room(&state, game_id, |room| room.apply_action(libciv_civ, &action))?;

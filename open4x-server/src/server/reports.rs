@@ -4,10 +4,10 @@ use std::collections::HashMap;
 
 use libciv::CivId;
 
-use crate::types::enums::*;
-use crate::types::ids as api;
-use crate::types::reports::*;
-use crate::types::view::*;
+use open4x_protocol::v1::enums::*;
+use open4x_protocol::v1::ids as api;
+use open4x_protocol::v1::reports::*;
+use open4x_protocol::v1::view::*;
 
 fn conv_civ_id(id: CivId) -> api::CivId {
     api::CivId::from_ulid(id.as_ulid())
@@ -233,7 +233,7 @@ pub fn build_culture_report(view: &GameView) -> CultureReport {
 pub fn build_turn_status(
     game_id: api::GameId,
     turn: u32,
-    status: crate::types::messages::GameStatus,
+    status: open4x_protocol::v1::messages::GameStatus,
     players: &[crate::server::state::PlayerSlot],
 ) -> TurnStatus {
     let players_submitted = players

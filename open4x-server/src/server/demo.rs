@@ -9,7 +9,7 @@ use libciv::{CivId, DefaultRulesEngine, TurnEngine, UnitCategory, UnitDomain, Un
 use libhexgrid::board::HexBoard;
 use libhexgrid::coord::HexCoord;
 
-use crate::types::view::GameView;
+use open4x_protocol::v1::view::GameView;
 use crate::server::projection::project_game_view;
 
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::types::ids::{CivId, GameId};
+use open4x_protocol::v1::ids::{CivId, GameId};
 use crate::server::state::AppState;
 
 /// Record for an API bearer token.

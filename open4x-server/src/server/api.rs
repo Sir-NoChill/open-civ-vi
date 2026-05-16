@@ -15,7 +15,7 @@ use crate::server::api_token;
 use crate::server::projection::project_game_view;
 use crate::server::reports;
 use crate::server::state::AppState;
-use crate::types::ids::{CityId, CivId, GameId};
+use open4x_protocol::v1::ids::{CityId, CivId, GameId};
 
 // ── Auth extractor ──────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ fn get_view(
     state: &Arc<AppState>,
     game_id: GameId,
     civ_id: CivId,
-) -> Result<crate::types::view::GameView, (StatusCode, &'static str)> {
+) -> Result<open4x_protocol::v1::view::GameView, (StatusCode, &'static str)> {
     let room = state
         .games
         .get(&game_id)

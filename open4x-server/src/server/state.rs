@@ -10,15 +10,15 @@ use libciv::ai::HeuristicAgent;
 use libciv::game::state::GameState;
 use libciv::{CivId, DefaultRulesEngine};
 
-use crate::types::ids::GameId;
-use crate::types::messages::{GameStatus, ServerMessage};
-use crate::types::profile::ProfileView;
+use open4x_protocol::v1::ids::GameId;
+use open4x_protocol::v1::messages::{GameStatus, ServerMessage};
+use open4x_protocol::v1::profile::ProfileView;
 
 /// Global server state shared across all WebSocket connections.
 pub struct AppState {
     pub games: DashMap<GameId, GameRoom>,
     pub players: DashMap<[u8; 32], PlayerRecord>,
-    pub templates: Vec<crate::types::profile::CivTemplate>,
+    pub templates: Vec<open4x_protocol::v1::profile::CivTemplate>,
     pub api_tokens: DashMap<String, crate::server::api_token::ApiTokenRecord>,
 }
 
@@ -54,9 +54,9 @@ pub struct GameRoom {
 /// back (so iteration yields chronological order).
 pub const NOTIFICATION_CAP: usize = 64;
 
-/// Keyed by the **wire-side** `CivId` (`crate::types::ids::CivId`), not the
+/// Keyed by the **wire-side** `CivId` (`open4x_protocol::v1::ids::CivId`), not the
 /// libciv one — the projector reads this with the auth_or_401 result.
-pub type NotifCivId = crate::types::ids::CivId;
+pub type NotifCivId = open4x_protocol::v1::ids::CivId;
 
 #[derive(Debug, Clone, Default)]
 pub struct NotificationBuffer {
@@ -151,6 +151,6 @@ pub struct PlayerSlot {
 pub struct PlayerRecord {
     pub pubkey: [u8; 32],
     pub display_name: String,
-    pub selected_template: crate::types::ids::CivTemplateId,
+    pub selected_template: open4x_protocol::v1::ids::CivTemplateId,
     pub games_played: u32,
 }
