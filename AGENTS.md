@@ -38,13 +38,18 @@ cargo run -p open4x -- play
 ### Workspace crates (dependency order)
 
 ```
-libhexgrid    — pure hex geometry, no game knowledge
-libciv        — all game state and rules (world, civ, rules, game, ai modules)
-open4x-cli    — CLI binary (clap: `new-game`, `action`, `end-turn`, `view`, `status`, `list`)
-open4x-server — merged server + frontend (feature flags: `ssr` for Axum server, `csr` for Leptos/WASM)
+libhexgrid          — pure hex geometry, no game knowledge
+libciv              — all game state and rules (world, civ, rules, game, ai modules)
+open4x-protocol     — versioned wire types (v1::*); the contract between server and clients
+open4x-sdk          — typed HTTP client over the protocol; native + wasm transports
+open4x-cli          — CLI binary (clap: `new-game`, `action`, `end-turn`, `view`, `status`, `list`); remote mode wraps the SDK
+open4x-server       — native-only Axum server (REST + WS + GameRoom); no Leptos, no cdylib
+open4x-client-web   — Leptos CSR + cdylib (wasm32) browser client; consumes the SDK
 ```
 
-`libhexgrid` must remain zero-knowledge of game concepts. `libciv` contains everything else: world map, civilizations, rules engine, AI, and game orchestration.
+Two additional crates (`open4x-accounts` and `open4x-lobby`) live on disk under their own directories but are excluded from the workspace via `[workspace] exclude` — they are scheduled for extraction to a separate repo.
+
+`libhexgrid` must remain zero-knowledge of game concepts. `libciv` contains everything else: world map, civilizations, rules engine, AI, and game orchestration. `open4x-protocol` is the only crate both `open4x-server` and `open4x-client-web` depend on.
 
 ### libciv internal structure
 
@@ -113,6 +118,23 @@ libciv/tests/
 | `libciv/tests/common/` | Shared `Scenario` setup used by all integration tests |
 | `libciv/tests/gameplay.rs` | End-to-end integration tests |
 | `open4x-cli/src/main.rs` | CLI entry point (non-REPL + legacy interactive) |
+| `open4x-cli/src/remote/client.rs` | Thin shim over `open4x_sdk::native::NativeBlockingClient` |
+| `open4x-protocol/src/v1/{coord,enums,ids,messages,profile,reports,view,web}.rs` | All wire types under the `v1::*` namespace — the single source of truth for the client/server contract |
+| `open4x-protocol/tests/wire_schema.rs` | JSON-snapshot regression tests for each top-level wire type |
+| `open4x-sdk/src/transport.rs` | `Transport` trait + `Method` enum — the SDK's transport abstraction |
+| `open4x-sdk/src/error.rs` | `ApiError` + helpers for decoding server `{error, message}` envelopes |
+| `open4x-sdk/src/native.rs` | `NativeBlockingClient` + `NativeAsyncClient` (feature `native-blocking` / `native-async`) |
+| `open4x-sdk/src/wasm.rs` | `WasmClient` over `web_sys::fetch` (feature `wasm`, wasm32 only) |
+| `open4x-sdk/src/endpoints/*` | One module per `/api/v1/*` resource (armies, cities, civics, combat, diplomacy, empire, games, government, health, map, notifications, player_state, registry, tech, turn, units, victory, world) |
+| `open4x-server/src/main.rs` | Axum server entry point; `OPEN4X_STATIC_DIR` defaults to `./open4x-client-web/dist` |
+| `open4x-server/src/server/rest/` | REST handlers; `v1_router()` is the shared route table for `main.rs` + integration tests |
+| `open4x-server/src/server/web_projection.rs` | Pure functions projecting `GameView` into per-endpoint wire slices |
+| `open4x-server/tests/rest_api.rs` | In-process integration tests for every `/api/v1/*` route via `tower::ServiceExt::oneshot` |
+| `open4x-client-web/src/lib.rs` | `wasm_bindgen(start)` entry; mounts the Leptos app (module decls are `cfg(target_arch = "wasm32")`-gated so workspace native builds stay green) |
+| `open4x-client-web/src/pages/` | Leptos routes (e.g. `RestGamePage`, `HomePage`, `MapConfigPage`) |
+| `open4x-client-web/src/components/` | Reusable UI components (HexMap, HUD, drawers); SDK adapter helper in `pages/rest_game.rs` |
+| `open4x-client-web/src/tabs/` | Tab views (Map, Science, Culture, City, etc.) |
+| `open4x-client-web/index.html` | Trunk entry; styling lives here pending CSS split |
 
 ### Key design decisions
 
@@ -148,11 +170,13 @@ libciv/tests/
 
 ### VCS
 
-Use **jj** (Jujutsu), not git. Commit style: conventional commits -- `infra:`, `impl:`, `fix:`, `tests:`, `docs:`.
+Use **`but`** (GitButler) for ongoing work — see [`agents/skills/gitbutler/SKILL.md`](./agents/skills/gitbutler/SKILL.md). `jj` use is suspended for the duration of the crate-split / GitButler-workflow window; revisit after the migration settles. Never run `git` write commands (`git add`, `git commit`, `git push`, `git stash`, `git checkout`, `git merge`, `git rebase`); translate to the matching `but` command. Read-only git inspection (`git status`, `git log`, `git diff --stat`) is fine.
+
+Commit style: conventional commits -- `infra:`, `impl:`, `fix:`, `tests:`, `docs:`, `chore:`.
 
 ### WASM frontend
 
-`open4x-server` with the `csr` feature compiles to `wasm32-unknown-unknown` via Leptos. The `.cargo/config.toml` sets `rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]` for all wasm targets -- required for `getrandom 0.3` transitive deps to agree on the WASM backend. The `ssr` feature builds the native Axum server binary.
+The browser client is `open4x-client-web` (Leptos CSR, cdylib). It builds for `wasm32-unknown-unknown` via trunk and depends on `open4x-sdk` (`features = ["wasm"]`) + `open4x-protocol`. The native `open4x-server` binary serves `/api/v1/*` REST + `/ws` and falls back to the trunk-built `dist/` for the SPA (default `OPEN4X_STATIC_DIR` is `./open4x-client-web/dist`). `getrandom`'s `wasm_js` feature is pinned in `open4x-sdk`'s wasm32 dependency block so the transitive `ulid → rand → getrandom` chain compiles for wasm; no workspace-level rustflag is required.
 
 ## Agent Skills
 
