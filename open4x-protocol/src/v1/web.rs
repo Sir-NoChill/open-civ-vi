@@ -4,9 +4,10 @@
 //! corresponds to a `<name>.json` file) so that the wireframe HTML can be
 //! retired without re-shaping its data semantics.
 //!
-//! Built by [`crate::server::web_projection`] on the server side; consumed by
-//! [`crate::components::api`] on the client side. Compile for both `ssr` and
-//! `csr` targets so the bindings layer can re-use the same types.
+//! Built by `open4x_server::server::web_projection` on the server side;
+//! consumed by `open4x_server::components::api` on the client side. Compile
+//! for both `ssr` and `csr` targets so the bindings layer can re-use the
+//! same types.
 //!
 //! Phase 0 (scaffolding): every type is a `Default`-constructible stub. Real
 //! field schemas land in Phase 1+.
