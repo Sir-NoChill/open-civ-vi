@@ -19,10 +19,18 @@ wasm-bindgen         = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 js-sys               = { version = "0.3", optional = true }
 serde-wasm-bindgen   = { version = "0.6", optional = true }
-send_wrapper         = { version = "0.6", optional = true }
+send_wrapper         = { version = "0.6", features = ["futures"], optional = true }
 web-sys = { version = "0.3", optional = true, features = [
     "Headers", "Request", "RequestInit", "Response", "Window",
 ] }
+
+# Force the `wasm_js` backend on the WASM target. Pulled in transitively
+# via open4x-protocol → ulid → rand → getrandom 0.3; without this feature
+# `cargo check --target wasm32-unknown-unknown` fails. `.cargo/config.toml`
+# already sets `--cfg getrandom_backend="wasm_js"` for wasm targets, but
+# the feature still has to be declared on the dep itself.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
 
 [features]
 # Default to the blocking native backend so `cargo build` on a fresh
