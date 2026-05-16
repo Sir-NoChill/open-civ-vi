@@ -1623,28 +1623,20 @@ name = "open4x-server"
 version = "0.1.0"
 dependencies = [
  "axum",
- "console_error_panic_hook",
  "dashmap",
  "ed25519-dalek",
- "getrandom 0.3.4",
  "hex",
  "http-body-util",
- "js-sys",
- "leptos",
  "libciv",
  "libhexgrid",
  "open4x-protocol",
  "rand",
  "serde",
- "serde-wasm-bindgen",
  "serde_json",
  "tokio",
  "tower",
  "tower-http",
  "ulid",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]
