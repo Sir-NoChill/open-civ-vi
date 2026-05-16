@@ -1,12 +1,19 @@
 # Server & Web Client
 
-The multiplayer stack is a single `open4x-server` crate with feature flags: `ssr` for the native Axum server and `csr` for the Leptos/WASM browser client. Wire-protocol types live in the `types` module, shared by both features.
+The multiplayer stack is split across four single-purpose crates:
 
-> **History**: Previously three crates (`open4x-api`, `open4x-server`, `open4x-web`) were merged to eliminate duplication.
+| Crate | Target | Role |
+|-------|--------|------|
+| `open4x-protocol` | any | Versioned wire types under `v1::*` — the contract between server and clients. |
+| `open4x-sdk` | native + `wasm32` | Typed HTTP client with two transports (`native-blocking` / `native-async` via `reqwest`, `wasm` via `web_sys::fetch`). |
+| `open4x-server` | native | Axum REST + WebSocket server, `GameRoom` orchestration, fog-of-war projection. No Leptos, no cdylib. |
+| `open4x-client-web` | `wasm32-unknown-unknown` | Leptos CSR frontend (cdylib) — consumes the SDK. |
 
-## Wire Protocol Types (`types` module)
+> **History**: a previous iteration merged three legacy crates (`open4x-api`, `open4x-server`, `open4x-web`) into one dual-purpose crate gated by `ssr` / `csr` feature flags. The [crate-split roadmap](../roadmap/crate-split.md) records how that crate was decomposed back into single-purpose crates with an explicit protocol surface.
 
-Serializable mirror types for the game state, shared between server and client. All types derive `Serialize`/`Deserialize`.
+## Wire Protocol Types (`open4x-protocol`)
+
+All wire types live under `open4x_protocol::v1::*` and derive `Serialize`/`Deserialize`. The `tests/wire_schema.rs` snapshots guard against accidental schema drift — any PR that intentionally changes a field must update them; any PR that accidentally changes one fails CI.
 
 ### Key Types
 
@@ -24,6 +31,8 @@ Serializable mirror types for the game state, shared between server and client. 
 | `TechTreeView` | Tech tree with research status |
 | `ProfileView` | Player profile with display name and civ template |
 | `CivTemplate` | Civilization definition (name, leader, abilities, uniques) |
+
+Per-endpoint slice types live under `v1::web::*` (e.g. `web::city_data::CityData`, `web::player_state::PlayerState`).
 
 ### GameAction Variants
 
@@ -46,7 +55,22 @@ enum GameAction {
 }
 ```
 
-## Server (`ssr` feature)
+## Typed Client (`open4x-sdk`)
+
+The SDK provides a `Transport` trait + concrete backends + one async function per `/api/v1/*` resource:
+
+```text
+open4x-sdk/src/
+  transport.rs        — `Transport` trait + `Method` enum
+  error.rs            — `ApiError` + helpers for decoding `{error, message}` envelopes
+  native.rs           — `NativeBlockingClient` / `NativeAsyncClient`  (features: native-blocking, native-async)
+  wasm.rs             — `WasmClient` over `web_sys::fetch`             (feature: wasm; wasm32 only)
+  endpoints/          — one module per resource (cities, units, tech, ...); functions generic over `T: Transport`
+```
+
+Both the native CLI (`open4x-cli/src/remote/client.rs` is a thin shim over `NativeBlockingClient`) and the browser client (`open4x-client-web`) consume the same `endpoints/*` functions.
+
+## Server (`open4x-server`)
 
 ### Architecture
 
@@ -54,23 +78,25 @@ enum GameAction {
 HTTP Server (Axum)
 +-- GET /ws            -> WebSocket upgrade
 +-- GET /health        -> Health check ("ok")
-+-- GET /api/demo-game -> JSON demo game result
-+-- GET /api/game/*    -> REST API (bearer token auth)
-+-- Static files       -> Trunk-built frontend
++-- GET /api/v1/*      -> REST API (bearer token auth)
++-- POST /api/v1/games/new -> bootstrap a single-player session (unauthenticated)
++-- Static files       -> Trunk-built frontend from OPEN4X_STATIC_DIR
 ```
+
+The full REST route list lives in [`book/src/multiplayer/web-client.md`](../multiplayer/web-client.md). The shared route table is `open4x_server::server::rest::v1_router()` so `main.rs` and `tests/rest_api.rs` use one source of truth.
 
 ### State Management
 
 ```rust
 struct AppState {
-    games: DashMap<GameId, GameRoom>,       // concurrent map of active games
-    players: DashMap<[u8; 32], PlayerRecord>, // persistent player profiles
+    games: DashMap<GameId, GameRoom>,           // concurrent map of active games
+    players: DashMap<[u8; 32], PlayerRecord>,   // persistent player profiles
     api_tokens: DashMap<String, ApiTokenRecord>, // REST API bearer tokens
-    templates: Vec<CivTemplate>,            // built-in civ definitions
+    templates: Vec<CivTemplate>,                // built-in civ definitions
 }
 ```
 
-Each `GameRoom` holds a full `GameState`, `DefaultRulesEngine`, player slots, AI agents, and a broadcast channel for push updates.
+Each `GameRoom` holds a full `GameState`, `DefaultRulesEngine`, player slots, AI agents, a notification ring buffer, and a broadcast channel for push updates.
 
 ### WebSocket Flow
 
@@ -78,26 +104,11 @@ Each `GameRoom` holds a full `GameState`, `DefaultRulesEngine`, player slots, AI
 2. **Lobby**: `ListGames` -> `GamesList`, `CreateGame` -> `GameCreated`, `JoinGame` -> `GameJoined { view }`
 3. **Gameplay**: `Action(GameAction)` -> `ActionResult { ok, error }`, `EndTurn` -> `TurnResolved { new_turn, view }`
 
-### REST API
-
-Bearer-token authenticated endpoints for programmatic access:
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/game/view` | Full `GameView` projection (enables custom renderers) |
-| `/api/game/cities` | City report for all own cities |
-| `/api/game/city/{id}` | Detailed report for a specific city |
-| `/api/game/resources` | Resource inventory |
-| `/api/game/units` | Unit roster |
-| `/api/game/map-stats` | Terrain/feature/resource counts |
-| `/api/game/players` | Known civilization info |
-| `/api/game/science` | Tech tree progress |
-| `/api/game/culture` | Civic tree progress |
-| `/api/game/turn` | Turn status (for future webhook support) |
+The single-player REST loop never opens a WebSocket; `/ws` is reserved for the AI demo and future multiplayer.
 
 ### Fog-of-War Projection
 
-The `projection` module converts internal `GameState` into per-player `GameView`:
+The `server/web_projection.rs` module converts internal `GameState` into per-endpoint wire slices:
 - Only explored tiles appear in the board view
 - Only visible units are included
 - Own cities show full detail; foreign cities show limited info
@@ -106,13 +117,13 @@ The `projection` module converts internal `GameState` into per-player `GameView`
 ### Deployment
 
 The server is containerized with a multi-stage Dockerfile:
-1. Build `open4x-server` binary with `--features ssr` (Rust 1.86)
-2. Build WASM frontend with `trunk` from `open4x-server/index.html`
-3. Package into Debian slim runtime image
+1. Build `open4x-server` binary (native, no feature flags)
+2. Build the WASM frontend with `trunk build --release` from `open4x-client-web/`
+3. Package into Debian slim runtime image; set `OPEN4X_STATIC_DIR` to the bundle path
 
 Exposes port `3001`. Persistent game data stored in a Docker volume at `/app/data`.
 
-## Frontend (`csr` feature)
+## Frontend (`open4x-client-web`)
 
 ### Tab-Based UI
 
@@ -138,15 +149,24 @@ struct WsClient {
 }
 ```
 
-The client connects to the server's `/ws` endpoint, performs Ed25519 authentication, and exchanges `ClientMessage`/`ServerMessage` JSON frames. The `WsClient::connect()` method sets up an `onmessage` callback that feeds server messages into Leptos reactive signals for UI updates.
+The client connects to the server's `/ws` endpoint, performs Ed25519 authentication, and exchanges `ClientMessage`/`ServerMessage` JSON frames. Used for the AI demo / future multiplayer; the single-player loop uses REST via `open4x-sdk` instead.
+
+### SDK Adapter
+
+`open4x-client-web/src/pages/rest_game.rs` defines a tiny `client(token)` helper that builds a `WasmClient` rooted at `""` (fetch resolves paths against `window.location`) and folds in the bearer token. Every typed call goes through `open4x_sdk::endpoints::*`.
 
 ### Hex Map Renderer
 
-The `hexmap` module renders the game board as SVG:
+The `components/hexmap.rs` module renders the game board as SVG:
 - Pointy-top hexagons colored by terrain type
 - Click handlers for tile and unit selection
 - Movement and attack interactions
 
 ### Build
 
-The frontend is compiled to `wasm32-unknown-unknown` by Trunk. The `.cargo/config.toml` sets the `getrandom_backend="wasm_js"` rustflag required for `getrandom 0.3` compatibility in WASM.
+```bash
+cd open4x-client-web
+trunk build --release        # emits dist/
+```
+
+Trunk auto-discovers the cdylib via the `<link data-trunk rel="rust">` hint in `index.html`. `getrandom`'s `wasm_js` feature is pinned in `open4x-sdk`'s wasm32 dependency block so the transitive `ulid → rand → getrandom` chain compiles for wasm without any workspace-level rustflag.

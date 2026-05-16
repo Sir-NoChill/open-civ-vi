@@ -47,7 +47,7 @@ Code-level TODOs extracted from the codebase, plus potential future work.
 - Turn timer enforcement
 - Per-player fog-of-war projection
 
-### WASM Frontend
+### WASM Frontend (`open4x-client-web`)
 - City management panel
 - Unit action overlay with movement preview
 - Minimap with territory colors

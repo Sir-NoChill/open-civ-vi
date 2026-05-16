@@ -1,16 +1,25 @@
 # Web UI Roadmap — Leptos port of the `open4x-webui/` wireframe
 
 > **Status**: Server-side reads + writes for all 5 phases complete (40
-> endpoints, 10 integration tests, 5 unit tests, both ssr/csr clippy clean).
-> Remaining: client tabs (city/units/diplomacy/empire/victory/government),
-> HexMap refactor, libciv extensions (preview_combat, available_unit_actions,
-> pending_actions, victory_progress, policy_catalogue, AssignCityFocus,
-> RenameCity, Cancel*, ChangeGovernment), NotificationRecord ring buffer,
-> and Phase 5 final cleanup (delete `open4x-webui/`, drop `/api/game/*`).
-> **Goal**: Replace the static `open4x-webui/` HTML wireframe with an interactive
-> Leptos/WASM frontend that lives in `open4x-server` and is driven by REST calls
-> against the same crate's `ssr` server. Single-player, declarative state on the
-> client, mutations go through REST.
+> endpoints, 10 integration tests, 5 unit tests, clippy clean across all
+> crates including the wasm32 client build). The
+> [crate-split migration](./crate-split.md) since extracted the Leptos UI
+> into its own `open4x-client-web` crate; `open4x-server` is now a native-
+> only Axum server. Remaining: client tabs (city/units/diplomacy/empire/
+> victory/government), HexMap refactor, libciv extensions (preview_combat,
+> available_unit_actions, pending_actions, victory_progress,
+> policy_catalogue, AssignCityFocus, RenameCity, Cancel*, ChangeGovernment).
+> **Note**: the changelog (§10) and earlier inventory sections below were
+> written against the pre-split layout; paths like
+> `open4x-server/src/{pages,components,tabs}` and `open4x-server/src/types`
+> now correspond to `open4x-client-web/src/{pages,components,tabs}` and
+> `open4x-protocol/src/v1` respectively. The per-screen plan in §2.1 is
+> still the source of truth for screen-level work.
+> **Goal**: Replace the static `open4x-webui/` HTML wireframe with an
+> interactive Leptos/WASM frontend (`open4x-client-web`) driven by REST
+> calls against the native `open4x-server`, with the contract owned by
+> `open4x-protocol` and the typed client by `open4x-sdk`. Single-player,
+> declarative state on the client, mutations go through REST.
 
 ---
 
@@ -20,20 +29,20 @@ We have two artefacts today:
 
 | Artefact                          | What it is                                                                                                            |
 |-----------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| `open4x-webui/4X Wireframes.html` | A 3 624-line vanilla-JS wireframe with 14 screens that already render from local JSON mocks (`*.json` next to it).    |
-| `open4x-server/src/{pages,components,tabs}` | A working Leptos/CSR app with a HexMap, ~9 tabs, WebSocket auth + a `GameView` projection. Functional but minimal. |
+| `docs/legacy-wireframe/4X Wireframes.html` (archived from `open4x-webui/`) | A 3 624-line vanilla-JS wireframe with 14 screens that render from local JSON mocks (`*.json` next to it). Kept as the visual + JSON-shape source of truth. |
+| `open4x-client-web/src/{pages,components,tabs}` | A working Leptos/CSR app with a HexMap, ~9 tabs, WebSocket auth + a `GameView` projection. Functional but minimal. (Pre-split, this lived under `open4x-server/src/`.) |
 
 The wireframe is closer to the *visual* target; the Leptos app is closer to the
 *technical* target. The plan below walks the wireframe's screens into the
 Leptos app one at a time, while turning every `fetch("foo.json")` call into a
-typed Rust `GET`/`POST` against `open4x-server`'s REST surface.
+typed `open4x-sdk` call against `open4x-server`'s REST surface.
 
 The end state must satisfy the user's brief:
 
-1. **Rust-based web framework, minimal JS** — Leptos CSR (already in
-   `open4x-server` with the `csr` feature). No new JS files; the wireframe's
-   `wireframe.js` / `government.js` / `unit-screen.js` / `map-overlay.js` get
-   ported into Leptos components.
+1. **Rust-based web framework, minimal JS** — Leptos CSR
+   (`open4x-client-web`, a wasm32-only cdylib). No new JS files; the
+   wireframe's `wireframe.js` / `government.js` / `unit-screen.js` /
+   `map-overlay.js` get ported into Leptos components.
 2. **Declarative, single-player gameplay loop** — the client holds a snapshot
    of `GameView` (or smaller per-screen views), renders it, and only mutates by
    sending a REST request and replacing its snapshot with the response.
@@ -67,14 +76,17 @@ must end up reproducing.
 | Empire overview         | `empire-overview.json`       | summary stats, city table, trade, religion, sparkline    |
 | Victory screen          | `victory.json`               | per-condition progress, leaderboard                      |
 
-### 2.2 Existing Leptos coverage (`open4x-server` with `csr`)
+### 2.2 Existing Leptos coverage (`open4x-client-web`)
 
-What we already have we keep:
+What we already have we keep (paths relative to `open4x-client-web/src/`
+post-split — pre-split these all lived under `open4x-server/src/`):
 
 - **`pages/mod.rs`** — `HomePage`, `MapConfigPage`, `SettingsPage`, `PlayersPage`,
   `DemoConfigPage` (all functional, just need to be reachable from the new HUD).
 - **`pages/game.rs`** — `GamePage` with TopBar, Sidebar, TileInfo, CityPanel,
   UnitInfo, YieldsPanel, TechPanel. Currently WebSocket-driven.
+- **`pages/rest_game.rs`** — REST single-player page (post-split adapter; builds
+  `open4x_sdk::wasm::WasmClient` from the bearer token).
 - **`pages/replay.rs`** — AI-demo replay viewer (independent, leave alone).
 - **`components/hexmap.rs`** — SVG hex renderer. Already does selection and
   click dispatch. **This is the foundation we build the new HUD around.**
@@ -83,8 +95,12 @@ What we already have we keep:
 - **`tabs/`** — `GameTab` enum + 9 tabs (Map, DataReports w/ 4 sub-tabs,
   Science, Culture, Governors, GreatPeople, Climate, Players, City). Several
   are placeholders.
-- **`types/{view,messages,enums,ids,coord}.rs`** — already serializable types
-  shared by `ssr` and `csr`. `GameView` is the canonical client-facing shape.
+- **`open4x-protocol::v1::{view,messages,enums,ids,coord,web}`** — serializable
+  wire types shared between server and clients. `GameView` is the canonical
+  client-facing shape. (Pre-split these lived in `open4x-server/src/types/`.)
+  The HTTP bindings used to live under `open4x-server/src/components/api/`;
+  they now come from `open4x_sdk::endpoints::*` and the wasm transport from
+  `open4x_sdk::wasm::WasmClient`.
 
 ### 2.3 Existing REST surface (`/api/game/*`)
 
@@ -419,11 +435,19 @@ let app = Router::new()
 
 ## 6. Client-side work (Leptos)
 
-### 6.1 Bindings layer (`client/api/`)
+### 6.1 Bindings layer (`open4x-sdk`)
 
-A new module `open4x-server/src/components/api/` contains one Rust function
-per REST endpoint. Reads return `Result<T, ApiError>`. Writes return
-`Result<MutationResponse<T>, ApiError>` where `T` is the affected slice.
+> Post-split note: the bindings layer is no longer in-tree under the web
+> client. It lives in the dedicated `open4x-sdk` crate (one module per
+> resource under `open4x-sdk/src/endpoints/*`) and is consumed by both
+> `open4x-client-web` (via `WasmClient`) and `open4x-cli` (via
+> `NativeBlockingClient`). The pre-split layout described below
+> (`open4x-server/src/components/api/*`) corresponds 1:1 to the SDK's
+> `endpoints/*` module set.
+
+`open4x-sdk` contains one Rust function per REST endpoint. Reads return
+`Result<T, ApiError>`. Writes return `Result<MutationResponse<T>, ApiError>`
+where `T` is the affected slice.
 
 ```rust
 // components/api/mod.rs

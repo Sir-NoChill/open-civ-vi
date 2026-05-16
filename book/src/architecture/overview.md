@@ -1,18 +1,25 @@
 # Architecture Overview
 
-Open Civ VI is structured as a Rust workspace with four crates arranged in a strict dependency hierarchy:
+Open Civ VI is structured as a Rust workspace with seven crates arranged in a strict dependency hierarchy:
 
 ```
-libhexgrid      (pure geometry, zero game knowledge)
+libhexgrid             (pure geometry, zero game knowledge)
     |
-libciv          (all game state and rules)
-    |           |
-open4x-cli  open4x-server   (CLI binary / merged server + frontend)
+libciv                 (all game state and rules)
+    |
+    +-- open4x-cli            (CLI binary; remote mode wraps the SDK)
+    +-- open4x-protocol       (versioned wire types — v1::*)
+    |       |
+    |       +-- open4x-sdk           (typed HTTP client; native + wasm transports)
+    |       |       |
+    |       |       +-- open4x-client-web   (Leptos CSR cdylib, wasm32)
+    |       |
+    |       +-- open4x-server        (native Axum server: REST + WS + GameRoom)
 ```
 
-> **History**: `open4x-api` (shared wire types) and `open4x-web` (Leptos frontend)
-> were merged into `open4x-server` using feature flags (`ssr` for Axum server,
-> `csr` for Leptos/WASM client).
+`open4x-accounts` and `open4x-lobby` live on disk under their own directories but are excluded from the workspace; they are scheduled for extraction to a separate repo.
+
+> **History**: a single dual-purpose `open4x-server` crate previously held the Axum server, the Leptos browser client, and the shared wire types behind mutually exclusive `ssr` / `csr` feature flags. The [crate-split roadmap](../roadmap/crate-split.md) records how that crate was split into `open4x-protocol`, `open4x-sdk`, `open4x-server` (native-only), and `open4x-client-web`. Before that split, `open4x-api` (wire types) and `open4x-web` (Leptos frontend) had been merged *into* the dual-purpose crate; the current four-crate layout undoes that consolidation in favour of single-purpose crates.
 
 ## Design Principles
 

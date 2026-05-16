@@ -1,13 +1,15 @@
 # Web Client
 
-The `open4x-server` crate (with the `csr` feature) provides a browser-based
-game client built with Leptos and compiled to WebAssembly.
+The `open4x-client-web` crate provides a browser-based game client built
+with Leptos and compiled to WebAssembly. It is a standalone wasm32-only
+cdylib that depends on `open4x-protocol` (wire types) and `open4x-sdk`
+(typed HTTP client). The native server (`open4x-server`) lives in its
+own crate with no Leptos / wasm-bindgen dependency.
 
-The crate is dual-purpose: with `--features ssr` it builds a native Axum
-server binary; with `--features csr --target wasm32-unknown-unknown` it
-builds the cdylib that becomes the SPA bundle. The `[[bin]]` entry in
-`Cargo.toml` is gated on `ssr`, so trunk's wasm pipeline picks up the
-library's `lib.rs::start()` (`#[wasm_bindgen(start)]`) instead.
+The crate's `src/lib.rs` exposes `#[wasm_bindgen(start)]` so trunk's wasm
+pipeline mounts the Leptos app on page load; module declarations are
+`cfg(target_arch = "wasm32")`-gated so `cargo build --workspace` includes
+the crate natively (as an empty cdylib) without a Leptos toolchain.
 
 ## Technology Stack
 
@@ -98,16 +100,19 @@ The full plan and changelog live in
 ## Client architecture
 
 The client mirrors the wireframe's contract verbatim through wire types in
-`open4x-server/src/types/web.rs`. Each REST endpoint has:
+`open4x-protocol::v1::web::*`. Each REST endpoint has:
 
-- a wire type (e.g. `types::web::city_data::CityData`)
-- a server projector (e.g. `server::web_projection::build_cities`)
-- a route handler (e.g. `server::rest::handlers::cities`)
-- a client binding (e.g. `components::api::cities::list`)
+- a wire type (e.g. `open4x_protocol::v1::web::city_data::CityData`)
+- a server projector (e.g. `open4x_server::server::web_projection::build_cities`)
+- a route handler (e.g. `open4x_server::server::rest::handlers::cities`)
+- an SDK endpoint (e.g. `open4x_sdk::endpoints::cities::list`)
 
-The browser-side bindings layer (`components::api::*`) wraps
-`web_sys::Request` through a single `fetch_json(method, url, token, body)`
-helper. There is no JavaScript shim — every call is pure Rust + wasm-bindgen.
+The browser-side bindings come from `open4x-sdk` directly: the
+`pages/rest_game.rs::client(token)` helper builds an
+`open4x_sdk::wasm::WasmClient` rooted at `""` (fetch resolves paths against
+`window.location`) and folds in the bearer token. Every typed call goes
+through `open4x_sdk::endpoints::*`. There is no JavaScript shim — every
+call is pure Rust + wasm-bindgen.
 
 ### Reactive state
 
@@ -144,25 +149,30 @@ this path.
 
 ```bash
 rustup target add wasm32-unknown-unknown          # one-time
-cargo install trunk                                # one-time
+cargo install trunk                                # one-time (or use a prebuilt binary)
 
-cd open4x-server
-trunk serve --features csr --no-default-features  # dev server
-trunk build --release --features csr --no-default-features
+cd open4x-client-web
+trunk serve              # dev server (proxies to localhost:3001 by convention)
+trunk build --release    # production build → open4x-client-web/dist/
 ```
 
-Then start the native server:
+Then start the native server, pointing it at the trunk-built bundle:
 
 ```bash
-cargo run -p open4x-server   # serves /api/*, /ws, and dist/
+OPEN4X_STATIC_DIR=$PWD/open4x-client-web/dist cargo run -p open4x-server
 ```
 
-The WASM target requires `getrandom_backend="wasm_js"`, configured in
-`.cargo/config.toml` for `wasm32-unknown-unknown`. This ensures all
-transitive deps agree on the WASM random backend.
+The default `OPEN4X_STATIC_DIR` is `./open4x-client-web/dist`, resolved
+against the binary's CWD; use an absolute path when running from a different
+working directory.
+
+`getrandom`'s `wasm_js` feature is pinned in `open4x-sdk`'s wasm32
+dependency block so the transitive `ulid → rand → getrandom` chain compiles
+for wasm without any workspace-level rustflag.
 
 ## Configuration
 
-`OPEN4X_STATIC_DIR` (default `./open4x-server/dist`) tells the server where
-to find the trunk-built bundle. `PORT` (default `3001`) sets the listen
-address. The client connects to the same origin for both REST and WS.
+`OPEN4X_STATIC_DIR` (default `./open4x-client-web/dist`) tells the server
+where to find the trunk-built bundle. `PORT` (default `3001`) sets the
+listen address. The client connects to the same origin for both REST and
+WS.

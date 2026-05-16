@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **Rust** (edition 2024, stable toolchain 1.86+)
-- **jj** (Jujutsu) for version control (the project uses jj, not git)
+- **`but`** (GitButler) for version control — see [`agents/skills/gitbutler/SKILL.md`](https://github.com/bloboss/open-civ-vi/blob/main/agents/skills/gitbutler/SKILL.md). `jj` use is suspended during the GitButler-workflow window.
 - For WASM frontend: **trunk** (`cargo install trunk`) and the `wasm32-unknown-unknown` target
 
 ## Building
@@ -63,29 +63,33 @@ The server serves the WASM frontend as static files and exposes a WebSocket endp
 
 ## Building the WASM Frontend
 
-The frontend is the `open4x-server` crate compiled with the `csr` feature for
-the `wasm32-unknown-unknown` target. The native server binary uses the `ssr`
-feature (default).
+The frontend is the `open4x-client-web` crate — a Leptos CSR cdylib that
+builds for `wasm32-unknown-unknown`. The native server binary
+(`open4x-server`) is a separate crate and has no Leptos / wasm-bindgen
+dependency.
 
 ```bash
 # One-time setup
 rustup target add wasm32-unknown-unknown
-cargo install trunk
+cargo install trunk          # or use a prebuilt release (cargo install fails on some platforms)
 
 # Iterate on the UI with hot-reloading (proxies API calls to localhost:3001)
-cd open4x-server
-trunk serve --features csr --no-default-features
+cd open4x-client-web
+trunk serve
 
-# Production build — emits open4x-server/dist/ for the server to serve
-trunk build --release --features csr --no-default-features
+# Production build — emits open4x-client-web/dist/ for the server to serve
+trunk build --release
 ```
 
-Then start the native server (which will fall back to the trunk-built
-artefacts at `OPEN4X_STATIC_DIR`, defaulting to `./open4x-server/dist`):
+Then start the native server (which serves the trunk-built artefacts from
+`OPEN4X_STATIC_DIR`, defaulting to `./open4x-client-web/dist`):
 
 ```bash
 cargo run -p open4x-server     # serves /api/*, /ws, and dist/
 ```
+
+Use an absolute path for `OPEN4X_STATIC_DIR` when running from a different
+working directory; the relative default resolves against the binary's CWD.
 
 ### REST surface (under construction)
 
@@ -126,8 +130,11 @@ open-civ-vi/
 |   |   +-- rules/       # Modifiers, tech trees, policies
 |   |   +-- world/       # Terrain, features, improvements, mapgen
 |   +-- tests/           # Integration tests (20+ test files)
-+-- open4x-cli/          # CLI binary
-+-- open4x-server/       # Merged server + frontend (ssr/csr features)
++-- open4x-cli/          # CLI binary (remote mode wraps open4x-sdk)
++-- open4x-protocol/     # Versioned wire types (v1::*)
++-- open4x-sdk/          # Typed HTTP client (native + wasm transports)
++-- open4x-server/       # Native Axum server (REST + WS, no Leptos)
++-- open4x-client-web/   # Leptos CSR frontend (wasm32 cdylib)
 +-- book/                # This documentation (mdBook)
 +-- CLAUDE.md            # Claude Code configuration
 ```

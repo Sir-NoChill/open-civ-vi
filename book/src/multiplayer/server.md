@@ -1,6 +1,6 @@
 # Game Server
 
-The `open4x-server` crate provides an Axum-based HTTP/WebSocket server for multiplayer games.
+The `open4x-server` crate provides a native-only Axum HTTP/WebSocket server for multiplayer games. It depends on `open4x-protocol` (wire types) and `libciv` (engine); it does not depend on Leptos, wasm-bindgen, or any browser-side crate.
 
 ## Architecture
 
@@ -8,8 +8,8 @@ The `open4x-server` crate provides an Axum-based HTTP/WebSocket server for multi
 Axum Router
   |-- GET /ws           WebSocket upgrade handler
   |-- GET /health       Health check endpoint
-  |-- GET /api/demo-game  AI-vs-AI demo (JSON response)
-  |-- Static files      Leptos/trunk frontend (from OPEN4X_STATIC_DIR)
+  |-- GET /api/v1/*     REST API (bearer token auth; full route list in web-client.md)
+  |-- Static files      Trunk-built frontend bundle (from OPEN4X_STATIC_DIR)
 ```
 
 ## State
@@ -114,9 +114,9 @@ The `projection` module converts internal game state to player-visible views:
 
 ```dockerfile
 # Multi-stage build
-FROM rust:1.86 AS build-server    # compile server binary
-FROM rust:1.86 AS build-web       # compile WASM frontend with trunk
-FROM debian:bookworm-slim         # runtime image
+FROM rust:1.86 AS build-server    # compile `open4x-server` (native, no feature flags)
+FROM rust:1.86 AS build-web       # compile `open4x-client-web` WASM frontend with trunk
+FROM debian:bookworm-slim         # runtime image; OPEN4X_STATIC_DIR points at the bundle
 ```
 
 ### Environment Variables
@@ -124,7 +124,7 @@ FROM debian:bookworm-slim         # runtime image
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | 3001 | HTTP listen port |
-| `OPEN4X_STATIC_DIR` | `./open4x-server/dist` | Path to frontend static files |
+| `OPEN4X_STATIC_DIR` | `./open4x-client-web/dist` | Path to frontend static files (built by trunk from `open4x-client-web`) |
 | `OPEN4X_DATA_DIR` | `./data` | Persistent data directory |
 
 ### Docker Compose

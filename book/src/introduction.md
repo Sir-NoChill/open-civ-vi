@@ -19,8 +19,11 @@ The engine is under active development. Core systems -- hex grid, terrain, citie
 |-------|------|
 | `libhexgrid` | Pure hex geometry -- coordinates, pathfinding, line of sight |
 | `libciv` | All game state and rules -- world, civilizations, rules engine, AI |
-| `open4x` (open4x-cli) | CLI binary for local simulation and interactive play |
-| `open4x-server` | Merged server + frontend (`ssr` for Axum server, `csr` for Leptos/WASM client) |
+| `open4x` (open4x-cli) | CLI binary for local simulation and interactive play (remote mode wraps `open4x-sdk`) |
+| `open4x-protocol` | Versioned wire types (`v1::*`) -- the contract between server and clients |
+| `open4x-sdk` | Typed HTTP client over the protocol; native + wasm transports |
+| `open4x-server` | Native Axum server (REST + WS + GameRoom); serves the trunk-built SPA from `OPEN4X_STATIC_DIR` |
+| `open4x-client-web` | Leptos CSR + cdylib (wasm32) browser client; consumes the SDK |
 
 ## License & Contributing
 
