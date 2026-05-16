@@ -14,6 +14,9 @@
 
 pub mod endpoints;
 pub mod error;
+pub mod transport;
+
+pub use transport::{Method, Transport};
 
 #[cfg(any(feature = "native-blocking", feature = "native-async"))]
 pub mod native;
