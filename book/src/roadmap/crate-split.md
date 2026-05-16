@@ -444,3 +444,228 @@ separate work:
   both REST and WS shapes. Keep them in `open4x-protocol/v1/messages.rs`
   unchanged; the WS transport itself is an SDK concern (Phase 2b can stub it
   and complete it once the REST surface is proven). -> `open4x-protocol/v1/messages.rs` as youo say
+
+---
+
+## 11. Agentic dispatch plan (GitButler workflow)
+
+This section operationalises §4–§5 against [GitButler](https://docs.gitbutler.com/cli-overview)'s
+virtual-branch model. **For the duration of this migration `jj` is suspended
+in favour of `git` + `but`.** Conventional commit tags from `AGENTS.md` still
+apply (`infra:`, `impl:`, `fix:`, `tests:`, `docs:`).
+
+### 11.1 GitButler primitives we rely on
+
+| Primitive                | `but` command                              | Used for                                                  |
+|--------------------------|--------------------------------------------|-----------------------------------------------------------|
+| Virtual branch (lane)    | `but branch new <lane>`                    | One lane per concurrently dispatched agent.               |
+| Stacked branch           | `but branch new -a <anchor> <lane>`        | When a phase strictly depends on another unmerged phase.  |
+| Per-lane staging         | `but stage <file-id> <lane>`               | Assign agent's edits to its own lane.                     |
+| Per-lane commit          | `but commit -m '<msg>' <lane>`             | Commit a lane without polluting unassigned bucket.        |
+| Lane status              | `but status`, `but status -f`              | Operator visibility: which agent owns which changes.      |
+| Lane diff                | `but diff <lane>`                          | Review before push.                                       |
+| Push lane                | `but push <lane>`                          | Publish for review.                                       |
+| Open PR                  | `but pr <lane>`                            | Create the GitHub PR per lane.                            |
+| Rebase open lanes        | `but pull` (after upstream merge)          | Keep remaining lanes current as siblings land.            |
+| Conflict resolution      | `but resolve`                              | First-class — never blocks unrelated lanes.               |
+| Recovery                 | `but oplog`, `but undo`, `but oplog restore` | Roll back a bad dispatch without touching other lanes.    |
+| Manual snapshot          | `but oplog snapshot`                       | Pin a known-good state before risky operations.           |
+
+GitButler shares a **single working directory** across all applied lanes —
+there is no per-lane checkout. Lane isolation is purely metadata: GitButler
+tracks which hunks belong to which lane. This means our concurrency safety
+comes from **disjoint file ownership**, not from filesystem walls.
+
+### 11.2 Lane → phase mapping
+
+One lane per dispatchable unit of work. Lane names use `phase/<id>-<slug>`.
+
+| Lane                       | Phase | Depends on (merged)        | Files the agent may touch                                                             |
+|----------------------------|-------|----------------------------|----------------------------------------------------------------------------------------|
+| `phase/0-scaffolding`      | P0    | —                          | Root `Cargo.toml`; new `open4x-{protocol,sdk,client-web}/{Cargo.toml,src/lib.rs}`.    |
+| `phase/1-protocol`         | P1    | P0                         | `open4x-server/src/types/**`, `open4x-protocol/src/**`, `open4x-server/Cargo.toml` (add dep only). |
+| `phase/2a-sdk-native`      | P2a   | P1                         | `open4x-sdk/src/{native.rs,error.rs,endpoints/*}`, `open4x-sdk/Cargo.toml`, `open4x-sdk/tests/native_roundtrip.rs`. |
+| `phase/2b-sdk-wasm`        | P2b   | P1                         | `open4x-sdk/src/{wasm.rs,endpoints/*}`, `open4x-sdk/Cargo.toml` (wasm features only), `open4x-sdk/tests/wasm_smoke.rs`. |
+| `phase/4-client-web`       | P4    | P2b                        | Moves `open4x-server/src/{components,pages,tabs}` → `open4x-client-web/src/**`; `open4x-client-web/{index.html,Cargo.toml}`. |
+| `phase/3-server-slim`      | P3    | P4                         | `open4x-server/{Cargo.toml,src/lib.rs,src/main.rs}`; deletes empty leftovers; updates `tests/rest_api.rs` cfg line. |
+| `phase/5-cli-sdk`          | P5    | P2a                        | `open4x-cli/src/remote/**`, `open4x-cli/Cargo.toml`.                                  |
+| `phase/6-docs`             | P6    | P3, P4, P5                 | `AGENTS.md`, `book/src/**`, `MEMORY.md`, `Dockerfile`, `docker-compose.yml`, `justfile`. |
+
+### 11.3 Hot zones (shared files across lanes)
+
+Three files attract concurrent edits and need explicit coordination:
+
+| File                                          | Lanes that touch it   | Coordination rule                                                                  |
+|-----------------------------------------------|-----------------------|------------------------------------------------------------------------------------|
+| `open4x-sdk/Cargo.toml`                       | P2a, P2b              | P0 lands the full feature scaffold (`native-blocking`, `native-async`, `wasm`) so each P2 lane only adds dep entries to its own feature block. Reviewer rejects any P2 PR that edits the other lane's feature block. |
+| `open4x-sdk/src/endpoints/mod.rs`             | P2a, P2b              | P0 commits the file with `pub mod cities; pub mod units; pub mod tech; …` already present. Each lane fills the per-resource module body, never touches `mod.rs`. |
+| `open4x-server/Cargo.toml`                    | P1, P3                | P1 only **adds** the protocol dep. P3 **removes** the leptos/wasm deps. P1 must merge before P3 starts (already enforced by §5 graph). |
+
+For everything else, the lane-to-files table in §11.2 is enforceable as a
+disjoint partition — two lanes never have write claims on the same file.
+
+### 11.4 Pre-flight (operator, once)
+
+```bash
+cd ~/Code/open-civ-vi
+but setup                                  # one-time per repo
+but config user                            # name + email if not already set
+but config forge auth                      # if you want `but pr` (else use gh)
+but config target                          # confirms origin/main is the target
+git fetch origin && git checkout main && git pull --ff-only
+```
+
+### 11.5 Dispatch recipe (per lane)
+
+The operator runs steps 1–3 and 6–8. Steps 4–5 are the agent's job.
+
+```bash
+# 1. Refresh from main.
+but pull
+
+# 2. Snapshot a known-good baseline so a misbehaving agent can be rewound.
+but oplog snapshot
+
+# 3. Open the lane. Use -a <anchor-lane> if the dependency hasn't merged yet
+#    and you want a stacked PR.
+but branch new phase/2a-sdk-native
+# or:  but branch new -a phase/1-protocol phase/2a-sdk-native
+
+# 4. Dispatch the agent with the lane name + file-ownership scope. Template
+#    prompt in §11.6. The agent edits files in the shared working tree.
+
+# 5. Agent commits its own work, always passing its lane name explicitly:
+#       but commit -m 'impl: lift http.rs into open4x-sdk/native' \
+#                  phase/2a-sdk-native
+
+# 6. Operator review.
+but status -f                              # see which lane owns what
+but diff phase/2a-sdk-native               # human review of the hunk set
+but branch show phase/2a-sdk-native        # commit list ahead of target
+cargo test --workspace                     # parity gate from §3
+cargo clippy --workspace -- -D warnings
+
+# 7. Publish.
+but push phase/2a-sdk-native
+but pr phase/2a-sdk-native                 # or: gh pr create ...
+
+# 8. After the PR merges to origin/main, rebase every still-open lane.
+but pull
+```
+
+If the agent goes off the rails: `but oplog restore <sha>` to the snapshot
+from step 2. Other lanes are untouched because they live in their own
+metadata.
+
+### 11.6 Agent prompt template
+
+The implementing agent does **not** need to understand GitButler. It just
+needs the lane name (so its commits land correctly) and a strict file-scope
+list. Use this template per dispatch:
+
+```
+You are implementing Phase <N> of the crate-split migration documented in
+book/src/roadmap/crate-split.md §4. Your lane name is `<lane>`.
+
+Files you may CREATE or MODIFY:
+  - <explicit list from §11.2>
+
+Files you may READ but MUST NOT modify:
+  - <everything else, especially the lanes listed in §11.3 as hot zones>
+
+When committing, always pass the lane name explicitly:
+  but commit -m '<conventional-commit-tag>: <message>' <lane>
+
+Exit criteria (all must hold before you report done):
+  - cargo build --workspace                      succeeds
+  - cargo test --workspace                       passes
+  - cargo clippy --workspace -- -D warnings      clean
+  - <phase-specific checklist from §8>
+
+Do NOT run: but push, but pr, but pull, git push, git rebase, git merge.
+The operator handles publishing.
+```
+
+### 11.7 Concurrency timeline
+
+```
+time →
+
+main │═══════════ P0 merged ═══════════ P1 merged ════════════════════════════════════════════════ P2a, P2b merged ════════ P5, P4 merged ═══════ P3 merged ═══ P6 merged
+     │                                       │                                                            │                       │                    │
+     │                                       ├── lane phase/2a-sdk-native ──────────────────────┐         │                       │                    │
+     │                                       │                                                  │         │                       │                    │
+     │                                       ├── lane phase/2b-sdk-wasm ────────────────────────┤         │                       │                    │
+     │                                       │                                                  │         │                       │                    │
+     │                                       │                                                  ├── lane phase/5-cli-sdk ─────────┤                    │
+     │                                       │                                                  │                                 │                    │
+     │                                       │                                                  ├── lane phase/4-client-web ──────┤                    │
+     │                                       │                                                  │                                 │                    │
+     │                                       │                                                  │                                 ├── lane phase/3-server-slim ──┤
+     │                                       │                                                  │                                 │                    │
+     │                                       │                                                  │                                 │                    ├── lane phase/6-docs ──┤
+```
+
+Two parallelism windows:
+
+- **Window A** (after P1 merges): lanes `phase/2a-sdk-native` and
+  `phase/2b-sdk-wasm` run concurrently. Two agents, disjoint endpoint
+  modules, shared scaffolding in `Cargo.toml`/`mod.rs` pre-landed by P0.
+- **Window B** (after P2a/P2b merge): lanes `phase/5-cli-sdk` and
+  `phase/4-client-web` run concurrently. Disjoint file sets entirely.
+
+Maximum agent concurrency: **2 lanes at any one time**. Going wider buys
+nothing — the dependency graph serialises everything else, and more lanes
+just amplify hot-zone risk.
+
+### 11.8 Conflict handling
+
+GitButler's "rebases always succeed, sometimes with conflicted commits"
+model means a sibling lane never blocks you mid-flight. Two failure modes
+to plan for:
+
+1. **Lane vs. main conflict** (after `but pull` rebases the lane onto a
+   freshly-merged sibling). Run `but resolve`; resolve in working tree;
+   `but resolve finish`; re-run `cargo test --workspace`.
+2. **Lane vs. lane conflict at commit-assign time** (two agents staged the
+   same hunk to different lanes). Should not happen if §11.3 is honoured.
+   If it does: `but oplog undo` the most recent assignment, fix the scope
+   violation, redispatch.
+
+### 11.9 Integration cadence
+
+- **Per-lane PR review** is the merge unit. No giant integration branch.
+- After each merge to `origin/main`, the operator runs `but pull` once to
+  rebase every open lane. This is the only step that can cascade conflicts;
+  do it after every merge, not in batches.
+- The `[ ]` checkbox lists in §8 are the per-PR acceptance criteria. PRs
+  whose checkboxes aren't all ticked don't merge.
+- If a phase fails review (request changes), the agent for that lane
+  receives a follow-up dispatch with the review feedback verbatim. New
+  commits land on the same lane (no rebase needed unless the operator ran
+  `but pull` in the meantime).
+
+### 11.10 Recovery playbook
+
+| Symptom                                              | Action                                                                 |
+|------------------------------------------------------|------------------------------------------------------------------------|
+| Agent committed to the wrong lane.                   | `but rub <commit-sha> <correct-lane>` to reassign.                     |
+| Agent edited a file outside its scope.               | `but oplog undo` repeatedly until the bad edit is gone, then redispatch with stricter scope wording. |
+| Two lanes both edited the same `Cargo.toml` block.   | Land one PR, then `but pull` the other; resolve via `but resolve`; reviewer signs off on the merged Cargo block. |
+| Workspace `cargo test` fails after a lane merge.     | `but oplog restore <pre-merge-sha> -f` on the operator's lane state; revert the merge PR; redispatch with the regression as a new acceptance test. |
+| GitButler metadata gets weird.                       | `but teardown && but setup` — drops metadata, preserves git history; re-apply lanes manually with `but branch new` on top of each unmerged branch ref. |
+
+### 11.11 What this section deliberately does not solve
+
+- **Code review automation** — every PR still needs a human (or `/ultrareview`)
+  pass. The dispatch plan only governs *creation* and *integration* of changes.
+- **CI integration** — assumes GitHub Actions (or equivalent) already runs
+  `cargo test --workspace` + `cargo clippy` on every PR. If not, add it
+  before starting Phase 0.
+- **Agent identity in commits** — co-author trailers per existing convention
+  (`Co-Authored-By: Claude <noreply@anthropic.com>` or whichever model);
+  GitButler does not impose anything here.
+- **Restoring jj** — out of scope for this migration. After P6 merges,
+  re-evaluate whether to switch back or keep `but` as the long-term VCS
+  workflow.
+
