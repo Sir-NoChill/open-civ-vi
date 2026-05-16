@@ -1561,6 +1561,7 @@ dependencies = [
  "leptos",
  "libciv",
  "libhexgrid",
+ "open4x-protocol",
  "rand",
  "serde",
  "serde-wasm-bindgen",

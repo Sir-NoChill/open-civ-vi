@@ -18,6 +18,7 @@ serde_json  = { workspace = true }
 ulid        = { workspace = true }
 ed25519-dalek = { workspace = true }
 rand        = { workspace = true }
+open4x-protocol = { path = "../open4x-protocol" }
 
 # ── Server-only (native binary) ───────────────────────────────────────
 libciv      = { path = "../libciv", optional = true }
