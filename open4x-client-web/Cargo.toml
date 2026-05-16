@@ -8,18 +8,34 @@ description = "Leptos/WASM web client for open4x. Mounts to a static index.html,
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+# ── Shared (compile for both native dep-resolution and wasm32) ────────
 open4x-protocol = { path = "../open4x-protocol" }
-# open4x-sdk dep added in Phase 4 once the wasm backend lands. Phase 0
-# keeps this crate dep-light so a stub native build stays cheap.
 
-# WASM-only deps. Listed unconditionally because they all compile for
-# native (no-op on non-wasm); the cdylib only matters under
-# `--target wasm32-unknown-unknown`.
+serde      = { workspace = true }
+serde_json = { workspace = true }
+ed25519-dalek = { workspace = true }
+
+# ── WASM-only deps ────────────────────────────────────────────────────
+# Every UI module is `#[cfg(target_arch = "wasm32")]`-gated in `lib.rs`,
+# so leptos / web-sys / wasm-bindgen only need to exist when targeting
+# the browser. Native `cargo build --workspace` compiles this crate as
+# an empty cdylib and skips all UI source.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+open4x-sdk               = { path = "../open4x-sdk", default-features = false, features = ["wasm"] }
+leptos                   = { version = "0.7", features = ["csr"] }
 wasm-bindgen             = { version = "0.2" }
 console_error_panic_hook = { version = "0.1" }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-# These pull in browser APIs and only make sense for the wasm build.
-# Phase 4 expands this to match the current open4x-server `csr` feature set
-# (leptos, web-sys, js-sys, wasm-bindgen-futures, serde-wasm-bindgen,
-# getrandom with wasm_js backend, gloo-timers as needed).
+js-sys                   = { version = "0.3" }
+wasm-bindgen-futures     = { version = "0.4" }
+serde-wasm-bindgen       = { version = "0.6" }
+# Force the `wasm_js` backend on getrandom 0.3 (pulled in transitively
+# via ulid/rand). `.cargo/config.toml` sets `--cfg getrandom_backend="wasm_js"`
+# for wasm targets, but the feature has to be declared on the dep itself.
+getrandom            = { version = "0.3", features = ["wasm_js"] }
+web-sys              = { version = "0.3", features = [
+    "Blob", "BlobPropertyBag", "Document",
+    "HtmlAnchorElement", "HtmlInputElement", "Url", "Window", "Location",
+    "WebSocket", "MessageEvent", "CloseEvent", "ErrorEvent",
+    "Storage", "console",
+    "Response", "Headers", "RequestInit", "Request",
+] }
