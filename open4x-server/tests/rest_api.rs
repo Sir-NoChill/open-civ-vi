@@ -12,8 +12,6 @@
 //!
 //! Plan: book/src/roadmap/web-ui.md §4.
 
-#![cfg(feature = "ssr")]
-
 use std::sync::Arc;
 
 use axum::Router;
