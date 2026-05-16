@@ -5,11 +5,15 @@
 > exclusive `ssr`/`csr` features) into four single-purpose crates inside the
 > existing workspace, with **zero behavioural regression** at every step.
 >
-> **Status (2026-05-16)**: P0 → P5 merged to local main. The four target
-> crates exist, the protocol contract is extracted, the SDK has both
-> backends with the wasm32 target building cleanly, the CLI runs on the
-> SDK, and the Leptos UI lives in `open4x-client-web/`. **P3 (server
-> slim-down) and P6 (cleanup + docs) remain.** All parity gates green:
+> **Status (2026-05-16)**: P0 → P6 merged to local main. **All phases
+> done.** The four target crates exist, the protocol contract is
+> extracted, the SDK has both backends with the wasm32 target building
+> cleanly, the CLI runs on the SDK, `open4x-server` is slimmed to a
+> native-only Axum binary (no Leptos, no cdylib, no feature flags), and
+> the Leptos UI lives in `open4x-client-web/`. Documentation
+> (`AGENTS.md`, `book/src/architecture/*`, `book/src/multiplayer/*`,
+> `book/src/roadmap/web-ui.md`) is refreshed for the new layout, and
+> `commit.gpgsign` has been restored. All parity gates green:
 > `cargo build --workspace`, `cargo test --workspace`,
 > `cargo clippy --workspace -- -D warnings`,
 > `cargo check -p open4x-client-web --target wasm32-unknown-unknown`,
@@ -223,10 +227,10 @@ the trait's `+ Send` future bound.
   to P2b's commit. Net effect: clean state, slight commit-attribution
   oddity. The §11.3 hot-zone rule held in spirit if not in letter.
 
-### Phase 3 — Slim `open4x-server` — **PENDING** (next up)
+### Phase 3 — Slim `open4x-server` — **DONE**
 
 P4 already removed the UI sources and the `wasm_bindgen(start)` function
-from `lib.rs`. P3's remaining scope:
+from `lib.rs`. P3's remaining scope (now complete):
 
 1. ~~Delete `open4x-server/src/components/`, `pages/`, `tabs/`.~~ Done in P4.
 2. Drop the `csr` feature, drop `crate-type = ["cdylib", "rlib"]`, drop every
@@ -335,9 +339,9 @@ What changed:
 and `remote_parity_full_loop` both pass post-swap. The CLI server-mode
 [parity gate](./cli-server-mode.md) is the canonical validation — green.
 
-### Phase 6 — Cleanup + documentation — **PENDING**
+### Phase 6 — Cleanup + documentation — **DONE**
 
-Runs after P3. Scope unchanged from the original plan, with one addition:
+Ran after P3. Scope unchanged from the original plan, with one addition:
 
 1. Delete the `open4x-server/src/types/mod.rs` shim added in P1.
 2. Replace every remaining `use crate::types::*` in `open4x-server` with
@@ -507,13 +511,13 @@ Tick-boxes the reviewer can run down.
 - [x] `open4x-sdk/tests/wasm_smoke.rs` cfg-gated to `target_arch = "wasm32"`.
 - [x] Followup `fix/sdk-getrandom-wasm`: getrandom `wasm_js` feature + send_wrapper `futures` feature so `cargo check --target wasm32-unknown-unknown` succeeds.
 
-### P3 — Server slim — **PENDING**
-- [ ] Remove `csr` feature + every leptos/wasm-* dep from `open4x-server/Cargo.toml`.
-- [ ] Drop `crate-type = ["cdylib", "rlib"]` from `[lib]`.
-- [ ] `cargo build -p open4x-server` is a clean native-only build.
-- [ ] Drop `#![cfg(feature = "ssr")]` from `tests/rest_api.rs`.
-- [ ] `main.rs` default `OPEN4X_STATIC_DIR` retargeted to `./open4x-client-web/dist`.
-- [ ] `open4x-server/src/{components,pages,tabs}` directories confirmed gone (P4 already removed contents; verify no stray files).
+### P3 — Server slim — **DONE**
+- [x] Remove `csr` feature + every leptos/wasm-* dep from `open4x-server/Cargo.toml`.
+- [x] Drop `crate-type = ["cdylib", "rlib"]` from `[lib]`.
+- [x] `cargo build -p open4x-server` is a clean native-only build.
+- [x] Drop `#![cfg(feature = "ssr")]` from `tests/rest_api.rs`.
+- [x] `main.rs` default `OPEN4X_STATIC_DIR` retargeted to `./open4x-client-web/dist`.
+- [x] `open4x-server/src/{components,pages,tabs}` directories confirmed gone (P4 already removed contents; verify no stray files).
 
 ### P4 — Client web — **DONE**
 - [x] `components/`, `pages/`, `tabs/` moved to `open4x-client-web/src/`.
@@ -528,16 +532,23 @@ Tick-boxes the reviewer can run down.
 - [x] Remote subcommands call SDK indirectly via the shim (shim-only path; not direct `open4x_sdk::endpoints::*` calls).
 - [x] CLI server-mode parity harness passes; baseline transcripts unchanged.
 
-### P6 — Cleanup + docs — **PENDING**
-- [ ] `open4x-server/src/types/mod.rs` shim deleted.
-- [ ] Remaining `use crate::types` rewrites done.
-- [ ] `AGENTS.md` workspace + key-files tables updated.
-- [ ] `book/src/multiplayer/web-client.md`, `book/src/roadmap/web-ui.md`,
-      `book/src/SUMMARY.md` updated.
-- [ ] `MEMORY.md` "Web UI build" entry refreshed.
-- [ ] `book/src/roadmap/todo.md` entries closed.
-- [ ] `git config --local --unset commit.gpgsign` (restore signing).
-- [ ] Wireframe visual parity walked (deferred from P4).
+### P6 — Cleanup + docs — **DONE**
+- [x] `open4x-server/src/types/mod.rs` shim deleted (P3-era cleanup).
+- [x] Remaining `use crate::types` rewrites done (P3-era cleanup).
+- [x] `AGENTS.md` workspace + key-files tables updated.
+- [x] `book/src/multiplayer/web-client.md`, `book/src/roadmap/web-ui.md`,
+      `book/src/SUMMARY.md` updated (SUMMARY.md verified: no stale paths
+      to remove; web-client.md already covers both the dedicated
+      `open4x-client-web` crate and the SDK's role).
+- [x] `MEMORY.md` "Web UI build" entry refreshed (operator's auto-memory
+      file outside the repo; updated as part of the operator handoff).
+- [x] `book/src/roadmap/todo.md` entries closed (no crate-split TODOs
+      survived; "WASM Frontend" subhead retitled to point at
+      `open4x-client-web`).
+- [x] `git config --local --unset commit.gpgsign` (restore signing).
+- [ ] Wireframe visual parity walked (deferred from P4 — needs a human
+      with a browser; not automatable. **Carried forward to the operator
+      as a manual post-P6 task.**)
 
 ## 9. Out of scope
 
