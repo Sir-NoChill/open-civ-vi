@@ -1557,6 +1557,8 @@ dependencies = [
  "clap",
  "libciv",
  "libhexgrid",
+ "open4x-sdk",
+ "pollster",
  "rand",
  "reqwest",
  "rustyline",
@@ -1570,8 +1572,18 @@ name = "open4x-client-web"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "ed25519-dalek",
+ "getrandom 0.3.4",
+ "js-sys",
+ "leptos",
  "open4x-protocol",
+ "open4x-sdk",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -1729,6 +1741,12 @@ dependencies = [
  "der",
  "spki",
 ]
+
+[[package]]
+name = "pollster"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
 
 [[package]]
 name = "potential_utf"

@@ -1,97 +1,90 @@
-//! Thin HTTP wrapper used by every remote handler. Single source of
-//! truth for: base URL handling, bearer-auth header, and translating
-//! the server's `{error, message}` body into a flat `String`.
+//! Thin HTTP wrapper used by every remote handler.
+//!
+//! Since Phase 5 of the crate-split migration, this module is a shim
+//! over [`open4x_sdk::native::NativeBlockingClient`]. The SDK owns the
+//! actual reqwest plumbing, base-URL handling, bearer-auth header, and
+//! `{error, message}` envelope decoding; this wrapper only adapts the
+//! SDK's async `Transport::request` (which the blocking client returns
+//! as an immediately-ready future) into the sync
+//! `Result<serde_json::Value, String>` surface the rest of
+//! `open4x-cli::remote` expects.
+//!
+//! Keeping the shim in place means the action/list/status/view/etc.
+//! handlers stay untouched: they continue to call `client.get_json`,
+//! `client.post_json`, `client.delete_json` exactly as before.
 
+use open4x_sdk::native::NativeBlockingClient;
+use open4x_sdk::{Method, Transport, error::ApiError};
 use serde_json::Value;
 
 pub struct ApiClient {
-    base: String,
-    token: Option<String>,
-    inner: reqwest::blocking::Client,
+    inner: NativeBlockingClient,
 }
 
 impl ApiClient {
     pub fn new(base: impl Into<String>) -> Self {
-        let mut base = base.into();
-        while base.ends_with('/') {
-            base.pop();
-        }
         Self {
-            base,
-            token: None,
-            inner: reqwest::blocking::Client::builder()
-                .build()
-                .expect("failed to build reqwest client"),
+            inner: NativeBlockingClient::new(base),
         }
     }
 
     pub fn with_token(mut self, token: impl Into<String>) -> Self {
-        self.token = Some(token.into());
+        self.inner = self.inner.with_token(token);
         self
     }
 
-    fn url(&self, path: &str) -> String {
-        if path.starts_with('/') {
-            format!("{}{}", self.base, path)
-        } else {
-            format!("{}/{}", self.base, path)
-        }
-    }
-
-    fn maybe_auth(&self, req: reqwest::blocking::RequestBuilder) -> reqwest::blocking::RequestBuilder {
-        match &self.token {
-            Some(t) => req.bearer_auth(t),
-            None => req,
-        }
-    }
-
     pub fn get_json(&self, path: &str) -> Result<Value, String> {
-        let resp = self
-            .maybe_auth(self.inner.get(self.url(path)))
-            .send()
-            .map_err(|e| format!("GET {path}: {e}"))?;
-        decode(resp, &format!("GET {path}"))
+        self.request(Method::Get, path, None)
     }
 
     pub fn post_json(&self, path: &str, body: &Value) -> Result<Value, String> {
-        let resp = self
-            .maybe_auth(self.inner.post(self.url(path)).json(body))
-            .send()
-            .map_err(|e| format!("POST {path}: {e}"))?;
-        decode(resp, &format!("POST {path}"))
+        let bytes = serde_json::to_vec(body)
+            .map_err(|e| format!("POST {path}: failed to encode body: {e}"))?;
+        self.request(Method::Post, path, Some(&bytes))
     }
 
     pub fn delete_json(&self, path: &str) -> Result<Value, String> {
-        let resp = self
-            .maybe_auth(self.inner.delete(self.url(path)))
-            .send()
-            .map_err(|e| format!("DELETE {path}: {e}"))?;
-        decode(resp, &format!("DELETE {path}"))
+        self.request(Method::Delete, path, None)
+    }
+
+    fn request(&self, method: Method, path: &str, body: Option<&[u8]>) -> Result<Value, String> {
+        // `NativeBlockingClient::request` does the HTTP work eagerly and
+        // hands back an immediately-ready future, so `block_on` here
+        // does not spin a real executor — it just unwraps the result.
+        let ctx = format!("{} {path}", method.as_str());
+        let fut = self.inner.request(method, path, body);
+        let bytes = pollster::block_on(fut).map_err(|e| format_err(&ctx, &e))?;
+
+        if bytes.is_empty() {
+            return Ok(Value::Null);
+        }
+        serde_json::from_slice(&bytes)
+            .map_err(|e| format!("{ctx}: invalid JSON response ({e}): {}", String::from_utf8_lossy(&bytes)))
     }
 }
 
-/// Drain the response. On non-2xx, surface the server's structured
-/// `{error, message}` body if present, else the raw text.
-fn decode(resp: reqwest::blocking::Response, ctx: &str) -> Result<Value, String> {
-    let status = resp.status();
-    let text = resp
-        .text()
-        .map_err(|e| format!("{ctx}: failed to read response body: {e}"))?;
-
-    if status.is_success() {
-        if text.is_empty() {
-            return Ok(Value::Null);
+/// Reformat an [`ApiError`] to match the legacy bespoke-client error
+/// string. The legacy format was:
+///
+/// ```text
+/// {ctx} -> {status} {error_code}: {message} ({body_json})
+/// ```
+///
+/// We approximate it as `"{ctx}: <ApiError Display>"` for transport
+/// failures and `"{ctx} -> {status} {code}: {message}"` for HTTP
+/// failures. The CLI parity harness only asserts that the relevant
+/// error code (e.g. `pending_required_action`) appears in the string;
+/// it doesn't grep for the exact framing.
+fn format_err(ctx: &str, e: &ApiError) -> String {
+    if e.status == 0 {
+        // Transport-level failure. The SDK already includes the
+        // method/path in its message, so just surface it.
+        match &e.message {
+            Some(m) => m.clone(),
+            None => format!("{ctx}: transport error"),
         }
-        return serde_json::from_str(&text)
-            .map_err(|e| format!("{ctx}: invalid JSON response ({e}): {text}"));
+    } else {
+        let msg = e.message.as_deref().unwrap_or("");
+        format!("{ctx} -> {} {}: {msg}", e.status, e.code)
     }
-
-    let body: Value = serde_json::from_str(&text).unwrap_or(Value::String(text.clone()));
-    let err_code = body.get("error").and_then(|v| v.as_str()).unwrap_or("http_error");
-    let msg = body
-        .get("message")
-        .and_then(|v| v.as_str())
-        .map(str::to_string)
-        .unwrap_or_else(|| text.clone());
-    Err(format!("{ctx} -> {} {}: {} ({})", status.as_u16(), err_code, msg, body))
 }
