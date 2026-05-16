@@ -19,6 +19,7 @@ wasm-bindgen         = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 js-sys               = { version = "0.3", optional = true }
 serde-wasm-bindgen   = { version = "0.6", optional = true }
+send_wrapper         = { version = "0.6", optional = true }
 web-sys = { version = "0.3", optional = true, features = [
     "Headers", "Request", "RequestInit", "Response", "Window",
 ] }
@@ -39,4 +40,20 @@ native-async = ["dep:reqwest", "dep:tokio"]
 wasm = [
     "dep:wasm-bindgen", "dep:wasm-bindgen-futures",
     "dep:js-sys", "dep:web-sys", "dep:serde-wasm-bindgen",
+    "dep:send_wrapper",
 ]
+
+# ── Dev (test-only) ───────────────────────────────────────────────────
+# native_roundtrip.rs drives the in-process Axum router via tower::oneshot
+# instead of binding a TCP socket. See open4x-server/tests/rest_api.rs for
+# the pattern.
+[dev-dependencies]
+open4x-server  = { path = "../open4x-server" }
+tower          = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+axum           = { version = "0.8" }
+tokio          = { workspace = true }
+serde_json     = { workspace = true }
+# WASM smoke test harness (wasm_smoke.rs). Inert under native `cargo test`
+# because the test file is cfg-gated to `target_arch = "wasm32"`.
+wasm-bindgen-test = "0.3"
